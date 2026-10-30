@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "building-secure-contracts@trailofbits": true,
+    "entry-point-analyzer@trailofbits": true
+  }
+}
