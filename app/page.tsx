@@ -1,19 +1,18 @@
-import { Button } from "@/components/ui/button"
+import { ConnectWallet } from "@/components/ui/connect-wallet"
 
 export default function Page() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
+    <div className="flex min-h-svh flex-col">
+      <header className="flex items-center justify-between border-b px-6 py-3">
+        <span className="font-mono text-sm font-medium">Pwnpot</span>
+        <ConnectWallet />
+      </header>
+      <main className="flex flex-1 flex-col gap-2 p-6 text-sm">
+        <h1 className="font-medium">Plateforme de CTF smart contracts</h1>
+        <p className="text-muted-foreground">
+          Connecte ton wallet sur Base Sepolia pour commencer.
+        </p>
+      </main>
     </div>
   )
 }
