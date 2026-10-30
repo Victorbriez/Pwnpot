@@ -41,10 +41,3 @@ next-env.d.ts
 
 # serena
 .serena/
-
-# hardhat (contracts workspace)
-contracts/artifacts/
-contracts/cache/
-contracts/types/
-contracts/coverage/
-contracts/ignition/deployments/chain-31337/

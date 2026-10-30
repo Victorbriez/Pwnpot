@@ -9,7 +9,10 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "contracts:build": "pnpm --filter @pwnpot/contracts build",
+    "contracts:test": "pnpm --filter @pwnpot/contracts test",
+    "contracts:typecheck": "pnpm --filter @pwnpot/contracts typecheck"
   },
   "dependencies": {
     "@base-org/account": "^2.6.0",

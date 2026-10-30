@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Hardhat workspace has its own tooling.
+    "contracts/**",
   ]),
 ]);
 
