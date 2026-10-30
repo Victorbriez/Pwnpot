@@ -18,8 +18,20 @@ Dossier projet (source de vérité fonctionnelle) : https://claude.ai/artifact/U
 
 - **Frontend** : Next.js 16 (App Router, RSC), React 19, TypeScript, Tailwind CSS v4, shadcn/ui style `base-nova`.
 - **Web3** : wagmi 3 + viem 2, réseau **Base Sepolia** uniquement.
-- **Contrats** : Solidity, Hardhat, OpenZeppelin.
-- **Gestionnaire de paquets** : **pnpm** (jamais npm ou yarn pour installer).
+- **Contrats** : Solidity 0.8.34, Hardhat 3 (toolbox viem, tests Solidity + `node:test`), OpenZeppelin 5, dans le workspace `contracts/` (`@pwnpot/contracts`).
+- **Gestionnaire de paquets** : **pnpm** (jamais npm ou yarn pour installer). Repo en workspace pnpm : le frontend à la racine, les contrats dans `contracts/` (`pnpm --filter @pwnpot/contracts add …` pour y ajouter une dépendance).
+
+## Organisation
+
+```
+app/ components/ hooks/ lib/   frontend Next
+lib/onchain/wagmi.ts           config wagmi (Base Sepolia, connecteurs injected + Base Account)
+lib/onchain/config.ts          réglages des composants @onchain-ui
+contracts/                     workspace Hardhat (voir contracts/AGENTS.md)
+  contracts/                   sources .sol et tests unitaires .t.sol
+  test/                        tests d'intégration TypeScript
+  ignition/modules/            modules de déploiement
+```
 
 ## UI
 
@@ -40,6 +52,8 @@ Dossier projet (source de vérité fonctionnelle) : https://claude.ai/artifact/U
 - Lire l'état depuis la chaîne et les events du contrat, pas depuis une base de données : la plateforme n'a pas de backend qui détient de l'état.
 - Toute écriture passe par le wallet du joueur. Afficher l'état de la transaction (en attente, confirmée, échouée) et le lien vers l'explorer Base Sepolia.
 - Montants en `bigint` (wei) jusqu'à l'affichage ; formater avec `formatEther` / `formatUnits`.
+- Une seule config wagmi : `wagmiConfig` dans `lib/onchain/wagmi.ts`, typée via `Register`. Ne pas en créer d'autre.
+- `@base-org/account` est exclu du bundle serveur (`serverExternalPackages` dans `next.config.ts`) : ne pas retirer cette ligne, le build casse sinon.
 
 ## Contrats
 
@@ -54,14 +68,24 @@ Dossier projet (source de vérité fonctionnelle) : https://claude.ai/artifact/U
 ## Commandes
 
 ```bash
-pnpm dev        # serveur de dev
-pnpm build      # build de prod
-pnpm lint       # ESLint
-pnpm typecheck  # tsc --noEmit
-pnpm format     # Prettier
+pnpm dev                  # serveur de dev
+pnpm build                # build de prod
+pnpm lint                 # ESLint (frontend)
+pnpm typecheck            # tsc --noEmit (frontend)
+pnpm format               # Prettier
+pnpm contracts:build      # compile les contrats
+pnpm contracts:test       # tests Solidity + TypeScript
+pnpm contracts:typecheck  # compile puis tsc des tests/scripts Hardhat
 ```
 
-Avant de considérer une tâche finie : `pnpm lint` et `pnpm typecheck` passent.
+Avant de considérer une tâche finie : `pnpm lint` et `pnpm typecheck` passent, plus `pnpm contracts:test` si un contrat a changé.
+
+## Secrets
+
+- Frontend : variables dans `.env.local` (modèle : `.env.example`). Seules les `NEXT_PUBLIC_*` sont exposées au navigateur, n'y mettre aucun secret.
+- Contrats : RPC et clé de déploiement dans le keystore Hardhat, jamais dans un fichier :
+  `pnpm --filter @pwnpot/contracts exec hardhat keystore set BASE_SEPOLIA_RPC_URL` (idem `BASE_SEPOLIA_PRIVATE_KEY`).
+- Clé de déploiement : un compte dédié au testnet, jamais un wallet qui détient des fonds réels.
 
 ## Git
 
