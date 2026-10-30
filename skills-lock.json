@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "migrate-radix-to-base": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "skillPath": "skills/migrate-radix-to-base/SKILL.md",
+      "computedHash": "e1f2030ee5059be3dff0812ca0e4b995ee9fa3132176f049ebe6c90346a6755e"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "b864a958765563321f485a96f4d59c0bb6539f4286ab6d8b8b66895b7ebd302d"
+    },
+    "viem": {
+      "source": "0xsardius/onchain-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/viem/SKILL.md",
+      "computedHash": "c87913a8f7b7fcafaa056fac32f62860cdd4bc6e7928f6888adbd23a6b2a3364"
+    },
+    "wagmi": {
+      "source": "0xsardius/onchain-typescript-skills",
+      "sourceType": "github",
+      "skillPath": "skills/wagmi/SKILL.md",
+      "computedHash": "eb5842248354ca8f16d121d38b8ee1c367a58c5f506cb5e1bbf3312fd57a352e"
+    }
+  }
+}
