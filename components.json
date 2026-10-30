@@ -21,5 +21,13 @@
   },
   "menuColor": "default",
   "menuAccent": "subtle",
-  "registries": {}
+  "registries": {
+    "@onchain-ui": "https://onchain-ui.dev/r/{name}.json",
+    "@trophy-ui": "https://ui.trophy.so/r/{name}.json",
+    "@stepper": "https://francozeta-stepper.vercel.app/r/{name}.json",
+    "@json-view-cn": "https://json-view-cn.vercel.app/r/{name}.json",
+    "@basecn": "https://basecn.dev/r/{name}.json",
+    "@coss": "https://coss.com/ui/r/{name}.json",
+    "@afterglow": "https://afterglow.thebuilder.dk/r/{name}.json"
+  }
 }
