@@ -4,13 +4,11 @@ import {
   LockKeyholeIcon,
   ShieldCheckIcon,
 } from "lucide-react"
-import Link from "next/link"
-
 import { VulnTag } from "@/components/ctf/vuln-tag"
+import { ConnectRedirect } from "@/components/landing/connect-redirect"
 import { ExploitTrace } from "@/components/landing/exploit-trace"
-import { PublishCtfButton } from "@/components/site/soon-button"
+import { HeroActions } from "@/components/landing/hero-actions"
 import { Badge } from "@/components/ui/badge"
-import { buttonVariants } from "@/components/ui/button"
 import { formatEth, formatInt } from "@/lib/format"
 import { kpis, type Vuln } from "@/lib/mock/explore"
 
@@ -100,6 +98,7 @@ const stats = [
 export default function LandingPage() {
   return (
     <>
+      <ConnectRedirect />
       {/* Hero */}
       <section className="mx-auto grid max-w-7xl items-center gap-12 px-4 pt-16 pb-20 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:px-12 lg:pt-24 lg:pb-28">
         <div className="flex flex-col gap-7">
@@ -115,19 +114,15 @@ export default function LandingPage() {
             exploite sa propre instance, la réussite est vérifiée on-chain, et
             le contrat garde la cagnotte jusqu&apos;au partage.
           </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href="/explore" className={buttonVariants({ size: "lg" })}>
-              Explorer les CTF
-            </Link>
+          <HeroActions />
+          <p className="text-sm text-muted-foreground">
+            Un wallet suffit, pas de compte à créer.{" "}
             <a
               href="#comment-ca-marche"
-              className={buttonVariants({ variant: "outline", size: "lg" })}
+              className="font-medium text-foreground underline-offset-4 hover:underline"
             >
               Comment ça marche
             </a>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Un wallet suffit, pas de compte à créer.
           </p>
         </div>
         <ExploitTrace />
@@ -265,15 +260,10 @@ export default function LandingPage() {
               Ton premier contrat t&apos;attend
             </h2>
             <p className="text-muted-foreground">
-              Ou publie ton propre CTF et fixe la cagnotte.
+              Connecte ton wallet, choisis un CTF et lance ta première instance.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/explore" className={buttonVariants({ size: "lg" })}>
-              Explorer les CTF
-            </Link>
-            <PublishCtfButton variant="outline" />
-          </div>
+          <HeroActions />
         </div>
       </section>
     </>

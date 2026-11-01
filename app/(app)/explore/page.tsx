@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function ExplorePage() {
   return (
-    <div className="flex flex-col gap-10">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-10 sm:px-6 lg:px-12 lg:py-12">
       <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex max-w-2xl flex-col gap-3">
           <div className="flex flex-wrap gap-2">

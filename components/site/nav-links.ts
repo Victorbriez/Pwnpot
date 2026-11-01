@@ -6,6 +6,7 @@ export type NavLink = {
 }
 
 export const appNav: NavLink[] = [
+  { href: "/", label: "Accueil" },
   { href: "/explore", label: "Explorer" },
   { href: "/my-ctfs", label: "Mes CTF", soon: true },
   { href: "/disputes", label: "Litiges", soon: true },

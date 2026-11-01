@@ -76,7 +76,7 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-12">
-        <Logo href="/explore" />
+        <Logo />
 
         <nav aria-label="Navigation principale" className="hidden lg:block">
           <ul className="flex items-center gap-7 text-sm font-medium">
