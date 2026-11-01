@@ -1,0 +1,91 @@
+import { StatusPill } from "@/components/ctf/status-pill"
+import { VulnTag } from "@/components/ctf/vuln-tag"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { truncateAddress } from "@/lib/onchain/format"
+import { formatEth, formatInt, formatRemaining } from "@/lib/format"
+import type { Ctf } from "@/lib/mock/explore"
+import { cn } from "@/lib/utils"
+
+function remainingLabel(ctf: Ctf) {
+  if (ctf.status === "ended") return "clôturé"
+  const left = formatRemaining(ctf.remaining)
+  return ctf.status === "dispute" ? `vote : ${left}` : `fin dans ${left}`
+}
+
+export function CtfCard({ ctf }: { ctf: Ctf }) {
+  const pct = Math.round(ctf.elapsed * 100)
+
+  return (
+    <Card className="gap-5 rounded-2xl py-6 [--card-spacing:--spacing(6)]">
+      <CardHeader className="gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <StatusPill status={ctf.status} />
+          <span className="font-mono text-xs text-muted-foreground tabular-nums">
+            {remainingLabel(ctf)}
+          </span>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <CardTitle className="text-[1.0625rem] font-semibold">
+            {ctf.title}
+          </CardTitle>
+          <CardDescription className="text-[0.8125rem]">
+            {ctf.challenges} épreuve{ctf.challenges > 1 ? "s" : ""}, par{" "}
+            <span className="font-mono">
+              {truncateAddress(ctf.organizer, 3)}
+            </span>
+          </CardDescription>
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex flex-col gap-5">
+        <dl className="flex items-end justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <dt className="text-xs text-muted-foreground">Cagnotte</dt>
+            <dd className="text-2xl font-semibold tabular-nums">
+              {formatEth(ctf.prizePool)}
+            </dd>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <dt className="text-xs text-muted-foreground">Ticket</dt>
+            <dd className="text-[0.9375rem] font-semibold tabular-nums">
+              {formatEth(ctf.ticketPrice)}
+            </dd>
+          </div>
+        </dl>
+
+        <div className="flex flex-col gap-2">
+          <Progress
+            value={pct}
+            aria-label="Temps écoulé"
+            className={cn(
+              "[&_[data-slot=progress-indicator]]:rounded-full [&_[data-slot=progress-track]]:h-2 [&_[data-slot=progress-track]]:bg-accent",
+              ctf.status === "dispute"
+                ? "[&_[data-slot=progress-indicator]]:bg-warning"
+                : ctf.status === "ended"
+                  ? "[&_[data-slot=progress-indicator]]:bg-muted-foreground/40"
+                  : "[&_[data-slot=progress-indicator]]:bg-linear-to-r [&_[data-slot=progress-indicator]]:from-chart-1 [&_[data-slot=progress-indicator]]:to-chart-2"
+            )}
+          />
+          <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
+            <span>{formatInt(ctf.players)} joueurs</span>
+            <span>Caution {formatEth(ctf.bond)}</span>
+          </div>
+        </div>
+      </CardContent>
+
+      <CardFooter className="flex-wrap gap-2 border-t-0 bg-transparent pt-0">
+        {ctf.vulns.map((vuln) => (
+          <VulnTag key={vuln} vuln={vuln} />
+        ))}
+      </CardFooter>
+    </Card>
+  )
+}
