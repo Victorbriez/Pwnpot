@@ -1,9 +1,5 @@
-"use client"
-
-import * as React from "react"
 import { parseEther } from "viem"
 
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { formatEth } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -33,108 +29,62 @@ const total = funds.reduce((sum, fund) => sum + fund.amount, BigInt(0))
 
 type Destination = "winners" | "players" | "organizer" | "burn"
 
-const destinationStyle: Record<Destination, string> = {
-  winners: "bg-primary",
-  players: "bg-info",
-  organizer: "bg-success",
-  burn: "bg-[repeating-linear-gradient(135deg,var(--destructive)_0_6px,transparent_6px_12px)] ring-1 ring-destructive/60 ring-inset",
+const destinations: Record<Destination, { label: string; tone: string }> = {
+  winners: { label: "Gagnants", tone: "bg-primary" },
+  players: { label: "Joueurs remboursés", tone: "bg-info" },
+  organizer: { label: "Organisateur", tone: "bg-success" },
+  burn: {
+    label: "Brûlé",
+    tone: "bg-[repeating-linear-gradient(135deg,var(--destructive)_0_6px,transparent_6px_12px)] ring-1 ring-destructive/60 ring-inset",
+  },
 }
 
-const outcomes = {
-  winners: {
+const outcomes: {
+  label: string
+  when: string
+  flows: { to: Destination; amount: bigint }[]
+}[] = [
+  {
     label: "Des gagnants",
     when: "Au moins un joueur a validé son instance avant la clôture.",
     flows: [
-      {
-        to: "winners",
-        label: "Gagnants, cagnotte et tickets",
-        amount: parseEther("6.84"),
-      },
-      {
-        to: "organizer",
-        label: "Organisateur, caution rendue",
-        amount: parseEther("1.5"),
-      },
+      { to: "winners", amount: parseEther("6.84") },
+      { to: "organizer", amount: parseEther("1.5") },
     ],
   },
-  none: {
-    label: "Aucun gagnant",
-    when: "Personne n'a cassé le contrat, et aucun litige n'a abouti.",
-    flows: [
-      {
-        to: "players",
-        label: "Joueurs, tickets remboursés",
-        amount: parseEther("2.84"),
-      },
-      {
-        to: "organizer",
-        label: "Organisateur, cagnotte et caution",
-        amount: parseEther("5.5"),
-      },
-    ],
-  },
-  cheat: {
-    label: "Triche confirmée",
-    when: "Un litige prouve que l'organisateur a triché : le vote, puis l'arbitre, l'ont confirmé.",
-    flows: [
-      {
-        to: "players",
-        label: "Joueurs, tickets remboursés",
-        amount: parseEther("2.84"),
-      },
-      {
-        to: "organizer",
-        label: "Organisateur, cagnotte seulement",
-        amount: parseEther("4"),
-      },
-      { to: "burn", label: "Caution brûlée", amount: parseEther("1.5") },
-    ],
-  },
-} as const satisfies Record<
-  string,
   {
-    label: string
-    when: string
-    flows: ReadonlyArray<{ to: Destination; label: string; amount: bigint }>
-  }
->
-
-type Outcome = keyof typeof outcomes
+    label: "Aucun gagnant",
+    when: "Personne n'a cassé le contrat.",
+    flows: [
+      { to: "players", amount: parseEther("2.84") },
+      { to: "organizer", amount: parseEther("5.5") },
+    ],
+  },
+  {
+    label: "Triche confirmée",
+    when: "Un litige a prouvé la triche de l'organisateur.",
+    flows: [
+      { to: "players", amount: parseEther("2.84") },
+      { to: "organizer", amount: parseEther("4") },
+      { to: "burn", amount: parseEther("1.5") },
+    ],
+  },
+]
 
 function share(amount: bigint) {
   return `${(Number((amount * BigInt(10_000)) / total) / 100).toFixed(2)}%`
 }
 
-export function Settlement() {
-  const [outcome, setOutcome] = React.useState<Outcome>("winners")
-  const current = outcomes[outcome]
+function describe(flows: { to: Destination; amount: bigint }[]) {
+  return flows
+    .map((flow) => `${destinations[flow.to].label} : ${formatEth(flow.amount)}`)
+    .join(", ")
+}
 
+export function Settlement() {
   return (
     <div className="flex flex-col gap-10">
-      <ToggleGroup
-        variant="outline"
-        spacing={0}
-        value={[outcome]}
-        onValueChange={(value) => {
-          const next = value[0] as Outcome | undefined
-          if (next) setOutcome(next)
-        }}
-        aria-label="Issue du CTF"
-        className="flex-wrap"
-      >
-        {Object.entries(outcomes).map(([key, { label }]) => (
-          <ToggleGroupItem key={key} value={key} className="h-9 px-4">
-            {label}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-      <p
-        className="-mt-6 text-sm text-pretty text-muted-foreground"
-        aria-live="polite"
-      >
-        {current.when}
-      </p>
-
+      {/* Ce que détient le contrat */}
       <div className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between gap-4 text-sm">
           <span className="text-muted-foreground">
@@ -179,43 +129,64 @@ export function Settlement() {
         </ul>
       </div>
 
+      {/* Les trois issues, alignées sur la même échelle */}
       <div className="flex flex-col gap-3">
         <span className="text-sm text-muted-foreground">
           Où il part à la clôture
         </span>
-        <div className="flex h-14 gap-1 overflow-hidden rounded-xl" aria-hidden>
-          {current.flows.map((flow) => (
-            <div
-              key={`${outcome}-${flow.to}`}
-              style={{ width: share(flow.amount) }}
-              className={cn(
-                "animate-in duration-300 fade-in motion-reduce:animate-none",
-                destinationStyle[flow.to]
-              )}
-            />
+        <ol className="flex flex-col gap-7 border-t pt-6">
+          {outcomes.map((outcome) => (
+            <li key={outcome.label} className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                <span className="font-medium">{outcome.label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {outcome.when}
+                </span>
+              </div>
+              <div
+                role="img"
+                aria-label={describe(outcome.flows)}
+                className="flex h-9 gap-1 overflow-hidden rounded-lg"
+              >
+                {outcome.flows.map((flow) => (
+                  <div
+                    key={flow.to}
+                    style={{ width: share(flow.amount) }}
+                    className={destinations[flow.to].tone}
+                  />
+                ))}
+              </div>
+              <div aria-hidden className="flex gap-1">
+                {outcome.flows.map((flow) => (
+                  <span
+                    key={flow.to}
+                    style={{ width: share(flow.amount) }}
+                    className={cn(
+                      "truncate font-mono text-xs tabular-nums",
+                      flow.to === "burn"
+                        ? "text-destructive line-through"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {formatEth(flow.amount)}
+                  </span>
+                ))}
+              </div>
+            </li>
           ))}
-        </div>
-        <ul className="mt-2 flex flex-col divide-y border-y">
-          {current.flows.map((flow) => (
-            <li
-              key={`${outcome}-${flow.to}`}
-              className="flex items-center gap-3 py-3"
-            >
+        </ol>
+        <ul
+          aria-label="Légende"
+          className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t pt-5 text-xs"
+        >
+          {Object.entries(destinations).map(([key, destination]) => (
+            <li key={key} className="flex items-center gap-2">
               <span
                 aria-hidden
-                className={cn(
-                  "size-3 shrink-0 rounded-[3px]",
-                  destinationStyle[flow.to]
-                )}
+                className={cn("size-2.5 rounded-[3px]", destination.tone)}
               />
-              <span className="text-sm">{flow.label}</span>
-              <span
-                className={cn(
-                  "ml-auto font-mono text-sm font-medium tabular-nums",
-                  flow.to === "burn" && "text-destructive line-through"
-                )}
-              >
-                {formatEth(flow.amount)}
+              <span className="text-secondary-foreground">
+                {destination.label}
               </span>
             </li>
           ))}
