@@ -53,7 +53,7 @@ export function ConnectorList({
   onSelect,
   pendingId,
   disabled = false,
-  emptyMessage = "No compatible wallet connection is available on this device.",
+  emptyMessage = "Aucun wallet compatible n'est disponible sur cet appareil.",
   className,
   itemClassName,
 }: ConnectorListProps) {

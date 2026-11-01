@@ -121,7 +121,7 @@ export function NetworkLogo({
 
   const alt = useMemo(() => {
     if (displayName && displaySymbol) return `${displayName} (${displaySymbol})`;
-    return displayName ?? displaySymbol ?? String(chainId ?? "Network");
+    return displayName ?? displaySymbol ?? String(chainId ?? "Réseau");
   }, [chainId, displayName, displaySymbol]);
 
   const tooltip = tooltipContent ?? displayName ?? displaySymbol ?? chainId;

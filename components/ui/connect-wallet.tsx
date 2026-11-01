@@ -23,7 +23,7 @@ type ProbedConnector = ReturnType<
 >["connectors"][number];
 
 export interface ConnectWalletProps {
-  /** Label for the disconnected trigger. Default: "Connect wallet" */
+  /** Label for the disconnected trigger. Default: "Connecter un wallet" */
   label?: string | undefined;
   /** Show the network mark on the connected pill. Default: true */
   showNetwork?: boolean | undefined;
@@ -47,7 +47,7 @@ function toOption(connector: ProbedConnector) {
     id: connector.uid,
     // wagmi names the legacy window.ethereum fallback "Injected" — wallet
     // plumbing jargon nobody picks a wallet by.
-    name: connector.id === "injected" ? "Browser wallet" : connector.name,
+    name: connector.id === "injected" ? "Wallet du navigateur" : connector.name,
     icon: connector.icon,
   };
 }
@@ -60,7 +60,7 @@ function toOption(connector: ProbedConnector) {
  * testable with plain data. Swap any of them without touching this file.
  */
 export function ConnectWallet({
-  label = "Connect wallet",
+  label = "Connecter un wallet",
   showNetwork = true,
   size = "default",
   onError,
@@ -122,7 +122,7 @@ export function ConnectWallet({
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => disconnect.mutate()}>
             <LogOutIcon />
-            Disconnect
+            Se déconnecter
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -140,7 +140,7 @@ export function ConnectWallet({
         className={triggerClassName}
       >
         <WalletIcon className="size-4" aria-hidden="true" />
-        {connect.isPending ? "Connecting…" : label}
+        {connect.isPending ? "Connexion…" : label}
       </button>
     );
   }
@@ -152,7 +152,7 @@ export function ConnectWallet({
         className={triggerClassName}
       >
         <WalletIcon className="size-4" aria-hidden="true" />
-        {connect.isPending ? "Connecting…" : label}
+        {connect.isPending ? "Connexion…" : label}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className={cn("w-60", contentClassName)}>
         <ConnectorList

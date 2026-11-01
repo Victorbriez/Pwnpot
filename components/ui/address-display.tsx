@@ -59,9 +59,9 @@ export function AddressDisplay({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(address);
-      toast.success("Address copied");
+      toast.success("Adresse copiée");
     } catch {
-      toast.error("Could not copy address");
+      toast.error("Impossible de copier l'adresse");
     }
   };
 
@@ -85,7 +85,7 @@ export function AddressDisplay({
         <button
           type="button"
           onClick={handleCopy}
-          title="Copy address"
+          title="Copier l'adresse"
           className={cn(
             "flex min-w-0 items-center gap-1.5 font-mono text-muted-foreground",
             sizeClasses[size],
@@ -114,7 +114,7 @@ export function AddressDisplay({
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          title="View on explorer"
+          title="Voir sur l'explorer"
           className="text-muted-foreground hover:text-foreground transition-colors duration-150"
         >
           {explorerIcon}
