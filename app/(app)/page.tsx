@@ -4,8 +4,8 @@ import { VulnTag } from "@/components/ctf/vuln-tag"
 import { ConnectRedirect } from "@/components/landing/connect-redirect"
 import { ContractListing } from "@/components/landing/contract-listing"
 import { ExploitTrace } from "@/components/landing/exploit-trace"
+import { FinalCta } from "@/components/landing/final-cta"
 import { HeroActions } from "@/components/landing/hero-actions"
-import { LiveCtfs } from "@/components/landing/live-ctfs"
 import { Settlement } from "@/components/landing/settlement"
 import { formatEth, formatRemaining } from "@/lib/format"
 import { ctfs, type Vuln } from "@/lib/mock/explore"
@@ -193,25 +193,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTF en cours */}
-      <section aria-labelledby="live-titre" className="border-t">
-        <div className={`${section} flex flex-col gap-10 py-24 lg:py-32`}>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <h2
-              id="live-titre"
-              className="text-3xl font-semibold tracking-tight sm:text-4xl"
-            >
-              À prendre maintenant
-            </h2>
-            <Link
-              href="/explore"
-              className="text-sm font-medium underline-offset-4 hover:underline"
-            >
-              Tous les CTF
-            </Link>
-          </div>
-          <LiveCtfs ctfs={liveCtfs.slice(0, 4)} />
-          <HeroActions />
+      {/* Appel final */}
+      <section className="border-t">
+        <div className={`${section} py-24 lg:py-32`}>
+          <FinalCta />
         </div>
       </section>
     </>
