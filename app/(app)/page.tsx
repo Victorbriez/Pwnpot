@@ -17,8 +17,8 @@ const challenges: { vuln: Vuln; title: string; goal: string; code: string }[] =
       title: "Le coffre",
       goal: "Vide le coffre de tout son ETH.",
       code: `function withdraw() external {
-  uint256 amount = balances[msg.sender];
-  (bool ok, ) = msg.sender.call{value: amount}("");
+  uint256 bal = balances[msg.sender];
+  (bool ok,) = msg.sender.call{value: bal}("");
   require(ok);
   balances[msg.sender] = 0;
 }`,
@@ -171,7 +171,7 @@ export default function HomePage() {
               de le trouver.
             </p>
           </div>
-          <ul className="grid gap-6 lg:grid-cols-3">
+          <ul className="grid gap-6 xl:grid-cols-3">
             {challenges.map((challenge) => (
               <li
                 key={challenge.vuln}
@@ -184,7 +184,7 @@ export default function HomePage() {
                     {challenge.goal}
                   </p>
                 </div>
-                <pre className="mt-auto overflow-x-auto border-t bg-muted/60 p-5 font-mono text-[0.75rem] leading-5 text-secondary-foreground">
+                <pre className="mt-auto border-t bg-muted/60 px-4 py-5 font-mono text-[0.72rem] leading-5 [overflow-wrap:anywhere] whitespace-pre-wrap text-secondary-foreground">
                   <code>{challenge.code}</code>
                 </pre>
               </li>
