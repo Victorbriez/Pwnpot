@@ -31,6 +31,10 @@ const lines: Line[] = [
   },
   { code: "" },
   {
+    code: "  function finalize(uint256 ctfId);",
+    note: "N'importe qui clôture après la deadline : si l'organisateur disparaît, le CTF se termine quand même.",
+  },
+  {
     code: "  function withdraw();",
     note: "Chacun retire sa propre part, quand il veut.",
   },

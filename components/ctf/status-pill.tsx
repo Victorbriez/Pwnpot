@@ -2,13 +2,28 @@ import { Badge } from "@/components/ui/badge"
 import type { CtfStatus } from "@/lib/mock/explore"
 import { cn } from "@/lib/utils"
 
+type Variant = "brand" | "success" | "warning" | "info" | "muted"
+
+// Une entrée par phase du cycle de vie (docs/DESIGN.md).
 const statusMeta = {
-  live: { label: "En cours", variant: "success", dot: "bg-success" },
-  dispute: { label: "Litige ouvert", variant: "warning", dot: "bg-warning" },
-  ended: { label: "Terminé", variant: "muted", dot: "bg-muted-foreground" },
+  open: { label: "Inscriptions", variant: "info", dot: "bg-info" },
+  running: { label: "En cours", variant: "success", dot: "bg-success" },
+  contestation: { label: "Contestation", variant: "muted", dot: "bg-warning" },
+  voting: { label: "Vote", variant: "warning", dot: "bg-warning" },
+  appeal: { label: "Appel", variant: "warning", dot: "bg-warning" },
+  finalized: {
+    label: "Finalisé",
+    variant: "muted",
+    dot: "bg-muted-foreground",
+  },
+  cheated: {
+    label: "Triche confirmée",
+    variant: "muted",
+    dot: "bg-destructive",
+  },
 } as const satisfies Record<
   CtfStatus,
-  { label: string; variant: "success" | "warning" | "muted"; dot: string }
+  { label: string; variant: Variant; dot: string }
 >
 
 export function StatusPill({ status }: { status: CtfStatus }) {

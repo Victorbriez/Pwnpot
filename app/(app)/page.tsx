@@ -3,49 +3,62 @@ import Link from "next/link"
 import { VulnTag } from "@/components/ctf/vuln-tag"
 import { ConnectRedirect } from "@/components/landing/connect-redirect"
 import { ContractListing } from "@/components/landing/contract-listing"
+import { DisputeFlow } from "@/components/landing/dispute-flow"
 import { ExploitTrace } from "@/components/landing/exploit-trace"
 import { FinalCta } from "@/components/landing/final-cta"
 import { HeroActions } from "@/components/landing/hero-actions"
 import { Settlement } from "@/components/landing/settlement"
+import { TrustList } from "@/components/landing/trust-list"
 import { formatEth, formatRemaining } from "@/lib/format"
 import { ctfs, type Vuln } from "@/lib/mock/explore"
 
-const challenges: { vuln: Vuln; title: string; goal: string; code: string }[] =
-  [
-    {
-      vuln: "reentrancy",
-      title: "Le coffre",
-      goal: "Vide le coffre de tout son ETH.",
-      code: `function withdraw() external {
+// Les trois épreuves de docs/CHALLENGES.md.
+const challenges: {
+  vuln: Vuln
+  title: string
+  goal: string
+  check: string
+  code: string
+}[] = [
+  {
+    vuln: "reentrancy",
+    title: "Coffre",
+    goal: "Vide le coffre de tout son ETH.",
+    check: "address(instance).balance == 0",
+    code: `function withdraw() external {
   uint256 bal = balances[msg.sender];
   (bool ok,) = msg.sender.call{value: bal}("");
   require(ok);
   balances[msg.sender] = 0;
 }`,
-    },
-    {
-      vuln: "tx-origin",
-      title: "Le propriétaire",
-      goal: "Prends la place de l'owner.",
-      code: `function changeOwner(address next) external {
-  require(tx.origin == owner);
-  owner = next;
+  },
+  {
+    vuln: "tx-origin",
+    title: "Usurpateur",
+    goal: "Deviens le propriétaire du contrat.",
+    check: "instance.owner() == player",
+    code: `function changeOwner(address newOwner) external {
+  if (tx.origin != msg.sender) {
+    owner = newOwner;
+  }
 }`,
-    },
-    {
-      vuln: "storage",
-      title: "Le cadenas",
-      goal: "Déverrouille le contrat sans connaître le mot de passe.",
-      code: `bytes32 private password;
+  },
+  {
+    vuln: "storage",
+    title: "Coffre-fort à code",
+    goal: "Déverrouille le contrat sans connaître le mot de passe.",
+    check: "instance.locked() == false",
+    code: `bool public locked = true;
+bytes32 private password; // slot 1
 
-function unlock(bytes32 guess) external {
-  if (guess == password) locked = false;
+function unlock(bytes32 attempt) external {
+  if (attempt == password) locked = false;
 }`,
-    },
-  ]
+  },
+]
 
 const liveCtfs = ctfs
-  .filter((ctf) => ctf.status === "live")
+  .filter((ctf) => ctf.status === "running")
   .sort((a, b) => (b.prizePool > a.prizePool ? 1 : -1))
 const biggest = liveCtfs[0]
 
@@ -117,9 +130,9 @@ export default function HomePage() {
               Où va l&apos;argent
             </h2>
             <p className="max-w-md text-pretty text-muted-foreground">
-              Cagnotte, tickets, caution : tout est déposé dans le contrat dès
-              le départ. À la clôture, il n&apos;y a que trois issues possibles,
-              et chacune est écrite dans le code.
+              Cash prize, tickets, cautions : tout est déposé dans le contrat
+              dès le départ. À la clôture, il n&apos;y a que quatre issues
+              possibles, et chacune est écrite dans le code.
             </p>
             <p className="max-w-md text-sm text-pretty text-muted-foreground">
               Personne ne reçoit de virement : chacun voit son solde crédité et
@@ -152,6 +165,63 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Litiges */}
+      <section
+        id="litiges"
+        aria-labelledby="litiges-titre"
+        className="scroll-mt-16 border-t"
+      >
+        <div
+          className={`${section} grid gap-12 py-24 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20 lg:py-32`}
+        >
+          <div className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
+            <h2
+              id="litiges-titre"
+              className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
+            >
+              Contester une triche
+            </h2>
+            <p className="max-w-md text-pretty text-muted-foreground">
+              Un organisateur a fuité la solution ? Une épreuve refuse de
+              valider certains joueurs ? Les joueurs tranchent d&apos;abord, un
+              arbitre ensuite si le camp perdant fait appel.
+            </p>
+            <p className="max-w-md text-sm text-pretty text-muted-foreground">
+              Deux niveaux, parce qu&apos;aucun camp n&apos;est neutre : un
+              tiers sans intérêt dans la partie corrige le vote, et ses frais
+              dissuadent d&apos;en abuser.
+            </p>
+          </div>
+          <DisputeFlow />
+        </div>
+      </section>
+
+      {/* Ce qui reste à faire confiance */}
+      <section
+        id="confiance"
+        aria-labelledby="confiance-titre"
+        className="scroll-mt-16 border-t bg-card/40"
+      >
+        <div
+          className={`${section} grid gap-12 py-24 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20 lg:py-32`}
+        >
+          <div className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
+            <h2
+              id="confiance-titre"
+              className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
+            >
+              Ce qui reste à faire confiance
+            </h2>
+            <p className="max-w-md text-pretty text-muted-foreground">
+              Pwnpot n&apos;est pas « fully decentralised ». Il réduit la
+              confiance au minimum, rend sa trahison coûteuse, et l&apos;écrit
+              noir sur blanc.
+            </p>
+          </div>
+          <TrustList />
+        </div>
+      </section>
+
       {/* Épreuves */}
       <section
         id="epreuves"
@@ -168,7 +238,9 @@ export default function HomePage() {
             </h2>
             <p className="text-pretty text-muted-foreground">
               Les épreuves de lancement. Le bug est dans l&apos;extrait, à toi
-              de le trouver.
+              de le trouver. Pas de flag : chaque joueur a sa propre instance,
+              et la factory vérifie son état avec{" "}
+              <code className="font-mono text-sm">validateInstance</code>.
             </p>
           </div>
           <ul className="grid gap-6 xl:grid-cols-3">
@@ -182,6 +254,12 @@ export default function HomePage() {
                   <h3 className="text-lg font-semibold">{challenge.title}</h3>
                   <p className="text-sm text-muted-foreground">
                     {challenge.goal}
+                  </p>
+                  <p className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    Réussite vérifiée on-chain
+                    <code className="font-mono [overflow-wrap:anywhere] text-secondary-foreground">
+                      {challenge.check}
+                    </code>
                   </p>
                 </div>
                 <pre className="mt-auto border-t bg-muted/60 px-4 py-5 font-mono text-[0.72rem] leading-5 [overflow-wrap:anywhere] whitespace-pre-wrap text-secondary-foreground">

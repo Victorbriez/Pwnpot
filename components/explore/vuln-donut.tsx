@@ -23,7 +23,6 @@ const chartConfig = {
   reentrancy: { label: vulnLabels.reentrancy, color: "var(--chart-1)" },
   "tx-origin": { label: vulnLabels["tx-origin"], color: "var(--chart-2)" },
   storage: { label: vulnLabels.storage, color: "var(--chart-3)" },
-  oracle: { label: vulnLabels.oracle, color: "var(--chart-4)" },
 } satisfies ChartConfig
 
 const data = vulnBreakdown.map((row) => ({

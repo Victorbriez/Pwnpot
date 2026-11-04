@@ -14,15 +14,16 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import type { Ctf } from "@/lib/mock/explore"
+import { isClosed, type Ctf } from "@/lib/mock/explore"
 
 const filters = {
   all: { label: "Tous", test: () => true },
+  active: { label: "Actifs", test: (ctf: Ctf) => !isClosed(ctf.status) },
   beginner: { label: "Débutant", test: (ctf: Ctf) => ctf.level === "beginner" },
   advanced: { label: "Avancé", test: (ctf: Ctf) => ctf.level === "advanced" },
   soon: {
     label: "Bientôt finis",
-    test: (ctf: Ctf) => ctf.status !== "ended" && ctf.remaining < 86_400,
+    test: (ctf: Ctf) => ctf.status === "running" && ctf.remaining < 86_400,
   },
 } as const
 type Filter = keyof typeof filters
@@ -35,7 +36,7 @@ export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
     <section aria-labelledby="live-ctfs" className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 id="live-ctfs" className="text-xl font-semibold tracking-tight">
-          CTF en cours
+          Tous les CTF
         </h2>
         <ToggleGroup
           variant="outline"

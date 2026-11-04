@@ -14,6 +14,7 @@ const columns: { title: string; links: FooterLink[] }[] = [
       { label: "Accueil", href: "/" },
       { label: "Explorer les CTF", href: "/explore" },
       { label: "Où va l'argent", href: "/#comment-ca-marche" },
+      { label: "Contester une triche", href: "/#litiges" },
       { label: "Les épreuves", href: "/#epreuves" },
     ],
   },
@@ -101,7 +102,8 @@ export function SiteFooter() {
 
         <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {site.year} {site.name}. Projet étudiant.
+            © {site.year} {site.name}. Projet {site.editor.school}, module{" "}
+            {site.editor.module}.
           </p>
           <p>Testnet uniquement : l&apos;ETH utilisé n&apos;a aucune valeur.</p>
         </div>

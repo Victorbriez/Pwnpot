@@ -11,13 +11,36 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { truncateAddress } from "@/lib/onchain/format"
 import { formatEth, formatInt, formatRemaining } from "@/lib/format"
-import type { Ctf } from "@/lib/mock/explore"
+import {
+  inDispute,
+  isClosed,
+  type Ctf,
+  type CtfStatus,
+} from "@/lib/mock/explore"
 import { cn } from "@/lib/utils"
 
+const phasePrefix: Record<CtfStatus, string> = {
+  open: "début dans",
+  running: "fin dans",
+  contestation: "contestation :",
+  voting: "vote :",
+  appeal: "appel :",
+  finalized: "",
+  cheated: "",
+}
+
 function remainingLabel(ctf: Ctf) {
-  if (ctf.status === "ended") return "clôturé"
-  const left = formatRemaining(ctf.remaining)
-  return ctf.status === "dispute" ? `vote : ${left}` : `fin dans ${left}`
+  if (isClosed(ctf.status)) return "clôturé"
+  return `${phasePrefix[ctf.status]} ${formatRemaining(ctf.remaining)}`
+}
+
+function progressTone(status: CtfStatus) {
+  if (inDispute(status) || status === "contestation")
+    return "[&_[data-slot=progress-indicator]]:bg-warning"
+  if (isClosed(status))
+    return "[&_[data-slot=progress-indicator]]:bg-muted-foreground/40"
+  if (status === "open") return "[&_[data-slot=progress-indicator]]:bg-info"
+  return "[&_[data-slot=progress-indicator]]:bg-linear-to-r [&_[data-slot=progress-indicator]]:from-chart-1 [&_[data-slot=progress-indicator]]:to-chart-2"
 }
 
 export function CtfCard({ ctf }: { ctf: Ctf }) {
@@ -64,18 +87,16 @@ export function CtfCard({ ctf }: { ctf: Ctf }) {
         <div className="flex flex-col gap-2">
           <Progress
             value={pct}
-            aria-label="Temps écoulé"
+            aria-label="Temps écoulé dans la phase"
             className={cn(
               "[&_[data-slot=progress-indicator]]:rounded-full [&_[data-slot=progress-track]]:h-2 [&_[data-slot=progress-track]]:bg-accent",
-              ctf.status === "dispute"
-                ? "[&_[data-slot=progress-indicator]]:bg-warning"
-                : ctf.status === "ended"
-                  ? "[&_[data-slot=progress-indicator]]:bg-muted-foreground/40"
-                  : "[&_[data-slot=progress-indicator]]:bg-linear-to-r [&_[data-slot=progress-indicator]]:from-chart-1 [&_[data-slot=progress-indicator]]:to-chart-2"
+              progressTone(ctf.status)
             )}
           />
           <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
-            <span>{formatInt(ctf.players)} joueurs</span>
+            <span>
+              {formatInt(ctf.players)} / {formatInt(ctf.maxPlayers)} joueurs
+            </span>
             <span>Caution {formatEth(ctf.bond)}</span>
           </div>
         </div>

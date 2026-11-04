@@ -25,8 +25,8 @@ export default function ExplorePage() {
               <span aria-hidden className="size-1.5 rounded-full bg-success" />
               Testnet Base Sepolia
             </Badge>
-            <Badge variant="muted" className="h-6 px-2.5">
-              Contrats vérifiés sur Basescan
+            <Badge variant="warning" className="h-6 px-2.5">
+              Données de démonstration
             </Badge>
           </div>
           <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
@@ -35,6 +35,8 @@ export default function ExplorePage() {
           <p className="max-w-xl text-pretty text-muted-foreground">
             Exploite des contrats vulnérables. La cagnotte est détenue par le
             contrat : personne ne peut la retirer en dehors des règles.
+            CTFPlatform n&apos;est pas encore déployé : les CTF ci-dessous sont
+            des exemples.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -61,7 +63,7 @@ export default function ExplorePage() {
         <KpiCard
           label="Joueurs actifs"
           value={formatInt(kpis.activePlayers)}
-          caption="tickets achetés cette semaine"
+          caption="tickets achetés sur les CTF actifs"
           trend={formatTrend(kpis.trends.players)}
         />
         <KpiCard
@@ -73,8 +75,8 @@ export default function ExplorePage() {
         <KpiCard
           label="Cautions en jeu"
           value={formatEth(kpis.bondsAtStake)}
-          caption="déposées par les organisateurs"
-          trend={`${kpis.openDisputes} litiges`}
+          caption="déposées par les organisateurs, brûlées en cas de triche"
+          trend={`${kpis.openDisputes} litige${kpis.openDisputes > 1 ? "s" : ""} ouvert${kpis.openDisputes > 1 ? "s" : ""}`}
           trendVariant="warning"
         />
       </section>

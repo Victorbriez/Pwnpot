@@ -5,8 +5,7 @@ const vulnVariant = {
   reentrancy: "brand",
   "tx-origin": "info",
   storage: "success",
-  oracle: "warning",
-} as const satisfies Record<Vuln, "brand" | "info" | "success" | "warning">
+} as const satisfies Record<Vuln, "brand" | "info" | "success">
 
 export function VulnTag({ vuln }: { vuln: Vuln }) {
   return (
