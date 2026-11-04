@@ -6,8 +6,9 @@ export const site = {
   year: 2026,
   editor: {
     name: "Victor Briez",
-    // À compléter : affichés seulement une fois renseignés.
-    school: null as string | null,
+    school: "Epitech",
+    module: "Blockchain & Decentralised Applications",
+    // À compléter : affiché seulement une fois renseigné.
     contact: null as string | null,
   },
   host: {

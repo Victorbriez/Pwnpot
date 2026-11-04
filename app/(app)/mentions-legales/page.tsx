@@ -89,18 +89,15 @@ export default function LegalPage() {
           </h1>
           <p className="text-muted-foreground">
             Pwnpot est un projet étudiant, déployé uniquement sur le réseau de
-            test Base Sepolia. Mise à jour : 1er novembre 2026.
+            test Base Sepolia. Mise à jour : 4 novembre 2026.
           </p>
         </header>
 
         <Section id="editeur" title="Éditeur">
           <p>
             Ce site est édité à titre non professionnel par{" "}
-            <strong>{editor.name}</strong>
-            {editor.school
-              ? `, dans le cadre d'un projet à ${editor.school}`
-              : ", dans le cadre d'un projet d'école"}
-            .
+            <strong>{editor.name}</strong>, dans le cadre du module{" "}
+            <strong>{editor.module}</strong> à {editor.school}.
           </p>
           {editor.contact && (
             <p>
@@ -178,9 +175,17 @@ export default function LegalPage() {
           <p>
             <strong>Épreuves publiées par des tiers.</strong> N&apos;importe qui
             peut publier un CTF. Les épreuves sont écrites par leurs
-            organisateurs, pas par Pwnpot : lis le code avant d&apos;interagir
-            avec un contrat, et n&apos;utilise qu&apos;un wallet dédié au
-            testnet.
+            organisateurs, pas par Pwnpot. Avant d&apos;acheter un ticket,
+            vérifie que le code de chaque factory est publié sur Basescan, que
+            sa validation ne lit que l&apos;état de ton instance, et
+            qu&apos;elle n&apos;est pas un proxy. N&apos;utilise qu&apos;un
+            wallet dédié au testnet.
+          </p>
+          <p>
+            <strong>Arbitre de démonstration.</strong> En appel, les litiges
+            sont tranchés par un arbitre ERC-792 fixé au déploiement. Pour ce
+            projet, c&apos;est un contrat de test (MockArbitrator) contrôlé par
+            l&apos;équipe : ses décisions ne sont pas indépendantes.
           </p>
         </Section>
 
