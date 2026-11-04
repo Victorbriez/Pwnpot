@@ -1,42 +1,42 @@
-"use client";
+"use client"
 
-import { ChevronDownIcon, LoaderCircleIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { AddressIdentity } from "./address-identity";
-import { NetworkLogo } from "./network-logo";
-import type { Address } from "viem";
-import type { ComponentProps } from "react";
+import { ChevronDownIcon, LoaderCircleIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { AddressIdentity } from "./address-identity"
+import { NetworkLogo } from "./network-logo"
+import type { Address } from "viem"
+import type { ComponentProps } from "react"
 
 export interface WalletButtonProps
   // `name` is the resolved account name, not the button's form name.
   extends Omit<ComponentProps<"button">, "name"> {
   /** Connected wallet address */
-  address: Address;
+  address: Address
   /** Connected chain id. Renders a network mark when set */
-  chainId?: number | null | undefined;
+  chainId?: number | null | undefined
   /** Resolved name override, e.g. vitalik.eth. Skips resolution when set */
-  name?: string | null | undefined;
+  name?: string | null | undefined
   /** Avatar URL override */
-  avatarUrl?: string | null | undefined;
+  avatarUrl?: string | null | undefined
   /** Show a spinner in place of the chevron */
-  isPending?: boolean | undefined;
+  isPending?: boolean | undefined
   /** Show the network mark. Default: true */
-  showNetwork?: boolean | undefined;
+  showNetwork?: boolean | undefined
   /** Show the trailing chevron. Default: true */
-  showChevron?: boolean | undefined;
+  showChevron?: boolean | undefined
   /** Visual size. Default: "default" */
-  size?: "sm" | "default" | undefined;
+  size?: "sm" | "default" | undefined
 }
 
 const buttonSizes = {
   sm: "h-7 gap-1.5 py-0.5 pr-1.5 pl-1",
   default: "h-8 gap-2 py-1 pr-2 pl-1.5",
-} as const;
+} as const
 
 const avatarSizes = {
   sm: "size-5",
   default: "size-6",
-} as const;
+} as const
 
 /**
  * The connected-wallet pill: identity, network, and a disclosure chevron.
@@ -100,5 +100,5 @@ export function WalletButton({
         )
       )}
     </button>
-  );
+  )
 }

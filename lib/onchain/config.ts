@@ -1,13 +1,13 @@
-import { baseSepolia } from "viem/chains";
-import type { AssetGatewayUrls, Chain, PublicClient } from "viem";
+import { baseSepolia } from "viem/chains"
+import type { AssetGatewayUrls, Chain, PublicClient } from "viem"
 
-import { wagmiConfig } from "@/lib/onchain/wagmi";
+import { wagmiConfig } from "@/lib/onchain/wagmi"
 
 /** The small client surface identity resolution actually consumes. */
 export type OnchainReadClient = Pick<
   PublicClient,
   "getEnsAddress" | "getEnsAvatar" | "getEnsName" | "readContract"
->;
+>
 
 /**
  * The single place onchain-ui components look for app-wide settings.
@@ -32,7 +32,7 @@ export interface OnchainUIConfig {
    * chains: wagmiConfig.chains,
    * ```
    */
-  chains: readonly Chain[];
+  chains: readonly Chain[]
 
   /**
    * Returns a viem client for reads that are not tied to a rendered component
@@ -47,21 +47,21 @@ export interface OnchainUIConfig {
    * getClient: (chainId) => getPublicClient(wagmiConfig, { chainId }),
    * ```
    */
-  getClient?: (chainId: number) => OnchainReadClient | undefined;
+  getClient?: (chainId: number) => OnchainReadClient | undefined
 
   /**
    * Public gateways used to turn IPFS and Arweave avatar records into URLs.
    * Replace these with your own gateway in production when reliability or
    * rate limits matter.
    */
-  avatarGatewayUrls?: AssetGatewayUrls | undefined;
+  avatarGatewayUrls?: AssetGatewayUrls | undefined
 
   /**
    * The chain an address is assumed to live on when a component is given no
    * chain id. Default: 1 (Ethereum). An app on one L2 sets its own, or every
    * explorer link points at the wrong chain.
    */
-  defaultChainId?: number | undefined;
+  defaultChainId?: number | undefined
 }
 
 export const onchainConfig: OnchainUIConfig = {
@@ -71,7 +71,7 @@ export const onchainConfig: OnchainUIConfig = {
     arweave: "https://arweave.net",
   },
   defaultChainId: baseSepolia.id,
-};
+}
 
 /**
  * Curated network names and symbols.
@@ -81,36 +81,35 @@ export const onchainConfig: OnchainUIConfig = {
  * gives "ETH" for Base, Optimism, and Arbitrum alike, which is useless as a
  * network mark. Chains absent here fall back to the configured chain's name.
  */
-const knownNetworks: Partial<
-  Record<number, { name: string; symbol: string }>
-> = {
-  1: { name: "Ethereum", symbol: "ETH" },
-  10: { name: "Optimism", symbol: "OP" },
-  137: { name: "Polygon", symbol: "POL" },
-  4663: { name: "Robinhood Chain", symbol: "RH" },
-  8453: { name: "Base", symbol: "BASE" },
-  42161: { name: "Arbitrum", symbol: "ARB" },
-  84532: { name: "Base Sepolia", symbol: "BASE" },
-};
+const knownNetworks: Partial<Record<number, { name: string; symbol: string }>> =
+  {
+    1: { name: "Ethereum", symbol: "ETH" },
+    10: { name: "Optimism", symbol: "OP" },
+    137: { name: "Polygon", symbol: "POL" },
+    4663: { name: "Robinhood Chain", symbol: "RH" },
+    8453: { name: "Base", symbol: "BASE" },
+    42161: { name: "Arbitrum", symbol: "ARB" },
+    84532: { name: "Base Sepolia", symbol: "BASE" },
+  }
 
 function findChain(chainId?: number | null) {
-  if (chainId == null) return null;
-  return onchainConfig.chains.find((chain) => chain.id === chainId) ?? null;
+  if (chainId == null) return null
+  return onchainConfig.chains.find((chain) => chain.id === chainId) ?? null
 }
 
 export interface NetworkMeta {
-  name: string | null;
-  symbol: string | null;
+  name: string | null
+  symbol: string | null
 }
 
 /** Display name and symbol for a chain, or nulls when it is unrecognised. */
 export function getNetworkMeta(chainId?: number | null): NetworkMeta {
-  if (chainId == null) return { name: null, symbol: null };
+  if (chainId == null) return { name: null, symbol: null }
 
-  const known = knownNetworks[chainId];
-  if (known) return known;
+  const known = knownNetworks[chainId]
+  if (known) return known
 
-  return { name: findChain(chainId)?.name ?? null, symbol: null };
+  return { name: findChain(chainId)?.name ?? null, symbol: null }
 }
 
 /**
@@ -122,23 +121,23 @@ export function getNetworkMeta(chainId?: number | null): NetworkMeta {
  * space, so callers render no link rather than a misleading one.
  */
 export function getExplorerUrl(chainId?: number | null): string | null {
-  const chain = findChain(chainId);
-  return chain?.blockExplorers?.default.url ?? null;
+  const chain = findChain(chainId)
+  return chain?.blockExplorers?.default.url ?? null
 }
 
 /** The chain to assume when a component is given none. */
 export function getDefaultChainId(): number {
-  return onchainConfig.defaultChainId ?? 1;
+  return onchainConfig.defaultChainId ?? 1
 }
 
 /** A read client for `chainId`, if the app configured one. */
 export function getConfiguredClient(
   chainId: number
 ): OnchainReadClient | undefined {
-  return onchainConfig.getClient?.(chainId);
+  return onchainConfig.getClient?.(chainId)
 }
 
 /** App-wide gateways for ENS and Basename avatar assets, if configured. */
 export function getConfiguredAvatarGatewayUrls(): AssetGatewayUrls | undefined {
-  return onchainConfig.avatarGatewayUrls;
+  return onchainConfig.avatarGatewayUrls
 }

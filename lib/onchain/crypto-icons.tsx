@@ -1,5 +1,5 @@
-import { getAddress } from "viem";
-import type { ReactNode } from "react";
+import { getAddress } from "viem"
+import type { ReactNode } from "react"
 
 /**
  * Crypto icon adapter.
@@ -17,17 +17,17 @@ import type { ReactNode } from "react";
  * Explicit props (`src`, `fallback`) always win over this adapter.
  */
 
-export type CryptoIcon = string | ReactNode | null;
+export type CryptoIcon = string | ReactNode | null
 
 export interface TokenIconQuery {
   /** EVM chain id the token lives on */
-  chainId?: number | null | undefined;
+  chainId?: number | null | undefined
   /** Token contract address */
-  address?: string | null | undefined;
+  address?: string | null | undefined
   /** Token symbol. Unused by the default adapter: symbols are not canonical */
-  symbol?: string | null | undefined;
+  symbol?: string | null | undefined
   /** Whether this is the chain's native currency rather than an ERC-20 */
-  isNative?: boolean | undefined;
+  isNative?: boolean | undefined
 }
 
 // Chain folder names in the Trust Wallet assets repo.
@@ -37,7 +37,7 @@ const trustWalletChainFolders: Record<number, string> = {
   137: "polygon",
   8453: "base",
   42161: "arbitrum",
-};
+}
 
 /**
  * Resolves a token icon from the community-maintained Trust Wallet assets
@@ -49,21 +49,21 @@ const trustWalletChainFolders: Record<number, string> = {
  * CDN.
  */
 export function getTokenIcon(query: TokenIconQuery): CryptoIcon {
-  const { chainId, address, isNative, symbol } = query;
+  const { chainId, address, isNative, symbol } = query
   if (isNative && symbol?.toUpperCase() === "ETH") {
-    return <EthereumMark className="size-full" />;
+    return <EthereumMark className="size-full" />
   }
-  if (chainId == null || !address) return null;
+  if (chainId == null || !address) return null
 
-  const chainFolder = trustWalletChainFolders[chainId];
-  if (!chainFolder) return null;
+  const chainFolder = trustWalletChainFolders[chainId]
+  if (!chainFolder) return null
 
   try {
     // The repo stores assets under EIP-55 checksummed addresses.
-    const checksummed = getAddress(address);
-    return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chainFolder}/assets/${checksummed}/logo.png`;
+    const checksummed = getAddress(address)
+    return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chainFolder}/assets/${checksummed}/logo.png`
   } catch {
-    return null;
+    return null
   }
 }
 
@@ -80,7 +80,7 @@ function EthereumMark({ className }: { className?: string }) {
         <path fillOpacity=".602" d="M9 16.22l7.498 4.353v-7.701z" />
       </g>
     </svg>
-  );
+  )
 }
 
 function BaseMark({ className }: { className?: string }) {
@@ -92,7 +92,7 @@ function BaseMark({ className }: { className?: string }) {
         fill="white"
       />
     </svg>
-  );
+  )
 }
 
 function OptimismMark({ className }: { className?: string }) {
@@ -106,7 +106,7 @@ function OptimismMark({ className }: { className?: string }) {
         fill="white"
       />
     </svg>
-  );
+  )
 }
 
 function ArbitrumMark({ className }: { className?: string }) {
@@ -125,7 +125,10 @@ function ArbitrumMark({ className }: { className?: string }) {
         d="M11.9985 4.9913C12.0371 4.9913 12.0758 5.0018 12.1104 5.02019L18.0787 8.41424C18.148 8.45363 18.1907 8.52716 18.1907 8.60462V15.3914C18.1907 15.4702 18.148 15.5424 18.0787 15.5818L12.1104 18.9759C12.0772 18.9955 12.0371 19.0047 11.9985 19.0047C11.9598 19.0047 11.9211 18.9943 11.8865 18.9759L5.91826 15.5844C5.84894 15.545 5.80628 15.4715 5.80628 15.3941V8.60593C5.80628 8.52716 5.84894 8.45494 5.91826 8.41555L11.8865 5.0215C11.9211 5.0018 11.9598 4.9913 11.9985 4.9913ZM11.9985 4C11.7865 4 11.5732 4.05383 11.3826 4.16281L5.41568 7.55555C5.03442 7.77219 4.7998 8.17265 4.7998 8.60593V15.3927C4.7998 15.826 5.03442 16.2265 5.41568 16.4431L11.3839 19.8371C11.5745 19.9448 11.7865 20 11.9998 20C12.2118 20 12.425 19.9462 12.6157 19.8371L18.5839 16.4431C18.9652 16.2265 19.1998 15.826 19.1998 15.3927V8.60593C19.1998 8.17265 18.9652 7.77219 18.5839 7.55555L12.6143 4.16281C12.4237 4.05383 12.2104 4 11.9985 4Z"
         fill="white"
       />
-      <path d="M8.05225 17.9426L8.60149 16.4615L9.70662 17.3662L8.67348 18.2958L8.05225 17.9426Z" fill="white" />
+      <path
+        d="M8.05225 17.9426L8.60149 16.4615L9.70662 17.3662L8.67348 18.2958L8.05225 17.9426Z"
+        fill="white"
+      />
       <path
         d="M11.4965 8.12012H9.98351C9.87019 8.12012 9.76888 8.1897 9.73022 8.29474L6.48682 17.0523L8.05186 17.9425L11.6232 8.29868C11.6565 8.21203 11.5912 8.12012 11.4965 8.12012Z"
         fill="white"
@@ -135,7 +138,7 @@ function ArbitrumMark({ className }: { className?: string }) {
         fill="white"
       />
     </svg>
-  );
+  )
 }
 
 function PolygonMark({ className }: { className?: string }) {
@@ -161,7 +164,7 @@ function PolygonMark({ className }: { className?: string }) {
         fill="white"
       />
     </svg>
-  );
+  )
 }
 
 /**
@@ -170,10 +173,10 @@ function PolygonMark({ className }: { className?: string }) {
  * with zero configuration.
  */
 export function getNetworkIcon(chainId?: number | null): CryptoIcon {
-  if (chainId === 1) return <EthereumMark className="size-full" />;
-  if (chainId === 10) return <OptimismMark className="size-full" />;
-  if (chainId === 137) return <PolygonMark className="size-full" />;
-  if (chainId === 8453) return <BaseMark className="size-full" />;
-  if (chainId === 42161) return <ArbitrumMark className="size-full" />;
-  return null;
+  if (chainId === 1) return <EthereumMark className="size-full" />
+  if (chainId === 10) return <OptimismMark className="size-full" />
+  if (chainId === 137) return <PolygonMark className="size-full" />
+  if (chainId === 8453) return <BaseMark className="size-full" />
+  if (chainId === 42161) return <ArbitrumMark className="size-full" />
+  return null
 }

@@ -18,13 +18,7 @@ export function Logo({
         className
       )}
     >
-      <Image
-        src="/logo.png"
-        alt=""
-        width={36}
-        height={36}
-        className="size-9"
-      />
+      <Image src="/logo.png" alt="" width={36} height={36} className="size-9" />
       <span className="text-lg font-bold tracking-tight">Pwnpot</span>
     </Link>
   )
