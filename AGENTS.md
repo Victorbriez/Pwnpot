@@ -14,6 +14,8 @@ Plateforme ouverte de CTF smart contracts payants. N'importe qui publie un CTF ;
 
 Dossier projet (source de vérité fonctionnelle) : https://claude.ai/artifact/UB2mEKotkAwNjUbyVCiDYp
 
+Doc du repo : `docs/DESIGN.md` (cycle de vie, flux d'argent, litiges, paramètres, interface cible de `CTFPlatform`), `docs/CHALLENGES.md` (les 3 épreuves), `docs/SECURITY.md` (modèle de menace), `DEMO.md` (scénario de soutenance). Le contenu du site (textes, exemples, données fictives) doit rester aligné sur ces fichiers.
+
 ## Stack
 
 - **Frontend** : Next.js 16 (App Router, RSC), React 19, TypeScript, Tailwind CSS v4, shadcn/ui style `base-nova`.
@@ -31,6 +33,8 @@ contracts/                     workspace Hardhat (voir contracts/AGENTS.md)
   contracts/                   sources .sol et tests unitaires .t.sol
   test/                        tests d'intégration TypeScript
   ignition/modules/            modules de déploiement
+docs/                          design, épreuves, sécurité
+lib/mock/                      données fictives en attendant CTFPlatform
 ```
 
 ## UI
