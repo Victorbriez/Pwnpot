@@ -1,57 +1,69 @@
-# Sample Hardhat 3 Project (`node:test` and `viem`)
+# @pwnpot/contracts
 
-This project showcases a Hardhat 3 project using the native Node.js test runner (`node:test`) and the `viem` library for Ethereum interactions.
+Contrats de Pwnpot : Solidity 0.8.34, Hardhat 3 (toolbox viem), OpenZeppelin 5. Le design est décrit dans [../docs/DESIGN.md](../docs/DESIGN.md), les épreuves dans [../docs/CHALLENGES.md](../docs/CHALLENGES.md).
 
-To learn more about Hardhat 3, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3](https://hardhat.org/hardhat3-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+## Organisation
 
-## Project Overview
-
-This example project includes:
-
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using [`node:test`](https://nodejs.org/api/test.html), the new Node.js native test runner, and [`viem`](https://viem.sh/).
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
-
-## Usage
-
-### Running Tests
-
-To run all the tests in the project, execute the following command:
-
-```shell
-npx hardhat test
+```
+contracts/
+  CTFPlatform.sol          cagnotte, tickets, cautions, scores, litiges, retraits   (à venir)
+  interfaces/              ILevel, IArbitrator / IArbitrable (ERC-792)             (à venir)
+  levels/                  factories + contrats vulnérables des épreuves            (à venir)
+  mocks/MockArbitrator.sol arbitre de test et de démo                               (à venir)
+  *.t.sol                  tests unitaires Solidity (forge-std)
+test/                      tests d'intégration TypeScript (node:test + viem)
+ignition/modules/          modules de déploiement
+ignition/deployments/      trace des déploiements (chain-84532 committé)
 ```
 
-You can also selectively run the Solidity or `node:test` tests:
+`Counter.sol` et ses tests viennent du template Hardhat. Ils seront supprimés quand `CTFPlatform` arrivera.
 
-```shell
-npx hardhat test solidity
-npx hardhat test nodejs
+## Commandes
+
+Depuis la racine du repo :
+
+```bash
+pnpm contracts:build        # compile
+pnpm contracts:test         # tests Solidity + TypeScript
+pnpm contracts:typecheck    # compile puis tsc des tests et scripts
 ```
 
-### Make a deployment to Sepolia
+Ou directement dans ce dossier :
 
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
-
-To run the deployment to a local chain:
-
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
+```bash
+pnpm exec hardhat test solidity     # uniquement les .t.sol
+pnpm exec hardhat test nodejs       # uniquement les tests TypeScript
+pnpm exec hardhat test --build-profile production   # sur le bytecode optimisé, celui qu'on déploie
 ```
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
+## Profils de compilation
 
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
+| Profil | Optimiseur | Utilisé par |
+| --- | --- | --- |
+| `default` | désactivé | les tests : compilation plus rapide, meilleures traces |
+| `production` | activé, 200 runs | Ignition et `verify` : c'est ce qui est déployé |
 
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
+Les mesures de gaz faites en test (profil `default`) ne reflètent donc pas le coût réel en production.
 
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
+## Déployer et vérifier
+
+```bash
+pnpm exec hardhat keystore set BASE_SEPOLIA_RPC_URL
+pnpm exec hardhat keystore set BASE_SEPOLIA_PRIVATE_KEY
+pnpm exec hardhat keystore set ETHERSCAN_API_KEY
+
+pnpm exec hardhat ignition deploy ignition/modules/<Module>.ts --network baseSepolia
+pnpm exec hardhat ignition verify chain-84532 --network baseSepolia
 ```
 
-After setting the variable, you can run the deployment with the Sepolia network:
+- Le keystore est chiffré et propre à chaque utilisateur de la machine. Son mot de passe ne se récupère pas.
+- Pour que `ignition verify` fonctionne, ajouter le bloc `verify: { etherscan: { apiKey: configVariable("ETHERSCAN_API_KEY") } }` dans `hardhat.config.ts`.
+- Committer `ignition/deployments/chain-84532/` après chaque déploiement, puis reporter les adresses dans le [README racine](../README.md#adresses-déployées).
 
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
-```
+## Règles de code
+
+- `CTFPlatform` : pas d'owner, pas de proxy, pas de pause.
+- Pull payment, checks-effects-interactions, `nonReentrant` sur tout ce qui envoie de l'ETH ou appelle une factory.
+- Factories traitées comme du code non fiable : `staticcall` avec limite de gaz pour `validateInstance`.
+- Erreurs personnalisées pour chaque refus, un event par étape.
+- Chaque épreuve a un test qui rejoue son exploit. Chaque issue du cycle de vie a un test.
