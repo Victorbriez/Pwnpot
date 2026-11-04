@@ -3,6 +3,15 @@ import type { Address } from "viem"
 /** Infos du site affichées dans le footer et les mentions légales. */
 export const site = {
   name: "Pwnpot",
+  /**
+   * URL publique, pour les liens absolus (aperçus de partage, sitemap).
+   * Sur Vercel, l'URL de prod est fournie au build ; sinon on tombe sur le local.
+   */
+  url: process.env.NEXT_PUBLIC_SITE_URL
+    ? process.env.NEXT_PUBLIC_SITE_URL
+    : process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : "http://localhost:3000",
   year: 2026,
   /** Date affichée en tête des mentions légales et des CGU. */
   legalUpdatedAt: "4 novembre 2026",

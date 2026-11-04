@@ -6,12 +6,24 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Web3Provider } from "@/components/web3-provider"
+import { site } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
+const description =
+  "CTF smart contracts sur Base Sepolia : exploite ton instance, la réussite est vérifiée on-chain et la cagnotte est gardée par le contrat."
+
 export const metadata: Metadata = {
+  metadataBase: new URL(site.url),
   title: { default: "Pwnpot, CTF smart contracts", template: "%s · Pwnpot" },
-  description:
-    "CTF smart contracts sur Base Sepolia : exploite ton instance, la réussite est vérifiée on-chain et la cagnotte est gardée par le contrat.",
+  description,
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    siteName: site.name,
+    title: "Pwnpot, CTF smart contracts",
+    description,
+  },
+  twitter: { card: "summary_large_image" },
 }
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
