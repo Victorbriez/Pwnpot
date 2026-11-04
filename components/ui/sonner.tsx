@@ -1,14 +1,14 @@
-"use client";
+"use client"
 
-import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { Toaster as Sonner, type ToasterProps } from "sonner"
 import {
   CircleCheckIcon,
   InfoIcon,
   TriangleAlertIcon,
   OctagonXIcon,
   Loader2Icon,
-} from "lucide-react";
-import type { CSSProperties } from "react";
+} from "lucide-react"
+import type { CSSProperties } from "react"
 
 /**
  * Toast surface colors come from your app's CSS tokens (`--popover`,
@@ -42,7 +42,7 @@ const Toaster = ({ theme = "system", ...props }: ToasterProps) => {
       }
       {...props}
     />
-  );
-};
+  )
+}
 
-export { Toaster };
+export { Toaster }

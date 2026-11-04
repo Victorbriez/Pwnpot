@@ -1,37 +1,37 @@
-"use client";
+"use client"
 
-import { LoaderCircleIcon, WalletIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { ReactNode } from "react";
+import { LoaderCircleIcon, WalletIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import type { ReactNode } from "react"
 
 export interface ConnectorOption {
   /** Stable connector id, passed back to `onSelect` */
-  id: string;
+  id: string
   /** Wallet name, e.g. "MetaMask" */
-  name: string;
+  name: string
   /** Wallet icon. EIP-6963 wallets announce a data URI */
-  icon?: string | null | undefined;
+  icon?: string | null | undefined
   /** Secondary line, e.g. "Installed" or "Scan with your phone" */
-  description?: ReactNode | undefined;
+  description?: ReactNode | undefined
   /** Render but do not allow selection */
-  disabled?: boolean | undefined;
+  disabled?: boolean | undefined
 }
 
 export interface ConnectorListProps {
   /** Wallets the user can pick from */
-  connectors: Array<ConnectorOption>;
+  connectors: Array<ConnectorOption>
   /** Called with the id of the wallet the user picked */
-  onSelect: (connectorId: string) => void;
+  onSelect: (connectorId: string) => void
   /** Connector currently being connected. Blocks further selection */
-  pendingId?: string | null | undefined;
+  pendingId?: string | null | undefined
   /** Disable every row */
-  disabled?: boolean | undefined;
+  disabled?: boolean | undefined
   /** Shown when `connectors` is empty */
-  emptyMessage?: ReactNode | undefined;
+  emptyMessage?: ReactNode | undefined
   /** Applied to the list wrapper */
-  className?: string | undefined;
+  className?: string | undefined
   /** Applied to each row */
-  itemClassName?: string | undefined;
+  itemClassName?: string | undefined
 }
 
 function ConnectorIcon({ connector }: { connector: ConnectorOption }) {
@@ -43,9 +43,9 @@ function ConnectorIcon({ connector }: { connector: ConnectorOption }) {
         className="size-5 shrink-0 rounded"
         aria-hidden="true"
       />
-    );
+    )
   }
-  return <WalletIcon className="size-5 shrink-0 text-muted-foreground" />;
+  return <WalletIcon className="size-5 shrink-0 text-muted-foreground" />
 }
 
 export function ConnectorList({
@@ -53,7 +53,7 @@ export function ConnectorList({
   onSelect,
   pendingId,
   disabled = false,
-  emptyMessage = "No compatible wallet connection is available on this device.",
+  emptyMessage = "Aucun wallet compatible n'est disponible sur cet appareil.",
   className,
   itemClassName,
 }: ConnectorListProps) {
@@ -67,10 +67,10 @@ export function ConnectorList({
       >
         {emptyMessage}
       </p>
-    );
+    )
   }
 
-  const isPending = pendingId != null;
+  const isPending = pendingId != null
 
   return (
     <div className={cn("grid gap-0.5", className)}>
@@ -108,5 +108,5 @@ export function ConnectorList({
         </button>
       ))}
     </div>
-  );
+  )
 }

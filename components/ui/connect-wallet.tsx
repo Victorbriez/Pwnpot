@@ -1,55 +1,55 @@
-"use client";
+"use client"
 
-import { useConnect, useConnection, useDisconnect } from "wagmi";
-import { LogOutIcon, WalletIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAvailableConnectors } from "@/hooks/use-available-connectors";
-import { AddressIdentity } from "./address-identity";
-import { ConnectorList } from "./connector-list";
-import { WalletButton } from "./wallet-button";
+import { useConnect, useConnection, useDisconnect } from "wagmi"
+import { LogOutIcon, WalletIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { useAvailableConnectors } from "@/hooks/use-available-connectors"
+import { AddressIdentity } from "./address-identity"
+import { ConnectorList } from "./connector-list"
+import { WalletButton } from "./wallet-button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 
 // Derived from the hook rather than wagmi's generic `Connector`: apps that
 // augment `Register` get their own connector union, which the generic type is
 // not assignable to.
 type ProbedConnector = ReturnType<
   typeof useAvailableConnectors
->["connectors"][number];
+>["connectors"][number]
 
 export interface ConnectWalletProps {
-  /** Label for the disconnected trigger. Default: "Connect wallet" */
-  label?: string | undefined;
+  /** Label for the disconnected trigger. Default: "Connecter un wallet" */
+  label?: string | undefined
   /** Show the network mark on the connected pill. Default: true */
-  showNetwork?: boolean | undefined;
+  showNetwork?: boolean | undefined
   /** Visual size. Default: "default" */
-  size?: "sm" | "default" | undefined;
+  size?: "sm" | "default" | undefined
   /** Called when a connection attempt fails */
-  onError?: ((error: Error) => void) | undefined;
+  onError?: ((error: Error) => void) | undefined
   /** Applied to the trigger */
-  className?: string | undefined;
+  className?: string | undefined
   /** Applied to the menu */
-  contentClassName?: string | undefined;
+  contentClassName?: string | undefined
 }
 
 const triggerSizes = {
   sm: "h-7 gap-1.5 px-2 text-xs",
   default: "h-8 gap-2 px-2.5 text-[0.8rem]",
-} as const;
+} as const
 
 function toOption(connector: ProbedConnector) {
   return {
     id: connector.uid,
     // wagmi names the legacy window.ethereum fallback "Injected" — wallet
     // plumbing jargon nobody picks a wallet by.
-    name: connector.id === "injected" ? "Browser wallet" : connector.name,
+    name: connector.id === "injected" ? "Wallet du navigateur" : connector.name,
     icon: connector.icon,
-  };
+  }
 }
 
 /**
@@ -60,34 +60,31 @@ function toOption(connector: ProbedConnector) {
  * testable with plain data. Swap any of them without touching this file.
  */
 export function ConnectWallet({
-  label = "Connect wallet",
+  label = "Connecter un wallet",
   showNetwork = true,
   size = "default",
   onError,
   className,
   contentClassName,
 }: ConnectWalletProps) {
-  const { address, chainId, isConnected } = useConnection();
-  const connect = useConnect();
-  const disconnect = useDisconnect();
-  const { connectors, isProbing } = useAvailableConnectors();
+  const { address, chainId, isConnected } = useConnection()
+  const connect = useConnect()
+  const disconnect = useDisconnect()
+  const { connectors, isProbing } = useAvailableConnectors()
 
   const handleConnect = (connectorId: string) => {
-    const connector = connectors.find((entry) => entry.uid === connectorId);
-    if (!connector) return;
+    const connector = connectors.find((entry) => entry.uid === connectorId)
+    if (!connector) return
 
-    connect.mutate(
-      { connector },
-      { onError: (error) => onError?.(error) }
-    );
-  };
+    connect.mutate({ connector }, { onError: (error) => onError?.(error) })
+  }
 
   // `variables.connector` may be a bare CreateConnectorFn, which has no uid.
   const pendingConnector = connect.isPending
     ? connect.variables?.connector
-    : undefined;
+    : undefined
   const pendingConnectorId =
-    pendingConnector && "uid" in pendingConnector ? pendingConnector.uid : null;
+    pendingConnector && "uid" in pendingConnector ? pendingConnector.uid : null
 
   const triggerClassName = cn(
     "inline-flex shrink-0 items-center rounded-lg border border-border bg-background font-medium whitespace-nowrap",
@@ -96,7 +93,7 @@ export function ConnectWallet({
     "disabled:pointer-events-none disabled:opacity-50",
     triggerSizes[size],
     className
-  );
+  )
 
   if (isConnected && address) {
     return (
@@ -122,15 +119,15 @@ export function ConnectWallet({
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => disconnect.mutate()}>
             <LogOutIcon />
-            Disconnect
+            Se déconnecter
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    );
+    )
   }
 
   // Exactly one wallet: a menu of one is a worse click than connecting.
-  const [onlyConnector] = connectors;
+  const [onlyConnector] = connectors
   if (!isProbing && connectors.length === 1 && onlyConnector) {
     return (
       <button
@@ -140,9 +137,9 @@ export function ConnectWallet({
         className={triggerClassName}
       >
         <WalletIcon className="size-4" aria-hidden="true" />
-        {connect.isPending ? "Connecting…" : label}
+        {connect.isPending ? "Connexion…" : label}
       </button>
-    );
+    )
   }
 
   return (
@@ -152,7 +149,7 @@ export function ConnectWallet({
         className={triggerClassName}
       >
         <WalletIcon className="size-4" aria-hidden="true" />
-        {connect.isPending ? "Connecting…" : label}
+        {connect.isPending ? "Connexion…" : label}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className={cn("w-60", contentClassName)}>
         <ConnectorList
@@ -162,5 +159,5 @@ export function ConnectWallet({
         />
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }
