@@ -2,7 +2,7 @@
 
 Une épreuve Pwnpot, c'est un contrat volontairement vulnérable, plus une **factory** qui en déploie une copie par joueur et qui sait dire si cette copie a été exploitée. Il n'y a pas de flag : la réussite se lit dans l'état de la chaîne. C'est le même principe qu'[Ethernaut](https://ethernaut.openzeppelin.com/).
 
-> Les noms et le code ci-dessous sont des esquisses. Ils seront remplacés par le code réel de `contracts/contracts/levels/`.
+> Le code est dans [`contracts/contracts/levels/`](../contracts/contracts/levels/) (contrat vulnérable + factory, un fichier par épreuve), les contrats d'attaque dans [`contracts/contracts/exploits/`](../contracts/contracts/exploits/). Les extraits ci-dessous en sont tirés.
 
 ## Sommaire
 
@@ -49,6 +49,11 @@ sequenceDiagram
 
 La plateforme enregistre l'instance de chaque joueur au moment de sa création. `submit` ne valide **que** l'instance de `msg.sender` : personne ne peut soumettre à la place d'un autre.
 
+Les 3 factories héritent de [`Level`](../contracts/contracts/levels/Level.sol), qui ajoute deux protections de son côté :
+
+- `createInstance` n'est appelable que par l'adresse `platform`, fixée au déploiement (erreur `OnlyPlatform`). En attendant `CTFPlatform`, c'est le compte qui déploie.
+- La factory retient pour qui chaque instance a été créée (`playerOf`). `validateInstance(instance, player)` renvoie `false` si l'instance n'appartient pas à `player`, même si elle a été exploitée.
+
 ---
 
 ## Pourquoi une instance par joueur
@@ -84,7 +89,9 @@ contract Vault {
 
 **Ce que ça enseigne.** Checks-effects-interactions, et pourquoi `CTFPlatform` remet les soldes à zéro avant de payer (voir [SECURITY.md](SECURITY.md)).
 
-**Point de conception.** Chaque instance démarre avec un petit solde (par exemple 0.0001 ETH) fourni par la factory, que l'organisateur alimente à la création du CTF. Le montant exact reste *à trancher*.
+**Point de conception.** Chaque coffre démarre avec `seed` wei, pris sur le solde de la factory. L'organisateur alimente la factory en lui envoyant de l'ETH ; sans fonds, `createInstance` échoue avec `InsufficientFunds`. `seed` est un paramètre de déploiement (0.0001 ETH par défaut) : le montant définitif reste *à trancher* (décision n° 8), mais il ne demandera pas de changer le code. La factory n'a aucune fonction de retrait, puisqu'il n'y a pas d'admin : l'ETH non utilisé y reste.
+
+**Exploit fourni.** [`VaultAttack`](../contracts/contracts/exploits/VaultAttack.sol) : `run()` avec une valeur égale au solde du coffre, le butin revient au joueur.
 
 ---
 
@@ -112,6 +119,8 @@ contract Impostor {
 
 **Ce que ça enseigne.** On authentifie toujours avec `msg.sender`, jamais avec `tx.origin`.
 
+**Exploit fourni.** [`ImpostorAttack`](../contracts/contracts/exploits/ImpostorAttack.sol) : `run(instance)` appelle `changeOwner(tx.origin)`. La factory est le propriétaire de départ.
+
 ---
 
 ## Épreuve 3 — Coffre-fort à code (storage `private`)
@@ -137,15 +146,15 @@ contract CodeSafe {
 
 **Ce que ça enseigne.** « Il n'y a pas de secret sur une chaîne. » C'est aussi pour ça que Pwnpot n'utilise pas de flag stocké on-chain.
 
-**Point de conception.** Le mot de passe est dérivé de l'adresse du joueur et d'une valeur pseudo-aléatoire, pour être différent dans chaque instance. Le copier d'une autre instance ne sert donc à rien.
+**Point de conception.** Le mot de passe est `keccak256(player, block.prevrandao, block.timestamp, factory, compteur)` : il est différent dans chaque instance, et le copier d'une autre ne sert donc à rien. Il n'a pas besoin d'être imprévisible, puisqu'il est lisible de toute façon.
 
 ---
 
 ## Ajouter une épreuve
 
-1. Écrire le contrat vulnérable et sa factory dans `contracts/contracts/levels/`, en implémentant `ILevel`.
+1. Écrire le contrat vulnérable et sa factory dans `contracts/contracts/levels/`, la factory héritant de `Level` (qui implémente `ILevel`) : il reste à écrire `_deploy` et `_isSolved`.
 2. `validateInstance` doit être **`view`** et rester **sous la limite de gaz** de la plateforme (300 000 *(proposé)*).
-3. Écrire un **test d'exploit** dans `contracts/test/` qui :
+3. Écrire un **test d'exploit** dans `contracts/test/levels/` (TypeScript, joué comme un joueur) et un test unitaire `levels/<Épreuve>.t.sol` (Solidity, avec fuzz et mesure du gaz), qui :
    - crée une instance ;
    - vérifie que `validateInstance` renvoie `false` ;
    - joue l'exploit ;
