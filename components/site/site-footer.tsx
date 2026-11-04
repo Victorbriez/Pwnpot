@@ -43,8 +43,12 @@ const columns: { title: string; links: FooterLink[] }[] = [
     title: "Légal",
     links: [
       { label: "Mentions légales", href: "/mentions-legales" },
-      { label: "Confidentialité", href: "/mentions-legales#confidentialite" },
-      { label: "Avertissement", href: "/mentions-legales#avertissement" },
+      { label: "Conditions d'utilisation", href: "/cgu" },
+      {
+        label: "Données personnelles",
+        href: "/mentions-legales#confidentialite",
+      },
+      { label: "Stockage local", href: "/mentions-legales#stockage" },
     ],
   },
 ]

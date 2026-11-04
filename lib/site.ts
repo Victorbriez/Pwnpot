@@ -4,11 +4,15 @@ import type { Address } from "viem"
 export const site = {
   name: "Pwnpot",
   year: 2026,
+  /** Date affichée en tête des mentions légales et des CGU. */
+  legalUpdatedAt: "4 novembre 2026",
   editor: {
     name: "Victor Briez",
     school: "Epitech",
     module: "Blockchain & Decentralised Applications",
-    // À compléter : affiché seulement une fois renseigné.
+    publicationDirector: "Victor Briez",
+    // Facultatif pour un éditeur non professionnel (LCEN, art. 6-III-2) :
+    // affiché seulement s'il est renseigné.
     contact: null as string | null,
   },
   host: {
@@ -17,12 +21,19 @@ export const site = {
     url: "https://vercel.com",
     privacyUrl: "https://vercel.com/legal/privacy-policy",
   },
+  /** Nœud RPC utilisé par défaut quand NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL est vide. */
+  rpc: {
+    name: "Coinbase, qui opère le réseau Base",
+    url: "https://sepolia.base.org",
+    privacyUrl: "https://www.coinbase.com/legal/privacy",
+  },
   platformAddress: (process.env.NEXT_PUBLIC_CTF_PLATFORM_ADDRESS ||
     null) as Address | null,
   links: {
     explorer: "https://sepolia.basescan.org",
     faucet: "https://docs.base.org/base-chain/tools/network-faucets",
     erc792: "https://github.com/ethereum/EIPs/issues/792",
+    cnil: "https://www.cnil.fr/fr/plaintes",
   },
 }
 

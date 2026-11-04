@@ -1,202 +1,229 @@
 import type { Metadata } from "next"
 
+import {
+  ExternalLink,
+  InternalLink,
+  LegalDoc,
+  LegalSection,
+} from "@/components/legal/legal-doc"
 import { site } from "@/lib/site"
 
 export const metadata: Metadata = {
   title: "Mentions légales",
   description:
-    "Éditeur, hébergement, confidentialité et avertissement de Pwnpot, projet étudiant sur Base Sepolia.",
+    "Éditeur, hébergement, données personnelles, stockage local et avertissement de Pwnpot, projet étudiant sur Base Sepolia.",
 }
 
 const sections = [
   { id: "editeur", label: "Éditeur" },
   { id: "hebergement", label: "Hébergement" },
-  { id: "confidentialite", label: "Confidentialité" },
+  { id: "confidentialite", label: "Données personnelles" },
+  { id: "stockage", label: "Stockage local et cookies" },
   { id: "avertissement", label: "Avertissement" },
   { id: "propriete", label: "Propriété intellectuelle" },
 ]
 
-function Section({
-  id,
-  title,
-  children,
-}: {
-  id: string
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-titre`}
-      className="flex scroll-mt-24 flex-col gap-4 border-t pt-10"
-    >
-      <h2 id={`${id}-titre`} className="text-2xl font-semibold tracking-tight">
-        {title}
-      </h2>
-      <div className="flex flex-col gap-4 leading-7 text-pretty text-muted-foreground [&_strong]:font-medium [&_strong]:text-foreground">
-        {children}
-      </div>
-    </section>
-  )
-}
-
-function ExternalLink({
-  href,
-  children,
-}: {
-  href: string
-  children: React.ReactNode
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="font-medium text-foreground underline underline-offset-4"
-    >
-      {children}
-    </a>
-  )
-}
-
 export default function LegalPage() {
-  const { editor, host } = site
+  const { editor, host, rpc } = site
 
   return (
-    <div className="mx-auto grid w-full max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[14rem_minmax(0,42rem)] lg:gap-20 lg:px-12 lg:py-24">
-      <aside className="lg:sticky lg:top-24 lg:self-start">
-        <nav aria-label="Sur cette page" className="hidden lg:block">
-          <ul className="flex flex-col gap-2.5 text-sm">
-            {sections.map((section) => (
-              <li key={section.id}>
-                <a
-                  href={`#${section.id}`}
-                  className="text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {section.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
+    <LegalDoc
+      title="Mentions légales"
+      sections={sections}
+      intro={
+        <p>
+          Pwnpot est un projet étudiant, déployé uniquement sur le réseau de
+          test Base Sepolia. L&apos;utilisation du site est encadrée par les{" "}
+          <InternalLink href="/cgu">
+            conditions générales d&apos;utilisation
+          </InternalLink>
+          . Mise à jour : {site.legalUpdatedAt}.
+        </p>
+      }
+    >
+      <LegalSection id="editeur" title="Éditeur">
+        <p>
+          Ce site est édité à titre non professionnel par{" "}
+          <strong>{editor.name}</strong>, dans le cadre du module{" "}
+          <strong>{editor.module}</strong> à {editor.school}.
+        </p>
+        <p>
+          Directeur de la publication :{" "}
+          <strong>{editor.publicationDirector}</strong>.
+        </p>
+        {editor.contact ? (
+          <p>
+            Contact :{" "}
+            <a
+              href={`mailto:${editor.contact}`}
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              {editor.contact}
+            </a>
+          </p>
+        ) : (
+          <p>
+            Conformément à l&apos;article 6-III-2 de la loi n° 2004-575 du 21
+            juin 2004 (LCEN), l&apos;éditeur, non professionnel, a communiqué
+            ses coordonnées à l&apos;hébergeur, qui peut le joindre si
+            nécessaire.
+          </p>
+        )}
+      </LegalSection>
 
-      <article className="flex flex-col gap-10">
-        <header className="flex flex-col gap-3">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            Mentions légales
-          </h1>
-          <p className="text-muted-foreground">
-            Pwnpot est un projet étudiant, déployé uniquement sur le réseau de
-            test Base Sepolia. Mise à jour : 4 novembre 2026.
-          </p>
-        </header>
+      <LegalSection id="hebergement" title="Hébergement">
+        <p>
+          Le site est hébergé par <strong>{host.name}</strong>, {host.address} (
+          <ExternalLink href={host.url}>
+            {host.url.replace("https://", "")}
+          </ExternalLink>
+          ).
+        </p>
+        <p>
+          Les cagnottes, tickets et cautions ne sont pas hébergés par le site :
+          ils sont détenus par le contrat CTFPlatform, déployé sur la blockchain
+          Base Sepolia.
+        </p>
+      </LegalSection>
 
-        <Section id="editeur" title="Éditeur">
-          <p>
-            Ce site est édité à titre non professionnel par{" "}
-            <strong>{editor.name}</strong>, dans le cadre du module{" "}
-            <strong>{editor.module}</strong> à {editor.school}.
-          </p>
-          {editor.contact && (
-            <p>
-              Contact :{" "}
-              <a
-                href={`mailto:${editor.contact}`}
-                className="font-medium text-foreground underline underline-offset-4"
-              >
-                {editor.contact}
-              </a>
-            </p>
-          )}
-        </Section>
+      <LegalSection id="confidentialite" title="Données personnelles">
+        <p>
+          <strong>Pwnpot ne collecte aucune donnée personnelle.</strong> Il
+          n&apos;y a ni compte, ni formulaire, ni base de données, ni outil de
+          mesure d&apos;audience, ni publicité. Le site ne fait que lire la
+          blockchain et préparer des transactions que tu signes dans ton wallet.
+        </p>
 
-        <Section id="hebergement" title="Hébergement">
-          <p>
-            Le site est hébergé par <strong>{host.name}</strong>, {host.address}{" "}
-            (
-            <ExternalLink href={host.url}>
-              {host.url.replace("https://", "")}
-            </ExternalLink>
-            ).
-          </p>
-          <p>
-            Les cagnottes, tickets et cautions ne sont pas hébergés par le site
-            : ils sont détenus par le contrat CTFPlatform, déployé sur la
-            blockchain Base Sepolia.
-          </p>
-        </Section>
+        <h3>Responsable du traitement</h3>
+        <p>
+          {editor.name}, éditeur du site, pour les seules données techniques
+          décrites ci-dessous.
+        </p>
 
-        <Section id="confidentialite" title="Confidentialité">
-          <p>
-            <strong>Aucun compte, aucune base de données.</strong> Pwnpot
-            n&apos;a pas de serveur qui stocke des informations sur toi. Il
-            n&apos;y a ni cookie publicitaire, ni outil de mesure
-            d&apos;audience.
-          </p>
-          <p>
-            <strong>Ton navigateur garde deux choses en local</strong> : le
-            thème choisi (clair ou sombre) et le dernier wallet utilisé, pour te
-            reconnecter automatiquement. Ces données restent sur ton appareil ;
-            vider les données du site les efface.
-          </p>
-          <p>
-            <strong>Ton adresse de wallet est publique.</strong> Elle est lue
-            dans ton navigateur et n&apos;est envoyée à aucun serveur de Pwnpot.
-            En revanche, chaque transaction que tu signes (ticket, instance,
-            vote, retrait) est inscrite sur la blockchain : elle est publique et
-            ne peut pas être effacée.
-          </p>
-          <p>
-            <strong>Services tiers.</strong> Pour lire la blockchain, ton
-            navigateur interroge un nœud Base Sepolia, qui voit ton adresse IP
-            et les adresses consultées. Si tu te connectes avec Base Account, ce
-            service est fourni par Coinbase. L&apos;hébergeur conserve des
-            journaux techniques de connexion (voir sa{" "}
+        <h3>Ce qui est traité, et par qui</h3>
+        <ul>
+          <li>
+            <strong>Journaux de connexion</strong> (adresse IP, date, page
+            demandée, navigateur) : conservés par l&apos;hébergeur {host.name}{" "}
+            pour faire fonctionner et sécuriser le site, selon sa{" "}
             <ExternalLink href={host.privacyUrl}>
               politique de confidentialité
             </ExternalLink>
+            . L&apos;éditeur n&apos;exploite pas ces journaux.
+          </li>
+          <li>
+            <strong>Lecture de la blockchain</strong> : ton navigateur interroge
+            directement un nœud Base Sepolia (par défaut{" "}
+            <code className="font-mono text-sm">
+              {rpc.url.replace("https://", "")}
+            </code>
+            , par {rpc.name}). Ce nœud voit ton adresse IP et les adresses
+            consultées (voir sa{" "}
+            <ExternalLink href={rpc.privacyUrl}>
+              politique de confidentialité
+            </ExternalLink>
             ).
-          </p>
-        </Section>
+          </li>
+          <li>
+            <strong>Adresse de wallet</strong> : lue dans ton navigateur, elle
+            n&apos;est envoyée à aucun serveur de Pwnpot. Si tu te connectes
+            avec Base Account, ce service est fourni par Coinbase.
+          </li>
+          <li>
+            <strong>Transactions</strong> : chaque transaction que tu signes
+            (ticket, instance, soumission, vote, retrait) est inscrite sur la
+            blockchain avec ton adresse. Elle est publique, et ni l&apos;éditeur
+            ni personne ne peut l&apos;effacer.
+          </li>
+        </ul>
 
-        <Section id="avertissement" title="Avertissement">
-          <p>
-            <strong>Testnet uniquement.</strong> L&apos;ETH de Base Sepolia
-            n&apos;a aucune valeur marchande. N&apos;envoie jamais d&apos;ETH
-            réel ni de fonds d&apos;un autre réseau vers les contrats du site.
-          </p>
-          <p>
-            <strong>Projet pédagogique.</strong> Pwnpot n&apos;est pas un
-            service financier ni un jeu d&apos;argent. Ses contrats n&apos;ont
-            pas fait l&apos;objet d&apos;un audit de sécurité.
-          </p>
-          <p>
-            <strong>Épreuves publiées par des tiers.</strong> N&apos;importe qui
-            peut publier un CTF. Les épreuves sont écrites par leurs
-            organisateurs, pas par Pwnpot. Avant d&apos;acheter un ticket,
-            vérifie que le code de chaque factory est publié sur Basescan, que
-            sa validation ne lit que l&apos;état de ton instance, et
-            qu&apos;elle n&apos;est pas un proxy. N&apos;utilise qu&apos;un
-            wallet dédié au testnet.
-          </p>
-          <p>
-            <strong>Arbitre de démonstration.</strong> En appel, les litiges
-            sont tranchés par un arbitre ERC-792 fixé au déploiement. Pour ce
-            projet, c&apos;est un contrat de test (MockArbitrator) contrôlé par
-            l&apos;équipe : ses décisions ne sont pas indépendantes.
-          </p>
-        </Section>
+        <h3>Base légale et durée</h3>
+        <p>
+          Ces traitements techniques reposent sur l&apos;intérêt légitime à
+          faire fonctionner le site (article 6.1.f du RGPD). Leur durée de
+          conservation est celle fixée par l&apos;hébergeur et le fournisseur du
+          nœud. Les données inscrites sur la blockchain sont conservées sans
+          limite de durée, par nature.
+        </p>
 
-        <Section id="propriete" title="Propriété intellectuelle">
-          <p>
-            Le code et le contenu du site appartiennent à leur auteur. Le code
-            de chaque épreuve reste la propriété de l&apos;organisateur qui
-            l&apos;a publiée.
-          </p>
-        </Section>
-      </article>
-    </div>
+        <h3>Transfert hors de l&apos;Union européenne</h3>
+        <p>
+          {host.name} et Coinbase sont des sociétés américaines : les journaux
+          techniques peuvent être traités aux États-Unis, dans le cadre de
+          l&apos;EU-US Data Privacy Framework ou de clauses contractuelles
+          types, comme décrit dans leurs politiques de confidentialité.
+        </p>
+
+        <h3>Tes droits</h3>
+        <p>
+          Tu disposes d&apos;un droit d&apos;accès, de rectification,
+          d&apos;effacement, de limitation et d&apos;opposition. Comme
+          l&apos;éditeur ne détient aucune donnée sur toi, ces demandes
+          s&apos;adressent directement à l&apos;hébergeur ou au fournisseur du
+          nœud, via les politiques citées plus haut. Ces droits ne
+          s&apos;appliquent pas aux transactions déjà inscrites sur la
+          blockchain, qui ne peuvent techniquement pas être modifiées. Tu peux
+          aussi adresser une réclamation à la{" "}
+          <ExternalLink href={site.links.cnil}>CNIL</ExternalLink>.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="stockage" title="Stockage local et cookies">
+        <p>
+          Le site ne dépose <strong>aucun cookie</strong>. Ton navigateur garde
+          en stockage local (localStorage) les seules informations nécessaires à
+          son fonctionnement :
+        </p>
+        <ul>
+          <li>le thème choisi, clair ou sombre ;</li>
+          <li>
+            l&apos;état de connexion de ton wallet et le dernier connecteur
+            utilisé, pour te reconnecter automatiquement ;
+          </li>
+          <li>
+            si tu utilises Base Account, les données de session écrites par le
+            SDK de Coinbase.
+          </li>
+        </ul>
+        <p>
+          Ces données sont strictement nécessaires au service que tu demandes :
+          elles ne requièrent pas de consentement, ne quittent pas ton appareil
+          et ne servent à aucun suivi. Vider les données du site dans ton
+          navigateur, ou déconnecter ton wallet, les efface. Les polices sont
+          servies par le site lui-même, sans appel à un service tiers.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="avertissement" title="Avertissement">
+        <p>
+          <strong>Testnet uniquement.</strong> L&apos;ETH de Base Sepolia
+          n&apos;a aucune valeur marchande. N&apos;envoie jamais d&apos;ETH réel
+          ni de fonds d&apos;un autre réseau vers les contrats du site.
+        </p>
+        <p>
+          <strong>Projet pédagogique.</strong> Pwnpot n&apos;est pas un service
+          financier ni un jeu d&apos;argent. Ses contrats n&apos;ont pas fait
+          l&apos;objet d&apos;un audit de sécurité.
+        </p>
+        <p>
+          <strong>Épreuves publiées par des tiers</strong> et{" "}
+          <strong>arbitre de démonstration</strong> : les règles et les limites
+          sont détaillées dans les <InternalLink href="/cgu">CGU</InternalLink>.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="propriete" title="Propriété intellectuelle">
+        <p>
+          Le code et le contenu du site appartiennent à leur auteur. Ils ne sont
+          pas publiés sous licence libre : toute reproduction demande son
+          accord. Le code des contrats déployés reste lisible par tous sur la
+          blockchain, comme tout contrat vérifié.
+        </p>
+        <p>
+          Le code de chaque épreuve reste la propriété de l&apos;organisateur
+          qui l&apos;a publiée.
+        </p>
+      </LegalSection>
+    </LegalDoc>
   )
 }
