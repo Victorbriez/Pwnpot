@@ -117,8 +117,8 @@ export default function LegalPage() {
             <code className="font-mono text-sm">
               {rpc.url.replace("https://", "")}
             </code>
-            , par {rpc.name}). Ce nœud voit ton adresse IP et les adresses
-            consultées (voir sa{" "}
+            , fourni par {rpc.name}). Ce nœud voit ton adresse IP et les
+            adresses consultées (voir sa{" "}
             <ExternalLink href={rpc.privacyUrl}>
               politique de confidentialité
             </ExternalLink>
