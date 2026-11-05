@@ -36,6 +36,7 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { DataList, DataRow } from "@/components/site/data-list"
 import type { Dispute } from "@/hooks/use-dispute"
 import { settlement, type DisputeState } from "@/lib/ctf/dispute"
 import { formatEth, formatInt, formatRemaining } from "@/lib/format"
@@ -455,17 +456,13 @@ function Result({ state }: { state: DisputeState }) {
         </AlertTitle>
         <AlertDescription>{decidedBy}</AlertDescription>
       </Alert>
-      <dl className="flex flex-col gap-2 text-sm">
+      <DataList>
         {settlement(state).map((line) => (
-          <div
-            key={line.who}
-            className="flex items-baseline justify-between gap-4"
-          >
-            <dt className="text-muted-foreground">{line.who}</dt>
-            <dd className="text-right font-medium">{line.what}</dd>
-          </div>
+          <DataRow key={line.who} label={line.who}>
+            {line.what}
+          </DataRow>
         ))}
-      </dl>
+      </DataList>
       <Link href="/gains" className={buttonVariants({ variant: "outline" })}>
         Voir ce que je peux retirer
       </Link>

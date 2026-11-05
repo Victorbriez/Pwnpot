@@ -7,6 +7,8 @@ import {
   CardHeader,
 } from "@/components/ui/card"
 
+import { cn } from "@/lib/utils"
+
 export function KpiCard({
   label,
   value,
@@ -14,6 +16,7 @@ export function KpiCard({
   trend,
   trendVariant = "success",
   action,
+  className,
 }: {
   label: string
   value: string
@@ -22,13 +25,17 @@ export function KpiCard({
   trendVariant?: "success" | "warning"
   /** Lien ou bouton affiché à droite du titre. */
   action?: React.ReactNode
+  className?: string
 }) {
   return (
-    <Card className="gap-3 rounded-2xl py-6 [--card-spacing:--spacing(6)]">
+    <Card
+      className={cn(
+        "gap-2 rounded-2xl py-4 [--card-spacing:--spacing(4)] sm:gap-3 sm:py-6 sm:[--card-spacing:--spacing(6)]",
+        className
+      )}
+    >
       <CardHeader>
-        <CardDescription className="text-[0.8125rem] font-medium">
-          {label}
-        </CardDescription>
+        <CardDescription className="font-medium">{label}</CardDescription>
         {(trend || action) && (
           <CardAction>
             {action ?? <Badge variant={trendVariant}>{trend}</Badge>}
@@ -36,10 +43,10 @@ export function KpiCard({
         )}
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
-        <p className="text-3xl font-semibold tracking-tight tabular-nums">
+        <p className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">
           {value}
         </p>
-        <p className="text-[0.8125rem] text-muted-foreground">{caption}</p>
+        <p className="text-xs text-muted-foreground sm:text-sm">{caption}</p>
       </CardContent>
     </Card>
   )

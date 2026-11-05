@@ -47,7 +47,7 @@ function rankLabel(rank: number) {
 }
 
 export function MyCtfsView() {
-  const { playing, organizing, totals, isDemo, needsWallet } = useMyCtfs()
+  const { playing, organizing, totals, needsWallet } = useMyCtfs()
 
   if (needsWallet) {
     return (
@@ -70,13 +70,10 @@ export function MyCtfsView() {
 
   return (
     <div className="flex flex-col gap-8">
-      {isDemo && (
-        <Badge variant="warning" className="h-6 px-2.5">
-          Données de démonstration
-        </Badge>
-      )}
-
-      <section aria-label="Résumé" className="grid gap-4 sm:grid-cols-3">
+      <section
+        aria-label="Résumé"
+        className="grid grid-cols-2 gap-4 sm:grid-cols-3"
+      >
         <KpiCard
           label="CTF en cours"
           value={formatInt(totals.active)}
@@ -89,6 +86,7 @@ export function MyCtfsView() {
         />
         <KpiCard
           label="À retirer"
+          className="col-span-2 sm:col-span-1"
           value={formatEth(totals.owed)}
           caption="gains, remboursements et cautions"
           action={

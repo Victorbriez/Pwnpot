@@ -56,10 +56,8 @@ export function CtfCard({ ctf }: { ctf: Ctf }) {
           </span>
         </div>
         <div className="flex flex-col gap-1.5">
-          <CardTitle className="text-[1.0625rem] font-semibold">
-            {ctf.title}
-          </CardTitle>
-          <CardDescription className="text-[0.8125rem]">
+          <CardTitle className="text-lg font-semibold">{ctf.title}</CardTitle>
+          <CardDescription>
             {ctf.challenges} épreuve{ctf.challenges > 1 ? "s" : ""}, par{" "}
             <span className="font-mono">
               {truncateAddress(ctf.organizer, 3)}
@@ -78,7 +76,7 @@ export function CtfCard({ ctf }: { ctf: Ctf }) {
           </div>
           <div className="flex flex-col items-end gap-1">
             <dt className="text-xs text-muted-foreground">Ticket</dt>
-            <dd className="text-[0.9375rem] font-semibold tabular-nums">
+            <dd className="text-base font-semibold tabular-nums">
               {formatEth(ctf.ticketPrice)}
             </dd>
           </div>

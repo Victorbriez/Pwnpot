@@ -6,7 +6,6 @@ import {
   ArrowDownToLineIcon,
   BoxIcon,
   CircleCheckIcon,
-  FlaskConicalIcon,
   ShieldCheckIcon,
   TicketIcon,
   TrophyIcon,
@@ -19,7 +18,6 @@ import { StatusPill } from "@/components/ctf/status-pill"
 import { VulnTag } from "@/components/ctf/vuln-tag"
 import { DisputeCard, type Role } from "@/components/dispute/dispute-card"
 import { TxStatusAlert } from "@/components/onchain/tx-status"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AddressDisplay } from "@/components/ui/address-display"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -58,6 +56,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { DataList, DataRow } from "@/components/site/data-list"
 import { useDispute } from "@/hooks/use-dispute"
 import { usePlatformTx } from "@/hooks/use-platform-tx"
 import { playerNextStep, organizerNextStep } from "@/lib/ctf/next-step"
@@ -208,11 +207,6 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
         <span className="font-mono text-sm text-muted-foreground tabular-nums">
           {remainingLabel(live)}
         </span>
-        {tx.isDemo && (
-          <Badge variant="warning" className="h-6 px-2.5">
-            Données de démonstration
-          </Badge>
-        )}
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex flex-col gap-6">
@@ -231,7 +225,7 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
               <CardTitle>Épreuves</CardTitle>
               <CardDescription>
                 {lockedReason ??
-                  "Crée ton instance, exploite-la, puis demande la vérification. Le contrat appelle validateInstance : pas de flag à recopier."}
+                  `Crée ton instance, exploite-la, puis demande la vérification. Le contrat appelle validateInstance : pas de flag à recopier.${tx.isDemo ? " En démo, la vérification réussit toujours." : ""}`}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -262,7 +256,9 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
                             ? "Réussie : 1 point."
                             : instance
                               ? `Ton instance : ${truncateAddress(instance)}`
-                              : "Pas encore d'instance."}
+                              : playing
+                                ? "Pas encore d'instance."
+                                : "Non résolue."}
                         </ItemDescription>
                       </ItemContent>
                       {!done && !lockedReason && (
@@ -390,19 +386,19 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
                   {formatInt(players)} / {formatInt(ctf.maxPlayers)} joueurs
                 </p>
               </div>
-              <dl className="flex flex-col gap-2">
-                <Row label="Ticket">{formatEth(ctf.ticketPrice)}</Row>
-                <Row label="Cash prize">{formatEth(ctf.cashPrize)}</Row>
-                <Row label="Caution de l'organisateur">
+              <DataList>
+                <DataRow label="Ticket">{formatEth(ctf.ticketPrice)}</DataRow>
+                <DataRow label="Cash prize">{formatEth(ctf.cashPrize)}</DataRow>
+                <DataRow label="Caution de l'organisateur">
                   {formatEth(ctf.bond)}
-                </Row>
-                <Row label="Podium">
+                </DataRow>
+                <DataRow label="Podium">
                   {shares
                     .map((share) => formatEth(share, { unit: false }))
                     .join(" / ")}{" "}
                   ETH
-                </Row>
-              </dl>
+                </DataRow>
+              </DataList>
               <Separator />
               <div className="flex items-center justify-between gap-2">
                 <span className="text-muted-foreground">Organisateur</span>
@@ -439,16 +435,16 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
                   n&apos;est confirmée.
                 </p>
               ) : playerHas ? (
-                <dl className="flex flex-col gap-2">
-                  <Row label="Épreuves réussies">
+                <DataList>
+                  <DataRow label="Épreuves réussies">
                     {solved.length} / {ctf.challenges}
-                  </Row>
-                  <Row label="Rang">
+                  </DataRow>
+                  <DataRow label="Rang">
                     {myRank !== null
                       ? `${myRank} sur ${formatInt(players)}`
                       : "non classé"}
-                  </Row>
-                </dl>
+                  </DataRow>
+                </DataList>
               ) : (
                 <p className="text-muted-foreground">
                   {canBuy
@@ -456,20 +452,6 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
                     : "Les inscriptions sont fermées."}
                 </p>
               )}
-              {tx.isDemo &&
-                tx.status === "idle" &&
-                !isOrganizer &&
-                !dispute && (
-                  <Alert>
-                    <FlaskConicalIcon />
-                    <AlertTitle>Mode démo</AlertTitle>
-                    <AlertDescription>
-                      Les transactions sont simulées et la vérification réussit
-                      toujours. Sur la chaîne, validateInstance vérifie ton
-                      exploit.
-                    </AlertDescription>
-                  </Alert>
-                )}
               <TxStatusAlert
                 status={tx.status}
                 hash={tx.hash}
@@ -508,21 +490,6 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
           </Card>
         </div>
       </div>
-    </div>
-  )
-}
-
-function Row({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium tabular-nums">{children}</dd>
     </div>
   )
 }

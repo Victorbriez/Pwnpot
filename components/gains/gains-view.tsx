@@ -5,14 +5,12 @@ import Link from "next/link"
 import {
   ArrowDownToLineIcon,
   ExternalLinkIcon,
-  FlaskConicalIcon,
   PiggyBankIcon,
   WalletIcon,
 } from "lucide-react"
 
 import { StatusPill } from "@/components/ctf/status-pill"
 import { TxStatusAlert } from "@/components/onchain/tx-status"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Card,
@@ -115,16 +113,6 @@ export function GainsView() {
             solde. Un retrait envoie tout sur ton wallet ; seul le gas est à ta
             charge.
           </p>
-          {isDemo && tx.status === "idle" && (
-            <Alert>
-              <FlaskConicalIcon />
-              <AlertTitle>Mode démo</AlertTitle>
-              <AlertDescription>
-                CTFPlatform n&apos;est pas encore déployé : le retrait est
-                simulé.
-              </AlertDescription>
-            </Alert>
-          )}
           <TxStatusAlert
             status={tx.status}
             hash={tx.hash}

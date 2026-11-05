@@ -9,15 +9,24 @@ import { fr } from "react-day-picker/locale"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+
+/** Heures proposées, toutes les 30 min, toujours en 24 h. */
+const TIMES = Array.from({ length: 48 }, (_, i) => {
+  const hours = String(Math.floor(i / 2)).padStart(2, "0")
+  return `${hours}:${i % 2 === 0 ? "00" : "30"}`
+})
 
 /** Jour + heure de début, en heure locale. */
 export function StartDatePicker({
@@ -85,20 +94,31 @@ export function StartDatePicker({
           />
         </PopoverContent>
       </Popover>
-      <InputGroup className="sm:w-32">
-        <InputGroupInput
-          type="time"
+      <Select
+        value={time}
+        disabled={disabled}
+        onValueChange={(value) => {
+          if (typeof value === "string") onTimeChange(value)
+        }}
+      >
+        <SelectTrigger
           aria-label="Heure de début"
-          value={time}
-          disabled={disabled}
           aria-invalid={invalid || undefined}
-          onChange={(e) => onTimeChange(e.target.value)}
-          className="appearance-none [&::-webkit-calendar-picker-indicator]:hidden"
-        />
-        <InputGroupAddon>
-          <Clock3Icon />
-        </InputGroupAddon>
-      </InputGroup>
+          className="w-full sm:w-28"
+        >
+          <Clock3Icon className="text-muted-foreground" />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {TIMES.map((value) => (
+              <SelectItem key={value} value={value}>
+                {value}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </div>
   )
 }

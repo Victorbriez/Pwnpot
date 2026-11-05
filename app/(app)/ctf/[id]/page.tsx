@@ -1,10 +1,17 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeftIcon } from "lucide-react"
 
 import { CtfPlay } from "@/components/ctf/ctf-play"
-import { buttonVariants } from "@/components/ui/button"
+import { PageHeader, PageShell } from "@/components/site/page-header"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { ctfs } from "@/lib/mock/explore"
 
 function findCtf(id: string) {
@@ -32,24 +39,26 @@ export default async function CtfPage({ params }: PageProps<"/ctf/[id]">) {
   if (!ctf) notFound()
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-12">
-      <header className="flex flex-col gap-4">
-        <Link
-          href="/explore"
-          className={buttonVariants({
-            variant: "ghost",
-            size: "sm",
-            className: "-ml-2 w-fit text-muted-foreground",
-          })}
-        >
-          <ArrowLeftIcon data-icon="inline-start" />
-          Explorer
-        </Link>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          {ctf.title}
-        </h1>
-      </header>
+    <PageShell>
+      <PageHeader
+        breadcrumb={
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink render={<Link href="/explore" />}>
+                  Explorer
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{ctf.title}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        }
+        title={ctf.title}
+      />
       <CtfPlay ctfId={ctf.id} />
-    </div>
+    </PageShell>
   )
 }

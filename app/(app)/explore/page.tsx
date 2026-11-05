@@ -5,6 +5,7 @@ import { CtfList } from "@/components/explore/ctf-list"
 import { KpiCard } from "@/components/explore/kpi-card"
 import { TvlChart } from "@/components/explore/tvl-chart"
 import { VulnDonut } from "@/components/explore/vuln-donut"
+import { PageHeader, PageShell } from "@/components/site/page-header"
 import { PublishCtfButton } from "@/components/site/soon-button"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -17,38 +18,28 @@ export const metadata: Metadata = {
 
 export default function ExplorePage() {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-10 sm:px-6 lg:px-12 lg:py-12">
-      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex max-w-2xl flex-col gap-3">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="success" className="h-6 gap-1.5 px-2.5">
-              <span aria-hidden className="size-1.5 rounded-full bg-success" />
-              Testnet Base Sepolia
-            </Badge>
-            <Badge variant="warning" className="h-6 px-2.5">
-              Données de démonstration
-            </Badge>
-          </div>
-          <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-            CTF smart contracts, cagnottes garanties on-chain
-          </h1>
-          <p className="max-w-xl text-pretty text-muted-foreground">
-            Exploite des contrats vulnérables. La cagnotte est détenue par le
-            contrat : personne ne peut la retirer en dehors des règles.
-            CTFPlatform n&apos;est pas encore déployé : les CTF ci-dessous sont
-            des exemples.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/#comment-ca-marche"
-            className={buttonVariants({ variant: "outline", size: "lg" })}
-          >
-            Comment ça marche
-          </Link>
-          <PublishCtfButton />
-        </div>
-      </header>
+    <PageShell wide className="gap-10">
+      <PageHeader
+        meta={
+          <Badge variant="success" className="h-6 gap-1.5 px-2.5">
+            <span aria-hidden className="size-1.5 rounded-full bg-success" />
+            Testnet Base Sepolia
+          </Badge>
+        }
+        title="CTF smart contracts, cagnottes garanties on-chain"
+        description="Exploite des contrats vulnérables. La cagnotte est détenue par le contrat : personne ne peut la retirer en dehors des règles."
+        actions={
+          <>
+            <Link
+              href="/#comment-ca-marche"
+              className={buttonVariants({ variant: "outline", size: "lg" })}
+            >
+              Comment ça marche
+            </Link>
+            <PublishCtfButton />
+          </>
+        }
+      />
 
       <section
         aria-label="Chiffres clés"
@@ -90,6 +81,6 @@ export default function ExplorePage() {
       </section>
 
       <CtfList ctfs={ctfs} />
-    </div>
+    </PageShell>
   )
 }

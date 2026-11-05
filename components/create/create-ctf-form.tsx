@@ -3,13 +3,7 @@
 import { useState } from "react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import {
-  ChevronDownIcon,
-  FlaskConicalIcon,
-  PlusIcon,
-  RocketIcon,
-  XIcon,
-} from "lucide-react"
+import { ChevronDownIcon, PlusIcon, RocketIcon, XIcon } from "lucide-react"
 import { isAddress, type Address } from "viem"
 import { baseSepolia } from "viem/chains"
 import { useConnection, useSwitchChain } from "wagmi"
@@ -17,7 +11,6 @@ import { useConnection, useSwitchChain } from "wagmi"
 import { StartDatePicker } from "@/components/create/start-date-picker"
 import { VulnTag } from "@/components/ctf/vuln-tag"
 import { TxStatusAlert } from "@/components/onchain/tx-status"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -57,6 +50,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { DataList, DataRow } from "@/components/site/data-list"
 import { useCreateCtf } from "@/hooks/use-create-ctf"
 import {
   DURATION_DAYS,
@@ -424,37 +418,27 @@ export function CreateCtfForm() {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <dl className="flex flex-col gap-3 text-sm">
-            <SummaryRow
-              label="Cash prize"
-              value={cashPrize !== null ? formatEth(cashPrize) : "—"}
-            />
-            <SummaryRow
+          <DataList>
+            <DataRow label="Cash prize">
+              {cashPrize !== null ? formatEth(cashPrize) : "—"}
+            </DataRow>
+            <DataRow
               label="Caution"
-              value={bond !== undefined ? formatEth(bond) : "—"}
               hint={
                 cashPrize !== null && ticketPrice !== null && bond !== undefined
                   ? `${formatEth(cashPrize, { unit: false })} + ${amounts.maxPlayers} × ${formatEth(ticketPrice)}`
                   : "cash prize + joueurs max × ticket"
               }
-            />
-          </dl>
+            >
+              {bond !== undefined ? formatEth(bond) : "—"}
+            </DataRow>
+          </DataList>
           <Separator />
           <p className="text-sm text-muted-foreground">
             La caution est calculée pour toi : elle couvre ce qu&apos;un
             organisateur tricheur pourrait récupérer. Elle t&apos;est rendue à
             la fin, sauf si la triche est confirmée.
           </p>
-          {tx.isDemo && tx.status === "idle" && (
-            <Alert>
-              <FlaskConicalIcon />
-              <AlertTitle>Mode démo</AlertTitle>
-              <AlertDescription>
-                CTFPlatform n&apos;est pas encore déployé : l&apos;envoi est
-                simulé.
-              </AlertDescription>
-            </Alert>
-          )}
           <TxStatusAlert
             status={tx.status}
             hash={tx.hash}
@@ -548,25 +532,5 @@ function AmountField({
         description && <FieldDescription>{description}</FieldDescription>
       )}
     </Field>
-  )
-}
-
-function SummaryRow({
-  label,
-  value,
-  hint,
-}: {
-  label: string
-  value: string
-  hint?: string
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="flex flex-col gap-0.5">
-        <span className="text-muted-foreground">{label}</span>
-        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-      </dt>
-      <dd className="font-medium tabular-nums">{value}</dd>
-    </div>
   )
 }

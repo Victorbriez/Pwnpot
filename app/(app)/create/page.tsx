@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { CreateCtfForm } from "@/components/create/create-ctf-form"
+import { PageHeader, PageShell } from "@/components/site/page-header"
 
 export const metadata: Metadata = {
   title: "Organiser un CTF",
@@ -10,18 +11,12 @@ export const metadata: Metadata = {
 
 export default function CreatePage() {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-12">
-      <header className="flex max-w-2xl flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Organiser un CTF
-        </h1>
-        <p className="text-pretty text-muted-foreground">
-          Le cash prize et ta caution restent bloqués dans le contrat
-          jusqu&apos;à la fin. Personne, toi compris, ne peut les retirer en
-          dehors des règles.
-        </p>
-      </header>
+    <PageShell>
+      <PageHeader
+        title="Organiser un CTF"
+        description="Le cash prize et ta caution restent bloqués dans le contrat jusqu'à la fin. Personne, toi compris, ne peut les retirer en dehors des règles."
+      />
       <CreateCtfForm />
-    </div>
+    </PageShell>
   )
 }
