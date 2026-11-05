@@ -3,6 +3,7 @@ import { ScaleIcon } from "lucide-react"
 
 import { StatusPill } from "@/components/ctf/status-pill"
 import { Badge } from "@/components/ui/badge"
+import { SectionHeading } from "@/components/site/page-header"
 import {
   Empty,
   EmptyDescription,
@@ -97,9 +98,7 @@ function Section({
 }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold tracking-tight">
-        {title} <span className="text-muted-foreground">({rows.length})</span>
-      </h2>
+      <SectionHeading count={rows.length}>{title}</SectionHeading>
       {rows.length > 0 ? (
         <ItemGroup className="gap-3">
           {rows.map((row) => (

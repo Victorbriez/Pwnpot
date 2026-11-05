@@ -1,7 +1,6 @@
 // Contenu de la page Doc. Source : docs/DESIGN.md, docs/CHALLENGES.md et
 // docs/SECURITY.md. Les montants des exemples sont calculés avec les mêmes
 // fonctions que le reste du site, pour rester alignés sur les règles.
-import Link from "next/link"
 import { parseEther } from "viem"
 
 import {
@@ -41,6 +40,7 @@ import {
   totalValue,
 } from "@/lib/ctf/params"
 import { formatEth } from "@/lib/format"
+import { TextLink } from "@/components/site/text-link"
 
 const hours = (seconds: number) => `${seconds / 3_600} h`
 const days = (seconds: number) => `${seconds / 86_400} jours`
@@ -494,14 +494,7 @@ export function DocsContent() {
           joueur vide, il le garde ; tu récupères le reste après le CTF.
         </DocText>
         <DocText>
-          Prêt ?{" "}
-          <Link
-            href="/organize/new"
-            className="font-medium text-foreground underline underline-offset-4"
-          >
-            Créer un CTF
-          </Link>
-          .
+          Prêt ? <TextLink href="/organize/new">Créer un CTF</TextLink>.
         </DocText>
       </DocSection>
 
@@ -614,13 +607,7 @@ export function DocsContent() {
           et un organisateur tricheur peut inscrire des complices. Un arbitre
           sans intérêt dans la partie corrige ces deux biais, et son coût
           dissuade d&apos;en abuser.{" "}
-          <Link
-            href="/disputes"
-            className="font-medium text-foreground underline underline-offset-4"
-          >
-            Voir les litiges en cours
-          </Link>
-          .
+          <TextLink href="/disputes">Voir les litiges en cours</TextLink>.
         </DocText>
       </DocSection>
 

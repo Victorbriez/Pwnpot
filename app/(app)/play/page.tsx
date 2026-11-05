@@ -20,7 +20,7 @@ export default function PlayPage() {
         actions={
           <Link
             href="/explore"
-            className={buttonVariants({ variant: "outline" })}
+            className={buttonVariants({ variant: "outline", size: "lg" })}
           >
             Trouver un CTF
           </Link>

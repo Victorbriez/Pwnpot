@@ -16,7 +16,7 @@ export default function OrganizePage() {
       <PageHeader
         title="Mes CTF organisés"
         description="Les CTF que tu as publiés : joueurs inscrits, cagnotte, caution et ce qu'il te reste à faire sur chacun."
-        actions={<PublishCtfButton size="default" />}
+        actions={<PublishCtfButton />}
       />
       <OrganizeView />
     </PageShell>

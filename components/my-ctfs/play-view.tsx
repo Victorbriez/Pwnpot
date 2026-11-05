@@ -20,6 +20,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { Progress } from "@/components/ui/progress"
+import { SectionHeading } from "@/components/site/page-header"
 import { useMyCtfs } from "@/hooks/use-my-ctfs"
 import { playerNextStep } from "@/lib/ctf/next-step"
 import { formatEth, formatInt } from "@/lib/format"
@@ -68,10 +69,9 @@ export function PlayView() {
       </section>
 
       <section aria-labelledby="parties-titre" className="flex flex-col gap-4">
-        <h2 id="parties-titre" className="text-lg font-semibold">
-          Mes parties{" "}
-          <span className="text-muted-foreground">({playing.length})</span>
-        </h2>
+        <SectionHeading id="parties-titre" count={playing.length}>
+          Mes parties
+        </SectionHeading>
         {playing.length > 0 ? (
           <ItemGroup className="gap-3">
             {playing.map((p) => (
