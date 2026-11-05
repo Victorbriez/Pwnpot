@@ -34,12 +34,73 @@ export const ctfPlatformAbi = [
     outputs: [{ name: "ctfId", type: "uint256" }],
   },
   {
+    type: "function",
+    name: "buyTicket",
+    stateMutability: "payable",
+    inputs: [{ name: "ctfId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "createInstance",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "ctfId", type: "uint256" },
+      { name: "levelIndex", type: "uint256" },
+    ],
+    outputs: [{ name: "instance", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "submit",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "ctfId", type: "uint256" },
+      { name: "levelIndex", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdraw",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "owed",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
     type: "event",
     name: "CTFCreated",
     anonymous: false,
     inputs: [
       { name: "ctfId", type: "uint256", indexed: true },
       { name: "organizer", type: "address", indexed: true },
+    ],
+  },
+  {
+    type: "event",
+    name: "InstanceCreated",
+    anonymous: false,
+    inputs: [
+      { name: "ctfId", type: "uint256", indexed: true },
+      { name: "levelIndex", type: "uint256", indexed: false },
+      { name: "player", type: "address", indexed: true },
+      { name: "instance", type: "address", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "Withdrawn",
+    anonymous: false,
+    inputs: [
+      { name: "to", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
     ],
   },
 ] as const

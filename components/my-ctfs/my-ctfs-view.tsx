@@ -91,6 +91,14 @@ export function MyCtfsView() {
           label="À retirer"
           value={formatEth(totals.owed)}
           caption="gains, remboursements et cautions"
+          action={
+            <Link
+              href="/gains"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Mes gains
+            </Link>
+          }
         />
       </section>
 
@@ -149,7 +157,11 @@ export function MyCtfsView() {
 function PlayingItem({ participation: p }: { participation: MyParticipation }) {
   const step = playerNextStep(p)
   return (
-    <Item variant="outline" className="gap-x-6 gap-y-3 rounded-xl p-4">
+    <Item
+      variant="outline"
+      className="gap-x-6 gap-y-3 rounded-xl p-4"
+      render={<Link href={`/ctf/${p.ctf.id}`} />}
+    >
       <ItemContent className="min-w-48">
         <ItemTitle className="text-base">{p.ctf.title}</ItemTitle>
         <ItemDescription>
@@ -184,7 +196,11 @@ function OrganizedItem({ organized: o }: { organized: MyOrganized }) {
   const step = organizerNextStep(o)
   const { ctf } = o
   return (
-    <Item variant="outline" className="gap-x-6 gap-y-3 rounded-xl p-4">
+    <Item
+      variant="outline"
+      className="gap-x-6 gap-y-3 rounded-xl p-4"
+      render={<Link href={`/ctf/${ctf.id}`} />}
+    >
       <ItemContent className="min-w-48">
         <ItemTitle className="text-base">{ctf.title}</ItemTitle>
         <ItemDescription>

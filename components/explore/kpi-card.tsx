@@ -13,12 +13,15 @@ export function KpiCard({
   caption,
   trend,
   trendVariant = "success",
+  action,
 }: {
   label: string
   value: string
   caption: string
   trend?: string
   trendVariant?: "success" | "warning"
+  /** Lien ou bouton affiché à droite du titre. */
+  action?: React.ReactNode
 }) {
   return (
     <Card className="gap-3 rounded-2xl py-6 [--card-spacing:--spacing(6)]">
@@ -26,9 +29,9 @@ export function KpiCard({
         <CardDescription className="text-[0.8125rem] font-medium">
           {label}
         </CardDescription>
-        {trend && (
+        {(trend || action) && (
           <CardAction>
-            <Badge variant={trendVariant}>{trend}</Badge>
+            {action ?? <Badge variant={trendVariant}>{trend}</Badge>}
           </CardAction>
         )}
       </CardHeader>
