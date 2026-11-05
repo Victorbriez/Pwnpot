@@ -20,21 +20,17 @@ import {
 } from "@/components/ui/item"
 import { contestBond, voteOutcome } from "@/lib/ctf/dispute"
 import { formatEth, formatInt, formatRemaining } from "@/lib/format"
-import { initialDispute } from "@/lib/mock/disputes"
+import {
+  disputeRows,
+  isDisputeInProgress,
+  type DisputeRow,
+} from "@/lib/mock/disputes"
 import { ctfs } from "@/lib/mock/explore"
 
-const rows = ctfs.flatMap((ctf) => {
-  const dispute = initialDispute(ctf)
-  return dispute ? [{ ctf, dispute }] : []
-})
-type Row = (typeof rows)[number]
+const rows = disputeRows(ctfs)
+type Row = DisputeRow
 
-const inProgress = rows.filter(
-  (r) =>
-    r.dispute.phase === "voting" ||
-    r.dispute.phase === "appealWindow" ||
-    r.dispute.phase === "appealed"
-)
+const inProgress = rows.filter(isDisputeInProgress)
 const contestable = rows.filter((r) => r.dispute.phase === "contestation")
 
 export function DisputeList() {
