@@ -1,16 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
-import { CtfList } from "@/components/explore/ctf-list"
-import { KpiCard } from "@/components/explore/kpi-card"
-import { TvlChart } from "@/components/explore/tvl-chart"
-import { VulnDonut } from "@/components/explore/vuln-donut"
+import { ExploreData } from "@/components/explore/explore-data"
 import { PageHeader, PageShell } from "@/components/site/page-header"
 import { PublishCtfButton } from "@/components/site/soon-button"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
-import { formatEth, formatInt, formatTrend } from "@/lib/format"
-import { ctfs, kpis } from "@/lib/mock/explore"
 
 export const metadata: Metadata = {
   title: "Explorer",
@@ -41,46 +36,7 @@ export default function ExplorePage() {
         }
       />
 
-      <section
-        aria-label="Chiffres clés"
-        className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        <KpiCard
-          label="Cagnottes bloquées"
-          value={formatEth(kpis.lockedPrizePools)}
-          caption={`sur ${kpis.activeCtfs} CTF actifs`}
-          trend={formatTrend(kpis.trends.locked)}
-        />
-        <KpiCard
-          label="Joueurs actifs"
-          value={formatInt(kpis.activePlayers)}
-          caption="tickets achetés sur les CTF actifs"
-          trend={formatTrend(kpis.trends.players)}
-        />
-        <KpiCard
-          label="Épreuves résolues"
-          value={formatInt(kpis.solved)}
-          caption="vérifiées par validateInstance"
-          trend={formatTrend(kpis.trends.solved)}
-        />
-        <KpiCard
-          label="Cautions en jeu"
-          value={formatEth(kpis.bondsAtStake)}
-          caption="déposées par les organisateurs, brûlées en cas de triche"
-          trend={`${kpis.openDisputes} litige${kpis.openDisputes > 1 ? "s" : ""} ouvert${kpis.openDisputes > 1 ? "s" : ""}`}
-          trendVariant="warning"
-        />
-      </section>
-
-      <section
-        aria-label="Statistiques"
-        className="grid gap-6 lg:grid-cols-[2fr_1fr]"
-      >
-        <TvlChart />
-        <VulnDonut />
-      </section>
-
-      <CtfList ctfs={ctfs} />
+      <ExploreData />
     </PageShell>
   )
 }

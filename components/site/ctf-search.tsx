@@ -2,6 +2,7 @@
 
 import { SearchIcon } from "lucide-react"
 import * as React from "react"
+import { useRouter } from "next/navigation"
 
 import { StatusPill } from "@/components/ctf/status-pill"
 import {
@@ -16,12 +17,14 @@ import {
 import { Kbd } from "@/components/ui/kbd"
 import { Button } from "@/components/ui/button"
 import { formatEth } from "@/lib/format"
-import { ctfs } from "@/lib/mock/explore"
+import { useCtfs } from "@/hooks/use-ctfs"
 import { cn } from "@/lib/utils"
 
 /** Recherche de CTF, ouverte au clic ou avec ⌘K / Ctrl+K. */
 export function CtfSearch({ className }: { className?: string }) {
   const [open, setOpen] = React.useState(false)
+  const router = useRouter()
+  const { ctfs } = useCtfs()
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -60,7 +63,10 @@ export function CtfSearch({ className }: { className?: string }) {
                 <CommandItem
                   key={ctf.id}
                   value={`${ctf.title} ${ctf.vulns.join(" ")}`}
-                  onSelect={() => setOpen(false)}
+                  onSelect={() => {
+                    setOpen(false)
+                    router.push(`/ctf/${ctf.id}`)
+                  }}
                 >
                   <span className="truncate">{ctf.title}</span>
                   <span className="ml-auto flex items-center gap-2">

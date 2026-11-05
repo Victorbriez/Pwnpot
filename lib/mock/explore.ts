@@ -4,7 +4,8 @@
 // caution ≥ cashPrize + maxPlayers × ticketPrice.
 import { parseEther } from "viem"
 
-import { inDispute, isClosed, type Ctf, type Vuln } from "@/lib/ctf/types"
+import { computeKpis } from "@/lib/ctf/kpis"
+import { type Ctf, type Vuln } from "@/lib/ctf/types"
 
 function ctf(
   data: Omit<Ctf, "prizePool" | "cashPrize" | "ticketPrice" | "bond"> & {
@@ -123,18 +124,9 @@ export const ctfs: Ctf[] = [
   }),
 ]
 
-const active = ctfs.filter((item) => !isClosed(item.status))
-
+/** Chiffres clés de démo ; les tendances n'existent qu'ici (pas d'historique on-chain). */
 export const kpis = {
-  lockedPrizePools: active.reduce(
-    (sum, item) => sum + item.prizePool,
-    BigInt(0)
-  ),
-  activeCtfs: active.length,
-  activePlayers: active.reduce((sum, item) => sum + item.players, 0),
-  solved: 412,
-  bondsAtStake: active.reduce((sum, item) => sum + item.bond, BigInt(0)),
-  openDisputes: ctfs.filter((item) => inDispute(item.status)).length,
+  ...computeKpis(ctfs, 412),
   trends: { locked: 12.4, players: 8.1, solved: 21 },
 }
 

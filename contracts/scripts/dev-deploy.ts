@@ -48,6 +48,15 @@ const periods = {
   arbitratorTimeout: 30n * MINUTE,
 }
 
+// Multicall3 à son adresse standard, comme sur Base Sepolia : wagmi s'en sert
+// pour regrouper les lectures. Bytecode récupéré sur Base (identique partout).
+const MULTICALL3 = "0xcA11bde05977b3631167028862bE2a173976CA11"
+const multicallCode = readFileSync(
+  fileURLToPath(new URL("./data/multicall3.hex", import.meta.url)),
+  "utf8"
+).trim() as `0x${string}`
+await networkHelpers.setCode(MULTICALL3, multicallCode)
+
 // Point de départ de la lecture des events par le front.
 const deployBlock = await publicClient.getBlockNumber()
 
