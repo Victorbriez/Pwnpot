@@ -126,7 +126,7 @@ export const ctfs: Ctf[] = [
   ctf({
     id: 4,
     title: "Slot Machine",
-    organizer: "0x2a8e6c4b0d9f1e3a5c7b9d1f3e5a7c9b1d3f5c77",
+    organizer: "0x4ce2a9b7d3f1e5c8a6b4d2f0e8c6a4b2d0f8aa19",
     challenges: 1,
     cashPrize: "0.6",
     ticketPrice: "0.005",
