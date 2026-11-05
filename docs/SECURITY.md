@@ -38,7 +38,8 @@ Ce document liste ce qu'un attaquant peut tenter contre Pwnpot, ce qui l'en emp�
 | Publier une épreuve impossible pour garder les tickets | Aucune réussite = tickets remboursés | Il récupère seulement sa mise de départ |
 | Factory truquée (validation refusée à certains joueurs, porte dérobée) | Code vérifié et auditable avant paiement, `codehash` enregistré, litige | Oui, contre les joueurs qui ne lisent pas le code ; c'est contestable |
 | Fuiter la solution à un complice | Caution brûlée si la triche est reconnue en litige | **Oui** : ce n'est pas prouvable on-chain (voir les limites) |
-| Acheter des tickets pour bloquer un vote | Vote pondéré par ticket, donc coûteux. Appel à l'arbitre | Il paie les tickets, et l'appel le contourne |
+| Inscrire des complices pour bloquer un vote | Un ticket par adresse, prix minimum de 0.0001 ETH : chaque voix coûte un ticket. Appel à l'arbitre | Il paie les tickets, et l'appel le contourne |
+| Laisser sa factory à sec pour bloquer les nouveaux joueurs | `createInstance` revert proprement | Oui, mais c'est contestable par litige |
 
 ### Joueur malveillant
 
@@ -50,7 +51,7 @@ Ce document liste ce qu'un attaquant peut tenter contre Pwnpot, ce qui l'en emp�
 | Copier l'exploit d'un autre | Rien : la chaîne est publique | **Oui**, mais il arrive plus tard au classement |
 | Réentrance sur `withdraw` | Solde remis à zéro avant le `call`, `nonReentrant` | Non |
 | Contester par frustration | Caution de contestation perdue, versée à l'organisateur | Coûteux |
-| Plusieurs comptes pour peser dans le vote | Chaque compte doit payer un ticket. Appel à l'arbitre | Coûteux, et corrigé par l'appel |
+| Plusieurs comptes pour peser dans le vote | Un ticket par adresse, au moins 0.0001 ETH chacun. Appel à l'arbitre | Coûteux, et corrigé par l'appel |
 
 ### Factory malveillante (code tiers appelé par la plateforme)
 
@@ -97,10 +98,12 @@ Ces propriétés doivent être vraies à tout moment. Ce sont les cibles des tes
 ## Limites connues et assumées
 
 - **La fuite de solution n'est pas prouvable.** Un organisateur qui donne la solution à un complice avant le CTF ne laisse aucune trace on-chain. Le design la rend **coûteuse** (caution) et **contestable** (litige), mais pas impossible.
-- **Le vote des joueurs n'est pas neutre.** Les perdants ont intérêt à voter « triche ». L'appel corrige ce biais, mais un organisateur honnête doit alors payer les frais d'arbitrage pour être blanchi.
+- **Le vote des joueurs n'est pas neutre.** Les perdants ont intérêt à voter « triche ». L'appel corrige ce biais : un organisateur honnête doit avancer les frais d'arbitrage, qui lui sont remboursés s'il gagne (plafonnés à la caution de contestation).
 - **L'arbitre est trusted en appel.** Il est choisi au déploiement : c'est le seul choix du déployeur qui pèse sur les litiges. En démo, `MockArbitrator` est contrôlé par l'équipe. Il faut le dire explicitement au jury.
 - **Les factories sont du code tiers.** La plateforme isole leur exécution, mais ne peut pas juger si une épreuve est « honnête ». C'est au joueur de lire le code vérifié.
 - **Un exploit est copiable** une fois publié sur la chaîne. Le classement au temps limite l'intérêt de copier.
+- **Le podium réduit l'intérêt de copier, mais ne le supprime pas.** Un copieur rapide peut finir 2e ou 3e et toucher une part de la cagnotte.
+- **Le gas n'est pas remboursé** en cas de triche confirmée. Les joueurs récupèrent leur ticket, pas le gas dépensé.
 
 ---
 

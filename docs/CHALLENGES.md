@@ -78,13 +78,18 @@ contract Vault {
 }
 ```
 
-**Condition de réussite.** `address(instance).balance == 0`
+**Condition de réussite.** `initialBalance > 0 && address(instance).balance == 0`, où `initialBalance` est le solde enregistré par l'instance à sa création.
 
 **Exploit attendu.** Le joueur déploie un contrat d'attaque, fait un petit dépôt, puis appelle `withdraw`. Son `receive()` rappelle `withdraw` tant que le coffre n'est pas vide.
 
 **Ce que ça enseigne.** Checks-effects-interactions, et pourquoi `CTFPlatform` remet les soldes à zéro avant de payer (voir [SECURITY.md](SECURITY.md)).
 
-**Point de conception.** Chaque instance démarre avec un petit solde (par exemple 0.0001 ETH) fourni par la factory, que l'organisateur alimente à la création du CTF. Le montant exact reste *à trancher*.
+**Point de conception.** Le solde des coffres est géré par la factory, pas par `CTFPlatform`, qui reste générique.
+
+- L'organisateur **alimente sa factory** avec `maxPlayers × 0.0001 ETH`. Chaque instance démarre avec 0.0001 ETH.
+- `createInstance` **revert** si la factory ne peut plus alimenter une nouvelle instance.
+- L'instance **enregistre son solde initial**. La condition de réussite devient « solde initial > 0 **et** solde actuel == 0 ». Sans ça, un coffre jamais alimenté serait « résolu » sans exploit.
+- Ce que le joueur vide, il le garde. Après le CTF, l'organisateur récupère le reste via une fonction de la factory.
 
 ---
 
