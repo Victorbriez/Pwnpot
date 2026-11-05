@@ -138,6 +138,12 @@ export default function HomePage() {
               Personne ne reçoit de virement : chacun voit son solde crédité et
               le retire lui-même.
             </p>
+            <Link
+              href="/docs"
+              className="text-sm font-medium underline underline-offset-4"
+            >
+              Lire toutes les règles
+            </Link>
           </div>
           <Settlement />
         </div>

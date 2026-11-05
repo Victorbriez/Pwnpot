@@ -31,7 +31,7 @@ export default function ExplorePage() {
         actions={
           <>
             <Link
-              href="/#comment-ca-marche"
+              href="/docs"
               className={buttonVariants({ variant: "outline", size: "lg" })}
             >
               Comment ça marche
