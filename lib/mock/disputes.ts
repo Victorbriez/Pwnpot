@@ -40,3 +40,22 @@ export function initialDispute(ctf: Ctf): DisputeState | undefined {
       return undefined
   }
 }
+
+/** CTF qui ont un litige ou une fenêtre de contestation, avec son état. */
+export function disputeRows(list: Ctf[]) {
+  return list.flatMap((ctf) => {
+    const dispute = initialDispute(ctf)
+    return dispute ? [{ ctf, dispute }] : []
+  })
+}
+
+export type DisputeRow = ReturnType<typeof disputeRows>[number]
+
+/** Litige ouvert : vote, fenêtre d'appel ou appel chez l'arbitre. */
+export function isDisputeInProgress({ dispute }: DisputeRow) {
+  return (
+    dispute.phase === "voting" ||
+    dispute.phase === "appealWindow" ||
+    dispute.phase === "appealed"
+  )
+}
