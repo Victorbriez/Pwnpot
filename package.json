@@ -13,7 +13,7 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "contracts:build": "pnpm --filter @pwnpot/contracts build",
     "contracts:test": "pnpm --filter @pwnpot/contracts test",
     "contracts:typecheck": "pnpm --filter @pwnpot/contracts typecheck"
