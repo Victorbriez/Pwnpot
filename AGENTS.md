@@ -80,9 +80,22 @@ pnpm format               # Prettier
 pnpm contracts:build      # compile les contrats
 pnpm contracts:test       # tests Solidity + TypeScript
 pnpm contracts:typecheck  # compile puis tsc des tests/scripts Hardhat
+pnpm chain                # nœud Hardhat local (chain id 84532, comme Base Sepolia)
+pnpm chain:deploy         # déploie CTFPlatform + TestLevel en local, 2 CTF d'exemple, écrit .env.local
+ADVANCE=7200 pnpm chain:time  # avance l'horloge du nœud local (en secondes)
 ```
 
 Avant de considérer une tâche finie : `pnpm lint` et `pnpm typecheck` passent, plus `pnpm contracts:test` si un contrat a changé.
+
+### Développement local
+
+Le nœud local reprend l'identifiant de Base Sepolia (84532) : le front marche sans toucher à la config wagmi, seul le RPC change (`.env.local`).
+
+1. `pnpm chain` dans un terminal, `pnpm chain:deploy` dans un autre, puis relancer `pnpm dev`.
+2. Dans le wallet, ajouter un réseau « Pwnpot local » : RPC `http://127.0.0.1:8545`, chain id `84532`. Importer une clé de test affichée par `pnpm chain` (#2 alice : sans ticket ; #3 bob : ticket dans le CTF 0 ; #1 : organisateur).
+3. Le nœud repart de zéro à chaque redémarrage (mêmes adresses de contrats). Relancer `pnpm chain:deploy` et vider l'activité du compte dans le wallet (nonce).
+4. Les liens vers l'explorer ne marchent pas en local. Vider `.env.local` pour revenir au mode démo.
+5. En local, la contestation dure 10 min au lieu de 48 h. Ne jamais lancer ces scripts sur Base Sepolia : ils refusent tout réseau autre que `localhost`.
 
 ## Secrets
 
