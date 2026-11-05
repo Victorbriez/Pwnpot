@@ -41,3 +41,20 @@ export function gainLines(
       })),
   ]
 }
+
+/**
+ * Parts du podium sur (cash prize + tickets) : 60 / 30 / 10 % à 3 gagnants,
+ * 67 / 33 % à 2, tout à 1. Les parts du 2e et du 3e sont calculées d'abord,
+ * le reste (arrondis compris) va au 1er : aucun wei ne reste bloqué.
+ */
+export function podiumShares(pot: bigint, winners: number): bigint[] {
+  if (winners <= 0) return []
+  if (winners === 1) return [pot]
+  if (winners === 2) {
+    const second = (pot * BigInt(33)) / BigInt(100)
+    return [pot - second, second]
+  }
+  const second = (pot * BigInt(30)) / BigInt(100)
+  const third = (pot * BigInt(10)) / BigInt(100)
+  return [pot - second - third, second, third]
+}

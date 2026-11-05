@@ -195,44 +195,41 @@ function MobileNav({
   badges: Badges
   onNavigate: () => void
 }) {
-  const links = appNav.filter((entry): entry is NavLink => !isGroup(entry))
-  const groups = appNav.filter(isGroup)
+  // Même ordre que la barre : un lien seul, ou une section titrée par groupe.
   return (
     <nav
       aria-label="Navigation mobile"
-      className="flex flex-col gap-4 px-4 text-base font-medium"
+      className="flex flex-col gap-3 px-4 text-base font-medium"
     >
-      <ul className="flex flex-col">
-        {links.map((link) => (
-          <li key={link.href}>
-            <MobileLink
-              link={link}
-              active={isActive(pathname, link.href)}
-              onNavigate={onNavigate}
-            />
-          </li>
-        ))}
-      </ul>
-      {groups.map((group) => (
-        <div key={group.label} className="flex flex-col gap-1">
-          <Separator className="mb-3" />
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            {group.label}
-          </p>
-          <ul className="flex flex-col">
-            {group.links.map((link) => (
-              <li key={link.href}>
-                <MobileLink
-                  link={link}
-                  active={isActive(pathname, link.href, group.links)}
-                  onNavigate={onNavigate}
-                  badge={badgeOf(link, badges)}
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+      {appNav.map((entry) =>
+        isGroup(entry) ? (
+          <div key={entry.label} className="flex flex-col gap-1">
+            <Separator className="mb-2" />
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              {entry.label}
+            </p>
+            <ul className="flex flex-col">
+              {entry.links.map((link) => (
+                <li key={link.href}>
+                  <MobileLink
+                    link={link}
+                    active={isActive(pathname, link.href, entry.links)}
+                    onNavigate={onNavigate}
+                    badge={badgeOf(link, badges)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <MobileLink
+            key={entry.href}
+            link={entry}
+            active={isActive(pathname, entry.href)}
+            onNavigate={onNavigate}
+          />
+        )
+      )}
     </nav>
   )
 }
