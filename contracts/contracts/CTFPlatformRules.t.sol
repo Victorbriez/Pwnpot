@@ -192,6 +192,40 @@ contract CTFPlatformRulesTest is CTFPlatformBase {
         platform.createCTF{value: CASH_PRIZE + BOND}(p, factories);
     }
 
+    function test_CreateCTF_AcceptsTenLevels() public {
+        uint256 id = _createCTF(10);
+        assertEq(platform.getLevels(id).length, 10);
+    }
+
+    function test_CreateCTF_RevertsWithElevenLevels() public {
+        ICTFPlatform.CTFParams memory p = _params();
+        address[] memory factories = _factories(11);
+        vm.prank(organizer);
+        vm.expectRevert(ICTFPlatform.TooManyLevels.selector);
+        platform.createCTF{value: CASH_PRIZE + BOND}(p, factories);
+    }
+
+    function _title(uint256 length) internal pure returns (string memory) {
+        bytes memory b = new bytes(length);
+        for (uint256 i = 0; i < length; ++i) {
+            b[i] = "a";
+        }
+        return string(b);
+    }
+
+    function test_CreateCTF_AcceptsHundredByteTitle() public {
+        ICTFPlatform.CTFParams memory p = _params();
+        p.title = _title(100);
+        uint256 id = _createCTF(p, 1);
+        assertEq(bytes(platform.getCTF(id).title).length, 100);
+    }
+
+    function test_CreateCTF_RevertsWhenTitleTooLong() public {
+        ICTFPlatform.CTFParams memory p = _params();
+        p.title = _title(101);
+        _expectCreateRevert(p, abi.encodeWithSelector(ICTFPlatform.TitleTooLong.selector));
+    }
+
     // ------------------------------------------------------------------
     // CTF inconnu
     // ------------------------------------------------------------------
@@ -216,6 +250,18 @@ contract CTFPlatformRulesTest is CTFPlatformBase {
         vm.prank(alice);
         vm.expectRevert(ICTFPlatform.AlreadyHasTicket.selector);
         platform.buyTicket{value: TICKET}(id);
+    }
+
+    function test_BuyTicket_RevertsForOrganizer() public {
+        uint256 id = _createCTF(1);
+        vm.prank(organizer);
+        vm.expectRevert(ICTFPlatform.OrganizerCannotPlay.selector);
+        platform.buyTicket{value: TICKET}(id);
+        _toRunning(id);
+        vm.prank(organizer);
+        vm.expectRevert(ICTFPlatform.OrganizerCannotPlay.selector);
+        platform.buyTicket{value: TICKET}(id);
+        assertFalse(platform.getPlayer(id, organizer).hasTicket);
     }
 
     function test_BuyTicket_RevertsOnWrongPrice() public {
