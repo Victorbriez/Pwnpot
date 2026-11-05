@@ -28,6 +28,13 @@ export default defineConfig({
       type: "edr-simulated",
       chainType: "op",
     },
+    // Local node started by `pnpm chain` (chain id 84532, like Base Sepolia,
+    // so the frontend works without changing its wagmi config).
+    localhost: {
+      type: "http",
+      chainType: "op",
+      url: "http://127.0.0.1:8545",
+    },
     // Secrets come from the Hardhat keystore:
     //   pnpm hardhat keystore set BASE_SEPOLIA_RPC_URL
     //   pnpm hardhat keystore set BASE_SEPOLIA_PRIVATE_KEY

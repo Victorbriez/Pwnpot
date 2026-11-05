@@ -16,7 +16,12 @@
     "typecheck": "next typegen && tsc --noEmit",
     "contracts:build": "pnpm --filter @pwnpot/contracts build",
     "contracts:test": "pnpm --filter @pwnpot/contracts test",
-    "contracts:typecheck": "pnpm --filter @pwnpot/contracts typecheck"
+    "contracts:typecheck": "pnpm --filter @pwnpot/contracts typecheck",
+    "abi": "pnpm contracts:build && node contracts/scripts/export-abi.ts && prettier --write lib/onchain/ctf-platform-abi.ts",
+    "chain": "pnpm --filter @pwnpot/contracts exec hardhat node --chain-id 84532 --chain-type op",
+    "chain:deploy": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-deploy.ts --network localhost",
+    "chain:time": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-time.ts --network localhost",
+    "chain:solve": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-solve.ts --network localhost"
   },
   "dependencies": {
     "@base-org/account": "^2.6.0",

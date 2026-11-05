@@ -58,6 +58,11 @@ lib/mock/                      données fictives en attendant CTFPlatform
 - Montants en `bigint` (wei) jusqu'à l'affichage ; formater avec `formatEther` / `formatUnits`.
 - Une seule config wagmi : `wagmiConfig` dans `lib/onchain/wagmi.ts`, typée via `Register`. Ne pas en créer d'autre.
 - `@base-org/account` est exclu du bundle serveur (`serverExternalPackages` dans `next.config.ts`) : ne pas retirer cette ligne, le build casse sinon.
+- **Mode démo / mode contrat** : sans `NEXT_PUBLIC_CTF_PLATFORM_ADDRESS`, les hooks renvoient les mocks de `lib/mock/` et les transactions sont simulées ; avec, tout est lu dans le contrat. Les composants passent par les hooks (`useCtfs`, `useCtf`, `useCtfPlay`, `useMyCtfs`, `useWithdrawals`) ; seuls les graphiques d'Explorer et les litiges lisent les mocks directement, et ne s'affichent qu'en démo.
+- ABI : `lib/onchain/ctf-platform-abi.ts` est généré (`pnpm abi`), ne pas l'écrire à la main. La CI échoue s'il n'est pas à jour.
+- Events : `usePlatformEvents(nom, args)` lit depuis `NEXT_PUBLIC_CTF_PLATFORM_DEPLOY_BLOCK`. Types partagés dans `lib/ctf/types.ts`, conversion contrat → `Ctf` dans `lib/onchain/mappers.ts`.
+- Après une transaction confirmée, `usePlatformTx` invalide toutes les requêtes : pas de mise à jour manuelle de l'état.
+- Litiges : pas encore dans le contrat, donc démo seulement (état vide « bientôt » en mode contrat).
 
 ## Contrats
 
@@ -80,9 +85,24 @@ pnpm format               # Prettier
 pnpm contracts:build      # compile les contrats
 pnpm contracts:test       # tests Solidity + TypeScript
 pnpm contracts:typecheck  # compile puis tsc des tests/scripts Hardhat
+pnpm abi                  # recopie l'ABI de CTFPlatform dans lib/onchain/ (après un changement du contrat)
+pnpm chain                # nœud Hardhat local (chain id 84532, comme Base Sepolia)
+pnpm chain:deploy         # déploie CTFPlatform + TestLevel en local, 2 CTF d'exemple, écrit .env.local
+ADVANCE=7200 pnpm chain:time  # avance l'horloge du nœud local (en secondes)
+PLAYER=2 CTF=0 LEVEL=0 pnpm chain:solve  # résout l'instance de test d'un joueur (« exploit » de TestLevel)
 ```
 
 Avant de considérer une tâche finie : `pnpm lint` et `pnpm typecheck` passent, plus `pnpm contracts:test` si un contrat a changé.
+
+### Développement local
+
+Le nœud local reprend l'identifiant de Base Sepolia (84532) : le front marche sans toucher à la config wagmi, seul le RPC change (`.env.local`).
+
+1. `pnpm chain` dans un terminal, `pnpm chain:deploy` dans un autre, puis relancer `pnpm dev`.
+2. Dans le wallet, ajouter un réseau « Pwnpot local » : RPC `http://127.0.0.1:8545`, chain id `84532`. Importer une clé de test affichée par `pnpm chain` (#2 alice : sans ticket ; #3 bob : ticket dans le CTF 0 ; #1 : organisateur).
+3. Le nœud repart de zéro à chaque redémarrage (mêmes adresses de contrats). Relancer `pnpm chain:deploy` et vider l'activité du compte dans le wallet (nonce).
+4. Les liens vers l'explorer ne marchent pas en local. Vider `.env.local` pour revenir au mode démo.
+5. En local, la contestation dure 10 min au lieu de 48 h. Ne jamais lancer ces scripts sur Base Sepolia : ils refusent tout réseau autre que `localhost`.
 
 ## Secrets
 
