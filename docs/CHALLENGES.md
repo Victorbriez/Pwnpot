@@ -83,13 +83,18 @@ contract Vault {
 }
 ```
 
-**Condition de réussite.** `address(instance).balance == 0`
+**Condition de réussite.** `initialBalance > 0 && address(instance).balance == 0`, où `initialBalance` est le solde enregistré par l'instance à sa création.
 
 **Exploit attendu.** Le joueur déploie un contrat d'attaque, fait un petit dépôt, puis appelle `withdraw`. Son `receive()` rappelle `withdraw` tant que le coffre n'est pas vide.
 
 **Ce que ça enseigne.** Checks-effects-interactions, et pourquoi `CTFPlatform` remet les soldes à zéro avant de payer (voir [SECURITY.md](SECURITY.md)).
 
-**Point de conception.** Chaque coffre démarre avec `seed` wei, pris sur le solde de la factory. L'organisateur alimente la factory en lui envoyant de l'ETH ; sans fonds, `createInstance` échoue avec `InsufficientFunds`. `seed` est un paramètre de déploiement (0.0001 ETH par défaut) : le montant définitif reste *à trancher* (décision n° 8), mais il ne demandera pas de changer le code. La factory n'a aucune fonction de retrait, puisqu'il n'y a pas d'admin : l'ETH non utilisé y reste.
+**Point de conception.** Le solde des coffres est géré par la factory, pas par `CTFPlatform`, qui reste générique.
+
+- L'organisateur **alimente sa factory** avec `maxPlayers × 0.0001 ETH`. Chaque instance démarre avec `seed` wei (paramètre de déploiement, 0.0001 ETH par défaut).
+- `createInstance` **revert** (`InsufficientFunds`) si la factory ne peut plus alimenter une nouvelle instance.
+- La condition de réussite est « solde initial > 0 **et** solde actuel == 0 ». Sans ça, un coffre jamais alimenté serait « résolu » sans exploit. Dans le code, le solde initial est garanti par construction : la factory refuse `seed == 0` et finance chaque coffre à sa création.
+- Ce que le joueur vide, il le garde. Après le CTF, l'organisateur récupère le reste via une fonction de la factory _(pas encore implémentée dans `VaultFactory`)_.
 
 **Exploit fourni.** [`VaultAttack`](../contracts/contracts/exploits/VaultAttack.sol) : `run()` avec une valeur égale au solde du coffre, le butin revient au joueur.
 
@@ -153,7 +158,7 @@ contract CodeSafe {
 ## Ajouter une épreuve
 
 1. Écrire le contrat vulnérable et sa factory dans `contracts/contracts/levels/`, la factory héritant de `Level` (qui implémente `ILevel`) : il reste à écrire `_deploy` et `_isSolved`.
-2. `validateInstance` doit être **`view`** et rester **sous la limite de gaz** de la plateforme (300 000 *(proposé)*).
+2. `validateInstance` doit être **`view`** et rester **sous la limite de gaz** de la plateforme (300 000 _(proposé)_).
 3. Écrire un **test d'exploit** dans `contracts/test/levels/` (TypeScript, joué comme un joueur) et un test unitaire `levels/<Épreuve>.t.sol` (Solidity, avec fuzz et mesure du gaz), qui :
    - crée une instance ;
    - vérifie que `validateInstance` renvoie `false` ;
