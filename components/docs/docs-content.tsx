@@ -47,7 +47,7 @@ import {
   totalValue,
 } from "@/lib/ctf/params"
 import { formatEth } from "@/lib/format"
-import type { Vuln } from "@/lib/mock/explore"
+import { type Vuln } from "@/lib/ctf/types"
 import { StepList, type Step } from "@/components/site/step-list"
 import { TextLink } from "@/components/site/text-link"
 

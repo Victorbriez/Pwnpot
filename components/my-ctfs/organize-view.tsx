@@ -23,7 +23,7 @@ import { SectionHeading } from "@/components/site/page-header"
 import { useMyCtfs } from "@/hooks/use-my-ctfs"
 import { organizerNextStep } from "@/lib/ctf/next-step"
 import { formatEth, formatInt } from "@/lib/format"
-import type { MyOrganized } from "@/lib/mock/my-ctfs"
+import type { MyOrganized } from "@/lib/ctf/types"
 
 /** Les CTF publiés par l'adresse connectée. */
 export function OrganizeView() {

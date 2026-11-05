@@ -16,7 +16,8 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import { formatInt } from "@/lib/format"
-import { vulnBreakdown, vulnLabels } from "@/lib/mock/explore"
+import { vulnLabels } from "@/lib/ctf/types"
+import { vulnBreakdown } from "@/lib/mock/explore"
 
 const chartConfig = {
   solved: { label: "Résolues" },

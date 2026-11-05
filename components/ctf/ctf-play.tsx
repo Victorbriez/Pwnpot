@@ -1,22 +1,23 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import {
   ArrowDownToLineIcon,
   BoxIcon,
   CircleCheckIcon,
+  FlagIcon,
+  SearchXIcon,
   ShieldCheckIcon,
   TicketIcon,
   TrophyIcon,
 } from "lucide-react"
-import { parseEventLogs, type Address, type TransactionReceipt } from "viem"
 import { baseSepolia } from "viem/chains"
 
 import { remainingLabel } from "@/components/ctf/ctf-card"
 import { StatusPill } from "@/components/ctf/status-pill"
 import { VulnTag } from "@/components/ctf/vuln-tag"
-import { DisputeCard, type Role } from "@/components/dispute/dispute-card"
+import { DisputeCard } from "@/components/dispute/dispute-card"
+import { ChainError, ChainLoading } from "@/components/onchain/chain-state"
 import { TxStatusAlert } from "@/components/onchain/tx-status"
 import { AddressDisplay } from "@/components/ui/address-display"
 import { Badge } from "@/components/ui/badge"
@@ -57,19 +58,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { DataList, DataRow } from "@/components/site/data-list"
-import { useDispute } from "@/hooks/use-dispute"
-import { usePlatformTx } from "@/hooks/use-platform-tx"
-import { playerNextStep, organizerNextStep } from "@/lib/ctf/next-step"
+import {
+  useCtfPlay,
+  type CtfPlayModel,
+  type PlayAction,
+} from "@/hooks/use-ctf-play"
 import { formatEth, formatInt, formatRemaining } from "@/lib/format"
-import { ctfChallenges, leaderboard, withMyScore } from "@/lib/mock/ctf-detail"
-import { ctfs, type Ctf } from "@/lib/mock/explore"
-import { myOrganized, myParticipations } from "@/lib/mock/my-ctfs"
-import { ctfPlatformAbi } from "@/lib/onchain/ctf-platform"
 import { truncateAddress } from "@/lib/onchain/format"
 import { cn } from "@/lib/utils"
-
-type Action =
-  { kind: "ticket" } | { kind: "instance" | "submit"; level: number }
 
 const toneVariant = {
   neutral: "muted",
@@ -78,127 +74,72 @@ const toneVariant = {
   money: "success",
 } as const
 
-/** Podium 60 / 30 / 10 % ; les arrondis vont au 1er (docs/DESIGN.md). */
-function podiumShares(pool: bigint) {
-  const second = (pool * BigInt(30)) / BigInt(100)
-  const third = (pool * BigInt(10)) / BigInt(100)
-  return [pool - second - third, second, third]
-}
-
-function demoInstance(ctfId: number, level: number): Address {
-  return `0x${`${ctfId}${level}`.padStart(4, "0").repeat(10)}`
-}
-
 export function CtfPlay({ ctfId }: { ctfId: number }) {
-  const ctf = ctfs.find((item) => item.id === ctfId) as Ctf
-  const participation = myParticipations.find((p) => p.ctf.id === ctfId)
-  const organized = myOrganized.find((o) => o.ctf.id === ctfId)
-  const challenges = ctfChallenges(ctf)
-  const tx = usePlatformTx()
+  const state = useCtfPlay(ctfId)
+  if (state.status === "loading") return <ChainLoading />
+  if (state.status === "error") return <ChainError error={state.error} />
+  if (state.status === "missing")
+    return (
+      <Empty className="border border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <SearchXIcon />
+          </EmptyMedia>
+          <EmptyTitle>Ce CTF n&apos;existe pas</EmptyTitle>
+          <EmptyDescription>
+            Aucun CTF ne porte ce numéro sur le contrat.{" "}
+            <Link href="/explore" className="underline underline-offset-4">
+              Voir tous les CTF
+            </Link>
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    )
+  return <CtfPlayView model={state.model} />
+}
 
-  const [hasTicket, setHasTicket] = useState(participation !== undefined)
-  const [solved, setSolved] = useState<number[]>(
-    Array.from({ length: participation?.solved ?? 0 }, (_, i) => i)
-  )
-  const [instances, setInstances] = useState<Record<number, Address>>({})
-  const [players, setPlayers] = useState(ctf.players)
-  const [action, setAction] = useState<Action>()
-  // En démo, on peut jouer le litige d'un côté ou de l'autre.
-  const [role, setRole] = useState<Role>(organized ? "organizer" : "player")
-  const isOrganizer = role === "organizer"
-  const playerHas = !isOrganizer && hasTicket
-
-  const dispute = useDispute(ctf, tx, {
+function CtfPlayView({ model }: { model: CtfPlayModel }) {
+  const {
+    ctf: live,
+    challenges,
+    players,
+    pool,
+    shares,
+    board,
+    myRank,
+    solvedCount,
     hasTicket: playerHas,
     isOrganizer,
-  })
-  // Le litige fait avancer la phase : on affiche l'état à jour.
-  const live: Ctf = dispute
-    ? { ...ctf, status: dispute.status, remaining: dispute.state.remaining }
-    : ctf
-
-  const board = withMyScore(leaderboard(ctf), {
-    score: solved.length,
-    rank: participation?.rank ?? null,
-  })
-  const myRank = board.find((entry) => entry.isMe)?.rank ?? null
+    role,
+    dispute,
+    step,
+    canBuy,
+    canFinalize,
+    canRefund,
+    needsWallet,
+    tx,
+    action,
+  } = model
+  const ctf = live
   const busy = tx.status === "signing" || tx.status === "confirming"
   const playing = live.status === "running"
-  const canBuy =
-    (live.status === "open" || live.status === "running") &&
-    players < ctf.maxPlayers
-  const pool = ctf.cashPrize + ctf.ticketPrice * BigInt(players)
-  const shares = podiumShares(pool)
 
-  const step = isOrganizer
-    ? organizerNextStep({ ctf: live, owed: organized?.owed ?? BigInt(0) })
-    : playerNextStep({
-        ctf: live,
-        solved: solved.length,
-        rank: myRank,
-        voted: dispute?.state.myVote !== undefined,
-        owed: participation?.owed ?? BigInt(0),
-      })
-
-  const buyTicket = () => {
-    setAction({ kind: "ticket" })
-    tx.send(
-      {
-        functionName: "buyTicket",
-        args: [BigInt(ctf.id)],
-        value: ctf.ticketPrice,
-      },
-      {
-        onSuccess: () => {
-          setHasTicket(true)
-          setPlayers((n) => n + 1)
-        },
-      }
-    )
-  }
-
-  const createInstance = (level: number) => {
-    setAction({ kind: "instance", level })
-    tx.send(
-      { functionName: "createInstance", args: [BigInt(ctf.id), BigInt(level)] },
-      {
-        onSuccess: (receipt?: TransactionReceipt) => {
-          const instance = receipt
-            ? parseEventLogs({
-                abi: ctfPlatformAbi,
-                eventName: "InstanceCreated",
-                logs: receipt.logs,
-              })[0]?.args.instance
-            : demoInstance(ctf.id, level)
-          if (instance) setInstances((prev) => ({ ...prev, [level]: instance }))
-        },
-      }
-    )
-  }
-
-  const submit = (level: number) => {
-    setAction({ kind: "submit", level })
-    tx.send(
-      { functionName: "submit", args: [BigInt(ctf.id), BigInt(level)] },
-      { onSuccess: () => setSolved((prev) => [...prev, level]) }
-    )
-  }
-
-  const pendingOn = (kind: Action["kind"], level?: number) =>
+  const pendingOn = (kind: PlayAction["kind"], level?: number) =>
     busy &&
     action?.kind === kind &&
-    (level === undefined ||
-      (action.kind !== "ticket" && action.level === level))
+    (level === undefined || ("level" in action && action.level === level))
 
-  const lockedReason = !playerHas
-    ? isOrganizer
-      ? "Tu organises ce CTF."
-      : "Achète un ticket pour jouer."
-    : live.status === "open"
-      ? `Les épreuves ouvrent dans ${formatRemaining(live.remaining)}.`
-      : !playing
-        ? "Le CTF est terminé : plus de soumission possible."
-        : undefined
+  const lockedReason = needsWallet
+    ? "Connecte ton wallet pour jouer."
+    : !playerHas
+      ? isOrganizer
+        ? "Tu organises ce CTF."
+        : "Achète un ticket pour jouer."
+      : live.status === "open"
+        ? `Les épreuves ouvrent dans ${formatRemaining(live.remaining)}.`
+        : !playing
+          ? "Le CTF est terminé : plus de soumission possible."
+          : undefined
 
   return (
     <div className="flex flex-col gap-6">
@@ -210,15 +151,39 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex flex-col gap-6">
-          {dispute && (
+          {dispute && role && (
             <DisputeCard
               dispute={dispute}
               tickets={players}
               busy={busy}
               isDemo={tx.isDemo}
-              role={role}
-              onRoleChange={setRole}
+              role={role.value}
+              onRoleChange={role.set}
             />
+          )}
+          {!tx.isDemo && live.status === "contestation" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Contestation</CardTitle>
+                <CardDescription>
+                  {live.remaining > 0
+                    ? `Fenêtre de contestation ouverte encore ${formatRemaining(live.remaining)}. L'ouverture d'un litige arrive avec la prochaine version du contrat.`
+                    : "La fenêtre de contestation est passée : n'importe qui peut finaliser le CTF."}
+                </CardDescription>
+              </CardHeader>
+              {canFinalize && (
+                <CardFooter>
+                  <Button disabled={busy} onClick={model.finalize}>
+                    {pendingOn("finalize") ? (
+                      <Spinner data-icon="inline-start" />
+                    ) : (
+                      <FlagIcon data-icon="inline-start" />
+                    )}
+                    Finaliser et répartir la cagnotte
+                  </Button>
+                </CardFooter>
+              )}
+            </Card>
           )}
           <Card>
             <CardHeader>
@@ -231,11 +196,11 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
             <CardContent>
               <ItemGroup className="gap-3">
                 {challenges.map((challenge, level) => {
-                  const done = solved.includes(level)
-                  const instance = instances[level]
+                  const done = challenge.done
+                  const instance = challenge.instance
                   return (
                     <Item
-                      key={challenge.id}
+                      key={challenge.key}
                       variant="outline"
                       className="gap-4"
                     >
@@ -249,7 +214,7 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
                       <ItemContent>
                         <ItemTitle>
                           {level + 1}. {challenge.name}
-                          <VulnTag vuln={challenge.vuln} />
+                          {challenge.vuln && <VulnTag vuln={challenge.vuln} />}
                         </ItemTitle>
                         <ItemDescription>
                           {done
@@ -267,7 +232,7 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
                             <Button
                               size="sm"
                               disabled={busy}
-                              onClick={() => submit(level)}
+                              onClick={() => model.submit(level)}
                             >
                               {pendingOn("submit", level) ? (
                                 <Spinner data-icon="inline-start" />
@@ -281,7 +246,7 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
                               size="sm"
                               variant="outline"
                               disabled={busy}
-                              onClick={() => createInstance(level)}
+                              onClick={() => model.createInstance(level)}
                             >
                               {pendingOn("instance", level) && (
                                 <Spinner data-icon="inline-start" />
@@ -437,7 +402,7 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
               ) : playerHas ? (
                 <DataList>
                   <DataRow label="Épreuves réussies">
-                    {solved.length} / {ctf.challenges}
+                    {solvedCount} / {ctf.challenges}
                   </DataRow>
                   <DataRow label="Rang">
                     {myRank !== null
@@ -459,13 +424,13 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
                 isDemo={tx.isDemo}
               />
             </CardContent>
-            {!isOrganizer && !playerHas && canBuy && (
+            {canBuy && !needsWallet && (
               <CardFooter>
                 <Button
                   size="lg"
                   className="w-full"
                   disabled={busy}
-                  onClick={buyTicket}
+                  onClick={model.buyTicket}
                 >
                   {pendingOn("ticket") ? (
                     <Spinner data-icon="inline-start" />
@@ -473,6 +438,23 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
                     <TicketIcon data-icon="inline-start" />
                   )}
                   Acheter un ticket · {formatEth(ctf.ticketPrice)}
+                </Button>
+              </CardFooter>
+            )}
+            {canRefund && (
+              <CardFooter>
+                <Button
+                  size="lg"
+                  className="w-full"
+                  disabled={busy}
+                  onClick={model.claimRefund}
+                >
+                  {pendingOn("refund") ? (
+                    <Spinner data-icon="inline-start" />
+                  ) : (
+                    <TicketIcon data-icon="inline-start" />
+                  )}
+                  Récupérer mon ticket · {formatEth(ctf.ticketPrice)}
                 </Button>
               </CardFooter>
             )}

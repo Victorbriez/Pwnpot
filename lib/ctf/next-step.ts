@@ -1,7 +1,7 @@
 // Ce que l'utilisateur doit faire ensuite sur un CTF, selon la phase
 // (docs/DESIGN.md, cycle de vie). Fonctions pures : la page n'affiche que du texte.
 import { formatEth, formatRemaining } from "@/lib/format"
-import type { MyOrganized, MyParticipation } from "@/lib/mock/my-ctfs"
+import type { MyOrganized, MyParticipation } from "@/lib/ctf/types"
 
 export type NextStep = {
   label: string
@@ -29,7 +29,9 @@ export function playerNextStep(p: MyParticipation): NextStep {
         : { label: `Tout est résolu · fin dans ${left}`, tone: "neutral" }
     }
     case "contestation":
-      return { label: `Contestation possible encore ${left}`, tone: "neutral" }
+      return ctf.remaining > 0
+        ? { label: `Contestation possible encore ${left}`, tone: "neutral" }
+        : { label: "Prêt à être finalisé", tone: "action" }
     case "voting":
       return p.voted
         ? { label: "Tu as voté", tone: "neutral" }
@@ -56,7 +58,9 @@ export function organizerNextStep(o: MyOrganized): NextStep {
     case "running":
       return { label: `Rien à faire · fin dans ${left}`, tone: "neutral" }
     case "contestation":
-      return { label: `Contestation possible encore ${left}`, tone: "neutral" }
+      return ctf.remaining > 0
+        ? { label: `Contestation possible encore ${left}`, tone: "neutral" }
+        : { label: "Prêt à être finalisé", tone: "action" }
     case "voting":
     case "appeal":
       return { label: "Litige en cours", tone: "warning" }

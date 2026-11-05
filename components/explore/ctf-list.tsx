@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/empty"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { SectionHeading } from "@/components/site/page-header"
-import { isClosed, type Ctf } from "@/lib/mock/explore"
+import { isClosed, type Ctf } from "@/lib/ctf/types"
 
 const filters = {
   all: { label: "Tous", test: () => true },
@@ -33,6 +33,11 @@ type Filter = keyof typeof filters
 export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
   const [filter, setFilter] = React.useState<Filter>("all")
   const visible = ctfs.filter(filters[filter].test)
+  // Le niveau n'existe qu'en démo : le contrat ne le stocke pas.
+  const hasLevels = ctfs.some((ctf) => ctf.level !== undefined)
+  const shown = Object.entries(filters).filter(
+    ([key]) => hasLevels || (key !== "beginner" && key !== "advanced")
+  )
 
   return (
     <section aria-labelledby="live-ctfs" className="flex flex-col gap-6">
@@ -50,7 +55,7 @@ export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
           aria-label="Filtrer les CTF"
           className="flex-wrap"
         >
-          {Object.entries(filters).map(([key, { label }]) => (
+          {shown.map(([key, { label }]) => (
             <ToggleGroupItem key={key} value={key}>
               {label}
             </ToggleGroupItem>

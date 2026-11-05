@@ -11,12 +11,7 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { truncateAddress } from "@/lib/onchain/format"
 import { formatEth, formatInt, formatRemaining } from "@/lib/format"
-import {
-  inDispute,
-  isClosed,
-  type Ctf,
-  type CtfStatus,
-} from "@/lib/mock/explore"
+import { inDispute, isClosed, type Ctf, type CtfStatus } from "@/lib/ctf/types"
 import { cn } from "@/lib/utils"
 
 const phasePrefix: Record<CtfStatus, string> = {

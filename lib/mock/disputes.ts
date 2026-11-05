@@ -3,7 +3,7 @@
 // - CTF 5 (Double Dip) : fenêtre de contestation ouverte, pas de litige ;
 // - CTF 6 (Hello Ethernaut) : finalisé sans litige.
 import type { DisputeState } from "@/lib/ctf/dispute"
-import type { Ctf } from "@/lib/mock/explore"
+import { type Ctf } from "@/lib/ctf/types"
 
 export function initialDispute(ctf: Ctf): DisputeState | undefined {
   const base = { remaining: ctf.remaining, cheatVotes: 0, fairVotes: 0 }
