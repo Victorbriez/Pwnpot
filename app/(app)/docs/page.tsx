@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
 
 import { DocsContent } from "@/components/docs/docs-content"
-import { DocsToc } from "@/components/docs/docs-toc"
+import { docSections } from "@/components/docs/doc-section"
 import { PageHeader, PageShell } from "@/components/site/page-header"
+import { PageToc } from "@/components/site/page-toc"
 
 export const metadata: Metadata = {
   title: "Documentation",
@@ -19,7 +20,7 @@ export default function DocsPage() {
       />
       <div className="grid gap-10 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-16">
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <DocsToc className="rounded-xl border p-4 lg:border-0 lg:p-0" />
+          <PageToc sections={docSections} />
         </aside>
         <DocsContent />
       </div>

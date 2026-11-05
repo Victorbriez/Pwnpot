@@ -1,5 +1,7 @@
 import Link from "next/link"
 
+import { PageToc, type TocSection } from "@/components/site/page-toc"
+
 /** Mise en page commune des pages juridiques (mentions légales, CGU). */
 export function LegalDoc({
   title,
@@ -9,37 +11,23 @@ export function LegalDoc({
 }: {
   title: string
   intro: React.ReactNode
-  sections: { id: string; label: string }[]
+  sections: TocSection[]
   children: React.ReactNode
 }) {
   return (
-    <div className="mx-auto grid w-full max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[14rem_minmax(0,42rem)] lg:gap-20 lg:px-12 lg:py-24">
-      <aside className="lg:sticky lg:top-24 lg:self-start">
-        <nav aria-label="Sur cette page" className="hidden lg:block">
-          <ul className="flex flex-col gap-2.5 text-sm">
-            {sections.map((section) => (
-              <li key={section.id}>
-                <a
-                  href={`#${section.id}`}
-                  className="text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {section.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
-
-      <article className="flex min-w-0 flex-col gap-10">
-        <header className="flex flex-col gap-3">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            {title}
-          </h1>
-          <div className="text-pretty text-muted-foreground">{intro}</div>
-        </header>
-        {children}
-      </article>
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-16 sm:px-6 lg:px-12 lg:py-24">
+      <header className="flex max-w-2xl flex-col gap-3 lg:ml-[calc(14rem+5rem)]">
+        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+          {title}
+        </h1>
+        <div className="text-pretty text-muted-foreground">{intro}</div>
+      </header>
+      <div className="grid gap-10 lg:grid-cols-[14rem_minmax(0,42rem)] lg:gap-20">
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <PageToc sections={sections} />
+        </aside>
+        <article className="flex min-w-0 flex-col gap-10">{children}</article>
+      </div>
     </div>
   )
 }
