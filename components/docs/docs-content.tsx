@@ -14,7 +14,14 @@ import {
 } from "@/components/docs/doc-section"
 import { DisputeFlow } from "@/components/landing/dispute-flow"
 import { Settlement } from "@/components/landing/settlement"
-import { Badge } from "@/components/ui/badge"
+import { VulnTag } from "@/components/ctf/vuln-tag"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -40,6 +47,8 @@ import {
   totalValue,
 } from "@/lib/ctf/params"
 import { formatEth } from "@/lib/format"
+import type { Vuln } from "@/lib/mock/explore"
+import { StepList, type Step } from "@/components/site/step-list"
 import { TextLink } from "@/components/site/text-link"
 
 const hours = (seconds: number) => `${seconds / 3_600} h`
@@ -80,6 +89,34 @@ const voteExample = { tickets: 20, cheat: 14, fair: 9 }
 const voteQuorum = quorum(voteExample.tickets)
 const voteTotal = voteExample.cheat + voteExample.fair
 const cheatShare = Math.round((voteExample.cheat / voteTotal) * 100)
+
+// Parcours d'un joueur, de l'achat du ticket au retrait.
+const playSteps: Step[] = [
+  {
+    title: "Acheter un ticket",
+    body: "Un seul par adresse, pendant que le CTF est ouvert ou en cours et tant qu'il reste des places.",
+    call: "buyTicket(ctfId)",
+  },
+  {
+    title: "Créer ton instance",
+    body: "Pour chaque épreuve, la factory déploie ta copie personnelle du contrat vulnérable. Personne d'autre ne peut la casser à ta place.",
+    call: "createInstance(ctfId, levelIndex)",
+  },
+  {
+    title: "Exploiter",
+    body: "Depuis ton wallet ou un contrat d'attaque, tu exploites la faille de ton instance.",
+  },
+  {
+    title: "Soumettre",
+    body: "La factory vérifie ton instance. Si c'est bon, tu marques 1 point, horodaté au bloc.",
+    call: "submit(ctfId, levelIndex)",
+  },
+  {
+    title: "Retirer",
+    body: "À la fin, ce qui t'est dû est crédité sur ton solde. Tu le retires depuis Mes gains.",
+    call: "withdraw()",
+  },
+]
 
 const lifecycle = [
   {
@@ -150,24 +187,30 @@ const outcomes = [
   },
 ]
 
-const challenges = [
+const challenges: {
+  name: string
+  vuln: Vuln
+  how: string
+  win: string
+  lesson: string
+}[] = [
   {
     name: "Coffre",
-    flaw: "Réentrance",
+    vuln: "reentrancy",
     how: "withdraw envoie l'ETH avant de remettre le solde à zéro.",
     win: "Le coffre de ton instance est vide (alors qu'il avait un solde au départ).",
     lesson: "Checks-Effects-Interactions.",
   },
   {
     name: "Usurpateur",
-    flaw: "tx.origin",
+    vuln: "tx-origin",
     how: "Le contrat authentifie le propriétaire avec tx.origin au lieu de msg.sender.",
     win: "Tu es devenu owner de ton instance.",
     lesson: "On authentifie toujours avec msg.sender.",
   },
   {
     name: "Coffre-fort à code",
-    flaw: "Storage private",
+    vuln: "storage",
     how: "Le mot de passe est en private, mais tout le storage reste lisible.",
     win: "Ton instance est déverrouillée.",
     lesson: "Il n'y a pas de secret sur une chaîne.",
@@ -342,51 +385,7 @@ export function DocsContent() {
         title="Jouer"
         lead="De l'achat du ticket au retrait des gains, en cinq étapes."
       >
-        <ol className="flex flex-col gap-3">
-          {[
-            [
-              "Acheter un ticket",
-              <>
-                Un seul par adresse (<Code>buyTicket</Code>), pendant que le CTF
-                est ouvert ou en cours et tant qu&apos;il reste des places.
-              </>,
-            ],
-            [
-              "Créer ton instance",
-              <>
-                Pour chaque épreuve, <Code>createInstance</Code> déploie ta
-                copie personnelle du contrat vulnérable. Personne d&apos;autre
-                ne peut la casser à ta place.
-              </>,
-            ],
-            [
-              "Exploiter",
-              "Depuis ton wallet ou un contrat d'attaque, tu exploites la faille de ton instance.",
-            ],
-            [
-              "Soumettre",
-              <>
-                <Code>submit</Code> demande à la factory de vérifier ton
-                instance. Si c&apos;est bon, tu marques 1 point, horodaté au
-                bloc.
-              </>,
-            ],
-            [
-              "Retirer",
-              "À la fin, ce qui t'est dû est crédité sur ton solde. Tu le retires depuis Mes gains.",
-            ],
-          ].map(([title, body], i) => (
-            <li key={i} className="flex gap-4">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full border font-mono text-sm tabular-nums">
-                {i + 1}
-              </span>
-              <div className="flex flex-col gap-1 pt-0.5">
-                <span className="font-medium">{title}</span>
-                <span className="leading-7 text-muted-foreground">{body}</span>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <StepList steps={playSteps} />
 
         <DocSubheading>Classement</DocSubheading>
         <DocList>
@@ -618,27 +617,28 @@ export function DocsContent() {
       >
         <div className="grid gap-4">
           {challenges.map((c, i) => (
-            <div
-              key={c.name}
-              className="flex flex-col gap-2 rounded-xl border p-5"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-sm text-muted-foreground tabular-nums">
-                  {i + 1}.
-                </span>
-                <span className="font-semibold">{c.name}</span>
-                <Badge variant="muted">{c.flaw}</Badge>
-              </div>
-              <DocText>{c.how}</DocText>
-              <p className="text-sm">
-                <span className="font-medium">Réussite :</span>{" "}
-                <span className="text-muted-foreground">{c.win}</span>
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">Ce que ça enseigne :</span>{" "}
-                <span className="text-muted-foreground">{c.lesson}</span>
-              </p>
-            </div>
+            <Card key={c.name}>
+              <CardHeader>
+                <CardTitle className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-muted-foreground tabular-nums">
+                    {i + 1}.
+                  </span>
+                  {c.name}
+                  <VulnTag vuln={c.vuln} />
+                </CardTitle>
+                <CardDescription>{c.how}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1.5 text-sm">
+                <p>
+                  <span className="font-medium">Réussite :</span>{" "}
+                  <span className="text-muted-foreground">{c.win}</span>
+                </p>
+                <p>
+                  <span className="font-medium">Ce que ça enseigne :</span>{" "}
+                  <span className="text-muted-foreground">{c.lesson}</span>
+                </p>
+              </CardContent>
+            </Card>
           ))}
         </div>
 

@@ -1,6 +1,7 @@
 import { LightbulbIcon } from "lucide-react"
 
 import { ProseSection } from "@/components/site/prose-section"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 /** Sections de la doc, dans l'ordre : sert au sommaire et aux ancres. */
@@ -65,15 +66,17 @@ export function DocExample({
   children: React.ReactNode
 }) {
   return (
-    <figure className="flex flex-col gap-3 rounded-xl border bg-muted/40 p-5">
-      <figcaption className="flex items-center gap-2 text-sm font-semibold">
-        <LightbulbIcon className="size-4 text-primary" aria-hidden />
-        Exemple · {title}
-      </figcaption>
-      <div className="flex flex-col gap-3 text-sm leading-6 text-muted-foreground">
+    <Card className="bg-muted/40">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <LightbulbIcon className="size-4 text-primary" aria-hidden />
+          Exemple · {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3 text-sm leading-6 text-muted-foreground">
         {children}
-      </div>
-    </figure>
+      </CardContent>
+    </Card>
   )
 }
 

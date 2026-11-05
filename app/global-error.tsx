@@ -2,6 +2,8 @@
 
 import "./globals.css"
 
+import { Button, buttonVariants } from "@/components/ui/button"
+
 // Filet de sécurité quand le layout racine lui-même plante : pas de thème, de
 // wallet ni de header, car leurs providers ne sont pas disponibles ici.
 export default function GlobalError({ retry }: { retry: () => void }) {
@@ -26,18 +28,14 @@ export default function GlobalError({ retry }: { retry: () => void }) {
             quelques minutes.
           </p>
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => retry()}
-              className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/80"
-            >
+            <Button type="button" size="lg" onClick={() => retry()}>
               Réessayer
-            </button>
+            </Button>
             {/* Lien natif : le routeur client n'est peut-être plus utilisable. */}
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/"
-              className="flex h-10 items-center rounded-lg border px-4 text-sm font-medium hover:bg-accent"
+              className={buttonVariants({ variant: "outline", size: "lg" })}
             >
               Retour à l&apos;accueil
             </a>
