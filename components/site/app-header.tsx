@@ -70,6 +70,11 @@ function NavItem({
   )
 }
 
+/** Actif sur la page et ses sous-pages (/ctf/3 n'est sous aucun lien). */
+function isActive(pathname: string, href: string) {
+  return href === "/" ? pathname === "/" : pathname.startsWith(href)
+}
+
 export function AppHeader() {
   const pathname = usePathname()
 
@@ -78,11 +83,11 @@ export function AppHeader() {
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-12">
         <Logo />
 
-        <nav aria-label="Navigation principale" className="hidden lg:block">
-          <ul className="flex items-center gap-7 text-sm font-medium">
+        <nav aria-label="Navigation principale" className="hidden xl:block">
+          <ul className="flex items-center gap-6 text-sm font-medium whitespace-nowrap">
             {appNav.map((link) => (
               <li key={link.href}>
-                <NavItem link={link} active={pathname === link.href} />
+                <NavItem link={link} active={isActive(pathname, link.href)} />
               </li>
             ))}
           </ul>
@@ -90,7 +95,7 @@ export function AppHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           <CtfSearch className="hidden md:inline-flex" />
-          <NetworkBadge className="hidden sm:inline-flex" />
+          <NetworkBadge className="hidden 2xl:inline-flex" />
           <ThemeToggle />
           <ConnectWallet label="Connecter" />
           <Sheet>
@@ -99,7 +104,7 @@ export function AppHeader() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="lg:hidden"
+                  className="xl:hidden"
                   aria-label="Ouvrir le menu"
                 />
               }
@@ -116,7 +121,7 @@ export function AppHeader() {
                     <li key={link.href}>
                       <NavItem
                         link={link}
-                        active={pathname === link.href}
+                        active={isActive(pathname, link.href)}
                         className="block py-2.5"
                       />
                     </li>
@@ -125,7 +130,7 @@ export function AppHeader() {
               </nav>
               <div className="flex flex-col gap-2 px-4">
                 <CtfSearch className="md:hidden" />
-                <NetworkBadge className="sm:hidden" />
+                <NetworkBadge className="2xl:hidden" />
               </div>
             </SheetContent>
           </Sheet>
