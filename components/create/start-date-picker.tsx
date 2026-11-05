@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-/** Heures proposées, toutes les 30 min, toujours en 24 h. */
+/** Heures au choix, toutes les 30 min, toujours en 24 h. */
 const TIMES = Array.from({ length: 48 }, (_, i) => {
   const hours = String(Math.floor(i / 2)).padStart(2, "0")
   return `${hours}:${i % 2 === 0 ? "00" : "30"}`

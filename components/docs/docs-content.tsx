@@ -257,7 +257,7 @@ const parameters = [
   {
     name: "Gaz de la validation",
     by: "Contrat",
-    value: "300 000 (proposé)",
+    value: "300 000",
   },
   { name: "Arbitre", by: "Déploiement", value: "Fixé à vie (ERC-792)" },
 ]
