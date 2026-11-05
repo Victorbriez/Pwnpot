@@ -29,7 +29,9 @@ export function playerNextStep(p: MyParticipation): NextStep {
         : { label: `Tout est résolu · fin dans ${left}`, tone: "neutral" }
     }
     case "contestation":
-      return { label: `Contestation possible encore ${left}`, tone: "neutral" }
+      return ctf.remaining > 0
+        ? { label: `Contestation possible encore ${left}`, tone: "neutral" }
+        : { label: "Prêt à être finalisé", tone: "action" }
     case "voting":
       return p.voted
         ? { label: "Tu as voté", tone: "neutral" }
@@ -56,7 +58,9 @@ export function organizerNextStep(o: MyOrganized): NextStep {
     case "running":
       return { label: `Rien à faire · fin dans ${left}`, tone: "neutral" }
     case "contestation":
-      return { label: `Contestation possible encore ${left}`, tone: "neutral" }
+      return ctf.remaining > 0
+        ? { label: `Contestation possible encore ${left}`, tone: "neutral" }
+        : { label: "Prêt à être finalisé", tone: "action" }
     case "voting":
     case "appeal":
       return { label: "Litige en cours", tone: "warning" }

@@ -3,6 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { CtfPlay } from "@/components/ctf/ctf-play"
+import { CtfTitle } from "@/components/ctf/ctf-title"
 import { PageHeader, PageShell } from "@/components/site/page-header"
 import {
   Breadcrumb,
@@ -13,19 +14,31 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { ctfs } from "@/lib/mock/explore"
+import { ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
 
-function findCtf(id: string) {
+const isDemo = ctfPlatformAddress === undefined
+
+function findDemoCtf(id: string) {
   return ctfs.find((ctf) => String(ctf.id) === id)
 }
 
+/** Numéro de CTF valide (entier ≥ 0), sinon `undefined`. */
+function parseId(id: string) {
+  return /^\d+$/.test(id) ? Number(id) : undefined
+}
+
+// En démo, les pages des CTF fictifs sont générées au build. Avec le contrat,
+// les CTF sont créés à tout moment : la page est rendue à la demande.
 export function generateStaticParams() {
-  return ctfs.map((ctf) => ({ id: String(ctf.id) }))
+  return isDemo ? ctfs.map((ctf) => ({ id: String(ctf.id) })) : []
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/ctf/[id]">): Promise<Metadata> {
-  const ctf = findCtf((await params).id)
+  const { id } = await params
+  if (!isDemo) return { title: `CTF n° ${id}` }
+  const ctf = findDemoCtf(id)
   return ctf
     ? {
         title: ctf.title,
@@ -35,8 +48,9 @@ export async function generateMetadata({
 }
 
 export default async function CtfPage({ params }: PageProps<"/ctf/[id]">) {
-  const ctf = findCtf((await params).id)
-  if (!ctf) notFound()
+  const { id: raw } = await params
+  const id = parseId(raw)
+  if (id === undefined || (isDemo && !findDemoCtf(raw))) notFound()
 
   return (
     <PageShell>
@@ -51,14 +65,16 @@ export default async function CtfPage({ params }: PageProps<"/ctf/[id]">) {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{ctf.title}</BreadcrumbPage>
+                <BreadcrumbPage>
+                  <CtfTitle id={id} />
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         }
-        title={ctf.title}
+        title={<CtfTitle id={id} />}
       />
-      <CtfPlay ctfId={ctf.id} />
+      <CtfPlay ctfId={id} />
     </PageShell>
   )
 }

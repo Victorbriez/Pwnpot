@@ -58,3 +58,38 @@ export function podiumShares(pot: bigint, winners: number): bigint[] {
   const third = (pot * BigInt(10)) / BigInt(100)
   return [pot - second - third, second, third]
 }
+
+export type Credit = {
+  ctfId: number
+  amount: bigint
+  blockNumber: bigint
+  logIndex: number
+}
+
+/**
+ * Répartit le solde `owed` réel sur les crédits reçus (events `Credited`),
+ * des plus récents aux plus anciens : `withdraw()` vide tout le solde, donc
+ * ce qui reste dû vient forcément des derniers crédits. Renvoie le montant
+ * encore dû par CTF.
+ */
+export function allocateOwed(
+  credits: readonly Credit[],
+  owed: bigint
+): Map<number, bigint> {
+  const byCtf = new Map<number, bigint>()
+  let left = owed
+  const newestFirst = [...credits].sort((a, b) =>
+    a.blockNumber !== b.blockNumber
+      ? a.blockNumber > b.blockNumber
+        ? -1
+        : 1
+      : b.logIndex - a.logIndex
+  )
+  for (const credit of newestFirst) {
+    if (left <= BigInt(0)) break
+    const part = credit.amount < left ? credit.amount : left
+    byCtf.set(credit.ctfId, (byCtf.get(credit.ctfId) ?? BigInt(0)) + part)
+    left -= part
+  }
+  return byCtf
+}
