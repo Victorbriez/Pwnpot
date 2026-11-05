@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 
-import type { PlatformTx } from "@/hooks/use-platform-tx"
+import type { PlatformCall, PlatformTx } from "@/hooks/use-platform-tx"
 import {
   contestBond,
   DEMO_ARBITRATION_FEE,
@@ -81,7 +81,12 @@ export function useDispute(
 
   const vote = (cheated: boolean) =>
     tx.send(
-      { functionName: "vote", args: [ctfId, cheated] },
+      // `vote` est encore `pure` dans le contrat (litiges pas implémentés) :
+      // ce litige ne tourne qu'en démo. À retirer avec l'implémentation (#15).
+      {
+        functionName: "vote",
+        args: [ctfId, cheated],
+      } as unknown as PlatformCall,
       {
         onSuccess: () =>
           setState(

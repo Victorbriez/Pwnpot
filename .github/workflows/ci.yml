@@ -44,3 +44,5 @@ jobs:
       - run: pnpm contracts:build
       - run: pnpm contracts:test
       - run: pnpm contracts:typecheck
+      - name: ABI du front à jour
+        run: pnpm abi && git diff --exit-code lib/onchain/ctf-platform-abi.ts

@@ -80,6 +80,7 @@ pnpm format               # Prettier
 pnpm contracts:build      # compile les contrats
 pnpm contracts:test       # tests Solidity + TypeScript
 pnpm contracts:typecheck  # compile puis tsc des tests/scripts Hardhat
+pnpm abi                  # recopie l'ABI de CTFPlatform dans lib/onchain/ (après un changement du contrat)
 pnpm chain                # nœud Hardhat local (chain id 84532, comme Base Sepolia)
 pnpm chain:deploy         # déploie CTFPlatform + TestLevel en local, 2 CTF d'exemple, écrit .env.local
 ADVANCE=7200 pnpm chain:time  # avance l'horloge du nœud local (en secondes)
