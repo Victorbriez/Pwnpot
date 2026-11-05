@@ -15,6 +15,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { SectionHeading } from "@/components/site/page-header"
 import { isClosed, type Ctf } from "@/lib/mock/explore"
 
 const filters = {
@@ -36,9 +37,7 @@ export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
   return (
     <section aria-labelledby="live-ctfs" className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="live-ctfs" className="text-xl font-semibold tracking-tight">
-          Tous les CTF
-        </h2>
+        <SectionHeading id="live-ctfs">Tous les CTF</SectionHeading>
         <ToggleGroup
           variant="outline"
           size="sm"

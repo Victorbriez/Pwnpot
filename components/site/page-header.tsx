@@ -60,3 +60,23 @@ export function PageHeader({
     </header>
   )
 }
+
+/** Titre d'une liste dans une page, avec le nombre d'éléments en option. */
+export function SectionHeading({
+  id,
+  count,
+  children,
+}: {
+  id?: string
+  count?: number
+  children: React.ReactNode
+}) {
+  return (
+    <h2 id={id} className="text-xl font-semibold tracking-tight">
+      {children}
+      {count !== undefined && (
+        <span className="text-muted-foreground"> ({count})</span>
+      )}
+    </h2>
+  )
+}

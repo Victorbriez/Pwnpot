@@ -19,6 +19,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { Progress } from "@/components/ui/progress"
+import { SectionHeading } from "@/components/site/page-header"
 import { useMyCtfs } from "@/hooks/use-my-ctfs"
 import { organizerNextStep } from "@/lib/ctf/next-step"
 import { formatEth, formatInt } from "@/lib/format"
@@ -58,10 +59,9 @@ export function OrganizeView() {
         aria-labelledby="organises-titre"
         className="flex flex-col gap-4"
       >
-        <h2 id="organises-titre" className="text-lg font-semibold">
-          Mes CTF organisés{" "}
-          <span className="text-muted-foreground">({organizing.length})</span>
-        </h2>
+        <SectionHeading id="organises-titre" count={organizing.length}>
+          Mes CTF organisés
+        </SectionHeading>
         {organizing.length > 0 ? (
           <ItemGroup className="gap-3">
             {organizing.map((o) => (
