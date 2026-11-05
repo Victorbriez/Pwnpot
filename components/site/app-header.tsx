@@ -8,9 +8,10 @@ import { usePathname } from "next/navigation"
 import { CtfSearch } from "@/components/site/ctf-search"
 import { Logo } from "@/components/site/logo"
 import {
+  appNav,
   isActive,
-  personalNav,
-  primaryNav,
+  isGroup,
+  type NavGroup,
   type NavLink,
 } from "@/components/site/nav-links"
 import { NetworkBadge } from "@/components/site/network-badge"
@@ -38,7 +39,7 @@ import {
 import { useNavBadges, type NavBadgeInfo } from "@/hooks/use-nav-badges"
 import { cn } from "@/lib/utils"
 
-// Lien de la barre : même style que le déclencheur « Mon espace ».
+// Lien de la barre : même style que les déclencheurs de menu.
 const barLinkClass = cn(
   navigationMenuTriggerStyle(),
   "text-muted-foreground hover:text-foreground data-active:bg-transparent data-active:text-foreground"
@@ -50,6 +51,10 @@ function badgeOf(link: NavLink, badges: Badges) {
   return link.badge ? badges[link.badge] : undefined
 }
 
+function groupActive(pathname: string, group: NavGroup) {
+  return group.links.some((link) => isActive(pathname, link.href, group.links))
+}
+
 function NavCount({ info }: { info: NavBadgeInfo }) {
   return (
     <Badge variant={info.variant} className="tabular-nums">
@@ -59,7 +64,7 @@ function NavCount({ info }: { info: NavBadgeInfo }) {
   )
 }
 
-/** Point sur « Mon espace » quand une pastille attend dans le menu. */
+/** Point sur un menu quand une pastille attend à l'intérieur. */
 function PendingDot() {
   return (
     <>
@@ -76,69 +81,70 @@ function DesktopNav({
   pathname: string
   badges: Badges
 }) {
-  const pending = Object.keys(badges).length > 0
-  const personalActive = personalNav.some((link) =>
-    isActive(pathname, link.href)
-  )
   return (
     <NavigationMenu
       aria-label="Navigation principale"
       className="hidden lg:flex"
     >
       <NavigationMenuList className="gap-1">
-        {primaryNav.map((link) => (
-          <NavigationMenuItem key={link.href}>
-            <NavigationMenuLink
-              active={isActive(pathname, link.href)}
-              className={barLinkClass}
-              render={<Link href={link.href} />}
-            >
-              {link.label}
-            </NavigationMenuLink>
-          </NavigationMenuItem>
-        ))}
-        <NavigationMenuItem>
-          <NavigationMenuTrigger
-            className={cn(
-              "text-muted-foreground hover:text-foreground data-popup-open:text-foreground",
-              personalActive && "text-foreground"
-            )}
-          >
-            Mon espace
-            {pending && <PendingDot />}
-          </NavigationMenuTrigger>
-          <NavigationMenuContent>
-            <ul className="grid w-80 gap-1 p-1">
-              {personalNav.map((link) => (
-                <li key={link.href}>
-                  <PersonalLink
-                    link={link}
-                    pathname={pathname}
-                    badge={badgeOf(link, badges)}
-                  />
-                </li>
-              ))}
-            </ul>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
+        {appNav.map((entry) =>
+          isGroup(entry) ? (
+            <NavigationMenuItem key={entry.label}>
+              <NavigationMenuTrigger
+                className={cn(
+                  "text-muted-foreground hover:text-foreground data-popup-open:text-foreground",
+                  groupActive(pathname, entry) && "text-foreground"
+                )}
+              >
+                {entry.label}
+                {entry.links.some((link) => badgeOf(link, badges)) && (
+                  <PendingDot />
+                )}
+              </NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <ul className="grid w-80 gap-1 p-1">
+                  {entry.links.map((link) => (
+                    <li key={link.href}>
+                      <GroupLink
+                        link={link}
+                        active={isActive(pathname, link.href, entry.links)}
+                        badge={badgeOf(link, badges)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
+          ) : (
+            <NavigationMenuItem key={entry.href}>
+              <NavigationMenuLink
+                active={isActive(pathname, entry.href)}
+                className={barLinkClass}
+                render={<Link href={entry.href} />}
+              >
+                {entry.label}
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+          )
+        )}
       </NavigationMenuList>
     </NavigationMenu>
   )
 }
 
-function PersonalLink({
+function GroupLink({
   link,
-  pathname,
+  active,
   badge,
 }: {
   link: NavLink
-  pathname: string
+  active: boolean
   badge?: NavBadgeInfo
 }) {
   const Icon = link.icon
   return (
     <NavigationMenuLink
-      active={isActive(pathname, link.href)}
+      active={active}
       className="items-start gap-3"
       render={<Link href={link.href} />}
     >
@@ -158,12 +164,12 @@ function PersonalLink({
 
 function MobileLink({
   link,
-  pathname,
+  active,
   onNavigate,
   badge,
 }: {
   link: NavLink
-  pathname: string
+  active: boolean
   onNavigate: () => void
   badge?: NavBadgeInfo
 }) {
@@ -171,12 +177,63 @@ function MobileLink({
     <Link
       href={link.href}
       onClick={onNavigate}
-      aria-current={isActive(pathname, link.href) ? "page" : undefined}
+      aria-current={active ? "page" : undefined}
       className="flex items-center justify-between gap-2 rounded-md py-2 text-muted-foreground transition-colors hover:text-foreground aria-[current=page]:text-foreground"
     >
       {link.label}
       {badge && <NavCount info={badge} />}
     </Link>
+  )
+}
+
+function MobileNav({
+  pathname,
+  badges,
+  onNavigate,
+}: {
+  pathname: string
+  badges: Badges
+  onNavigate: () => void
+}) {
+  const links = appNav.filter((entry): entry is NavLink => !isGroup(entry))
+  const groups = appNav.filter(isGroup)
+  return (
+    <nav
+      aria-label="Navigation mobile"
+      className="flex flex-col gap-4 px-4 text-base font-medium"
+    >
+      <ul className="flex flex-col">
+        {links.map((link) => (
+          <li key={link.href}>
+            <MobileLink
+              link={link}
+              active={isActive(pathname, link.href)}
+              onNavigate={onNavigate}
+            />
+          </li>
+        ))}
+      </ul>
+      {groups.map((group) => (
+        <div key={group.label} className="flex flex-col gap-1">
+          <Separator className="mb-3" />
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            {group.label}
+          </p>
+          <ul className="flex flex-col">
+            {group.links.map((link) => (
+              <li key={link.href}>
+                <MobileLink
+                  link={link}
+                  active={isActive(pathname, link.href, group.links)}
+                  onNavigate={onNavigate}
+                  badge={badgeOf(link, badges)}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </nav>
   )
 }
 
@@ -215,40 +272,11 @@ export function AppHeader() {
               <SheetHeader>
                 <SheetTitle>Menu</SheetTitle>
               </SheetHeader>
-              <nav
-                aria-label="Navigation mobile"
-                className="flex flex-col gap-4 px-4 text-base font-medium"
-              >
-                <ul className="flex flex-col">
-                  {primaryNav.map((link) => (
-                    <li key={link.href}>
-                      <MobileLink
-                        link={link}
-                        pathname={pathname}
-                        onNavigate={close}
-                      />
-                    </li>
-                  ))}
-                </ul>
-                <Separator />
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    Mon espace
-                  </p>
-                  <ul className="flex flex-col">
-                    {personalNav.map((link) => (
-                      <li key={link.href}>
-                        <MobileLink
-                          link={link}
-                          pathname={pathname}
-                          onNavigate={close}
-                          badge={badgeOf(link, badges)}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </nav>
+              <MobileNav
+                pathname={pathname}
+                badges={badges}
+                onNavigate={close}
+              />
               <div className="flex flex-col gap-2 px-4">
                 <CtfSearch className="md:hidden" />
                 <NetworkBadge className="xl:hidden" />
