@@ -2,7 +2,7 @@
 // On-chain, `owed` est un seul solde par adresse : ce détail sert à
 // l'expliquer, `withdraw()` retire toujours le total.
 import { type Ctf } from "@/lib/ctf/types"
-import type { MyOrganized, MyParticipation } from "@/lib/mock/my-ctfs"
+import type { MyOrganized, MyParticipation } from "@/lib/ctf/types"
 
 export type GainLine = {
   ctf: Ctf
@@ -29,7 +29,9 @@ export function gainLines(
         ctf: p.ctf,
         amount: p.owed,
         reason:
-          p.ctf.status === "cheated" ? "Ticket remboursé" : podium(p.rank),
+          p.ctf.status === "cheated" || p.refunded
+            ? "Ticket remboursé"
+            : podium(p.rank),
       })),
     ...organizing
       .filter((o) => o.owed > zero)
@@ -37,7 +39,11 @@ export function gainLines(
         ctf: o.ctf,
         amount: o.owed,
         reason:
-          o.ctf.status === "cheated" ? "Cash prize rendu" : "Caution rendue",
+          o.ctf.status === "cheated"
+            ? "Cash prize rendu"
+            : o.noWinner
+              ? "Aucun gagnant : cash prize et caution rendus"
+              : "Caution rendue",
       })),
   ]
 }

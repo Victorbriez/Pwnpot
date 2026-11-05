@@ -67,3 +67,25 @@ export function isClosed(status: CtfStatus) {
 export function inDispute(status: CtfStatus) {
   return status === "voting" || status === "appeal"
 }
+
+/** Un CTF joué par l'adresse connectée. */
+export type MyParticipation = {
+  ctf: Ctf
+  /** Épreuves réussies (`LevelSolved`). */
+  solved: number
+  /** Place au classement, `null` sans réussite. */
+  rank: number | null
+  /** Vote déjà exprimé pendant un litige. */
+  voted: boolean
+  /** Ce que `owed` crédite à l'adresse pour ce CTF. */
+  owed: bigint
+  /** Ticket remboursé avec `claimRefund` (CTF sans gagnant). */
+  refunded?: boolean
+}
+
+export type MyOrganized = {
+  ctf: Ctf
+  owed: bigint
+  /** CTF finalisé sans aucune épreuve réussie : cash prize rendu. */
+  noWinner?: boolean
+}

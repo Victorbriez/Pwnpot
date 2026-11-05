@@ -1,7 +1,7 @@
 // Ce que l'utilisateur doit faire ensuite sur un CTF, selon la phase
 // (docs/DESIGN.md, cycle de vie). Fonctions pures : la page n'affiche que du texte.
 import { formatEth, formatRemaining } from "@/lib/format"
-import type { MyOrganized, MyParticipation } from "@/lib/mock/my-ctfs"
+import type { MyOrganized, MyParticipation } from "@/lib/ctf/types"
 
 export type NextStep = {
   label: string

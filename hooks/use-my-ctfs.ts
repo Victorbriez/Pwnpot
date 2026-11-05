@@ -1,14 +1,16 @@
 "use client"
 
+import { zeroAddress } from "viem"
 import { useConnection } from "wagmi"
 
+import { useCtfs } from "@/hooks/use-ctfs"
+import { useMyCredits } from "@/hooks/use-my-credits"
+import { usePlatformEvents } from "@/hooks/use-platform-events"
+import { rankSolves, type SolveEvent } from "@/lib/ctf/leaderboard"
+
 import { isClosed } from "@/lib/ctf/types"
-import {
-  myOrganized,
-  myParticipations,
-  type MyOrganized,
-  type MyParticipation,
-} from "@/lib/mock/my-ctfs"
+import type { MyOrganized, MyParticipation } from "@/lib/ctf/types"
+import { myOrganized, myParticipations } from "@/lib/mock/my-ctfs"
 import { ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
 
 export type PlayingTotals = { active: number; solved: number; owed: bigint }
@@ -74,12 +76,34 @@ function build(
 }
 
 /**
- * CTF joués et organisés par l'adresse connectée. Sans contrat, renvoie les
- * mocks ; la lecture des events (TicketBought, CTFCreated, LevelSolved…)
- * arrivera avec #11.
+ * CTF joués et organisés par l'adresse connectée. Sans contrat, les mocks ;
+ * avec, les events `TicketBought` et `CTFCreated` de l'adresse, le classement
+ * (`LevelSolved`) et ce que le contrat lui doit (`owed`, `Credited`).
  */
 export function useMyCtfs(): MyCtfs {
-  const { isConnected } = useConnection()
+  const { address, isConnected } = useConnection()
+  const me = address ?? zeroAddress
+  const live = ctfPlatformAddress !== undefined && !!address
+  const { ctfs } = useCtfs()
+  const tickets = usePlatformEvents(
+    "TicketBought",
+    { player: me },
+    { enabled: live }
+  )
+  const created = usePlatformEvents(
+    "CTFCreated",
+    { organizer: me },
+    { enabled: live }
+  )
+  const refunds = usePlatformEvents(
+    "RefundClaimed",
+    { player: me },
+    { enabled: live }
+  )
+  const solves = usePlatformEvents("LevelSolved", undefined, {
+    enabled: live,
+  })
+  const credits = useMyCredits()
 
   if (ctfPlatformAddress === undefined) {
     return {
@@ -88,10 +112,63 @@ export function useMyCtfs(): MyCtfs {
       needsWallet: false,
     }
   }
+  if (!isConnected) {
+    return { ...build([], []), isDemo: false, needsWallet: true }
+  }
 
+  const byId = new Map(ctfs.map((ctf) => [ctf.id, ctf]))
+  const solvesByCtf = new Map<number, SolveEvent[]>()
+  for (const log of solves.data ?? []) {
+    const id = Number(log.args.ctfId)
+    const list = solvesByCtf.get(id) ?? []
+    list.push({
+      player: log.args.player,
+      timestamp: log.args.timestamp,
+      blockNumber: log.blockNumber,
+      logIndex: log.logIndex,
+    })
+    solvesByCtf.set(id, list)
+  }
+  const refunded = new Set(
+    (refunds.data ?? []).map((log) => Number(log.args.ctfId))
+  )
+  const owedOf = (id: number) => credits.byCtf.get(id) ?? BigInt(0)
+
+  const playing: MyParticipation[] = (tickets.data ?? []).flatMap((log) => {
+    const ctf = byId.get(Number(log.args.ctfId))
+    if (!ctf) return []
+    const ranking = rankSolves(solvesByCtf.get(ctf.id) ?? [], address)
+    const mine = ranking.find((entry) => entry.isMe)
+    return [
+      {
+        ctf,
+        solved: mine?.score ?? 0,
+        rank: mine?.rank ?? null,
+        voted: false,
+        owed: owedOf(ctf.id),
+        refunded: refunded.has(ctf.id),
+      },
+    ]
+  })
+
+  const organizing: MyOrganized[] = (created.data ?? []).flatMap((log) => {
+    const ctf = byId.get(Number(log.args.ctfId))
+    if (!ctf) return []
+    return [
+      {
+        ctf,
+        owed: owedOf(ctf.id),
+        noWinner: (solvesByCtf.get(ctf.id) ?? []).length === 0,
+      },
+    ]
+  })
+
+  const result = build(playing, organizing)
+  // Le total vient du contrat : c'est ce que `withdraw()` enverra.
   return {
-    ...build([], []),
+    ...result,
+    totals: { owed: credits.owed },
     isDemo: false,
-    needsWallet: !isConnected,
+    needsWallet: false,
   }
 }

@@ -3,28 +3,11 @@
 // lib/mock/explore.ts et joue aux CTF 1, 3, 5 et 6.
 import { parseEther, type Address } from "viem"
 
-import { type Ctf } from "@/lib/ctf/types"
+import type { Ctf, MyOrganized, MyParticipation } from "@/lib/ctf/types"
 import { ctfs } from "@/lib/mock/explore"
 
 /** Organisateur des CTF 2 et 4 dans les mocks d'Explore. */
 export const demoAddress: Address = "0x4ce2a9b7d3f1e5c8a6b4d2f0e8c6a4b2d0f8aa19"
-
-export type MyParticipation = {
-  ctf: Ctf
-  /** Épreuves réussies (`LevelSolved`). */
-  solved: number
-  /** Place au classement, `null` sans réussite. */
-  rank: number | null
-  /** Vote déjà exprimé pendant un litige. */
-  voted: boolean
-  /** Ce que `owed` crédite à l'adresse pour ce CTF. */
-  owed: bigint
-}
-
-export type MyOrganized = {
-  ctf: Ctf
-  owed: bigint
-}
 
 function byId(id: number): Ctf {
   const ctf = ctfs.find((item) => item.id === id)

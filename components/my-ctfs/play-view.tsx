@@ -24,7 +24,7 @@ import { SectionHeading } from "@/components/site/page-header"
 import { useMyCtfs } from "@/hooks/use-my-ctfs"
 import { playerNextStep } from "@/lib/ctf/next-step"
 import { formatEth, formatInt } from "@/lib/format"
-import type { MyParticipation } from "@/lib/mock/my-ctfs"
+import type { MyParticipation } from "@/lib/ctf/types"
 
 function rankLabel(rank: number) {
   return rank === 1 ? "1er" : `${rank}e`
