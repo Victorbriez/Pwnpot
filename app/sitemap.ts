@@ -6,7 +6,8 @@ import { site } from "@/lib/site"
 const pages: { path: string; priority: number }[] = [
   { path: "/", priority: 1 },
   { path: "/explore", priority: 0.8 },
-  { path: "/create", priority: 0.6 },
+  { path: "/organize/new", priority: 0.6 },
+  { path: "/docs", priority: 0.7 },
   { path: "/mentions-legales", priority: 0.2 },
   { path: "/cgu", priority: 0.2 },
 ]

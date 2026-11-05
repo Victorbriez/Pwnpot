@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { ChevronDownIcon, PlusIcon, RocketIcon, XIcon } from "lucide-react"
@@ -12,7 +13,7 @@ import { StartDatePicker } from "@/components/create/start-date-picker"
 import { VulnTag } from "@/components/ctf/vuln-tag"
 import { TxStatusAlert } from "@/components/onchain/tx-status"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -65,6 +66,7 @@ import {
 import { formatEth } from "@/lib/format"
 import { knownFactories, knownFactoryAddress } from "@/lib/onchain/factories"
 import { truncateAddress } from "@/lib/onchain/format"
+import { cn } from "@/lib/utils"
 
 type Amounts = { cashPrize: string; ticketPrice: string; maxPlayers: string }
 
@@ -448,15 +450,34 @@ export function CreateCtfForm() {
         </CardContent>
         <CardFooter>
           {tx.status === "success" ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="w-full"
-              onClick={handleReset}
-            >
-              Créer un autre CTF
-            </Button>
+            <div className="flex w-full flex-col gap-2">
+              <Link
+                href="/organize"
+                className={cn(buttonVariants({ size: "lg" }), "w-full")}
+              >
+                Voir mes CTF organisés
+              </Link>
+              {tx.ctfId !== undefined && (
+                <Link
+                  href={`/ctf/${tx.ctfId}`}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "lg" }),
+                    "w-full"
+                  )}
+                >
+                  Ouvrir le CTF
+                </Link>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="lg"
+                className="w-full"
+                onClick={handleReset}
+              >
+                Créer un autre CTF
+              </Button>
+            </div>
           ) : needsWallet ? (
             <ConnectWallet
               label="Connecter un wallet"

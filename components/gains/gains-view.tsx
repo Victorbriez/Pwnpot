@@ -181,10 +181,10 @@ export function GainsView() {
                 </EmptyHeader>
                 <EmptyContent>
                   <Link
-                    href="/my-ctfs"
+                    href="/play"
                     className={buttonVariants({ variant: "outline" })}
                   >
-                    Voir mes CTF
+                    Voir mes parties
                   </Link>
                 </EmptyContent>
               </Empty>

@@ -11,25 +11,65 @@ import {
 } from "@/lib/mock/my-ctfs"
 import { ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
 
+export type PlayingTotals = { active: number; solved: number; owed: bigint }
+export type OrganizingTotals = {
+  active: number
+  /** Joueurs inscrits sur les CTF organisés, tous confondus. */
+  players: number
+  /** Cagnottes et cautions encore bloquées dans le contrat. */
+  locked: bigint
+  owed: bigint
+}
+
 export type MyCtfs = {
   playing: MyParticipation[]
   organizing: MyOrganized[]
-  totals: { active: number; solved: number; owed: bigint }
+  /** Tout ce que l'adresse peut retirer, joueur et organisateur confondus. */
+  totals: { owed: bigint }
+  playingTotals: PlayingTotals
+  organizingTotals: OrganizingTotals
   /** Vrai tant que CTFPlatform n'est pas déployé : données fictives. */
   isDemo: boolean
   /** Contrat déployé mais aucun wallet connecté. */
   needsWallet: boolean
 }
 
-function totalsOf(playing: MyParticipation[], organizing: MyOrganized[]) {
-  const all = [...playing, ...organizing]
-  const activeIds = new Set(
-    all.filter((item) => !isClosed(item.ctf.status)).map((item) => item.ctf.id)
-  )
+const sumOwed = (items: { owed: bigint }[]) =>
+  items.reduce((sum, item) => sum + item.owed, BigInt(0))
+
+function playingTotalsOf(playing: MyParticipation[]): PlayingTotals {
   return {
-    active: activeIds.size,
+    active: playing.filter((p) => !isClosed(p.ctf.status)).length,
     solved: playing.reduce((sum, p) => sum + p.solved, 0),
-    owed: all.reduce((sum, item) => sum + item.owed, BigInt(0)),
+    owed: sumOwed(playing),
+  }
+}
+
+function organizingTotalsOf(organizing: MyOrganized[]): OrganizingTotals {
+  const open = organizing.filter((o) => !isClosed(o.ctf.status))
+  return {
+    active: open.length,
+    players: organizing.reduce((sum, o) => sum + o.ctf.players, 0),
+    locked: open.reduce(
+      (sum, o) => sum + o.ctf.prizePool + o.ctf.bond,
+      BigInt(0)
+    ),
+    owed: sumOwed(organizing),
+  }
+}
+
+function build(
+  playing: MyParticipation[],
+  organizing: MyOrganized[]
+): Omit<MyCtfs, "isDemo" | "needsWallet"> {
+  const playingTotals = playingTotalsOf(playing)
+  const organizingTotals = organizingTotalsOf(organizing)
+  return {
+    playing,
+    organizing,
+    totals: { owed: playingTotals.owed + organizingTotals.owed },
+    playingTotals,
+    organizingTotals,
   }
 }
 
@@ -43,18 +83,14 @@ export function useMyCtfs(): MyCtfs {
 
   if (ctfPlatformAddress === undefined) {
     return {
-      playing: myParticipations,
-      organizing: myOrganized,
-      totals: totalsOf(myParticipations, myOrganized),
+      ...build(myParticipations, myOrganized),
       isDemo: true,
       needsWallet: false,
     }
   }
 
   return {
-    playing: [],
-    organizing: [],
-    totals: totalsOf([], []),
+    ...build([], []),
     isDemo: false,
     needsWallet: !isConnected,
   }
