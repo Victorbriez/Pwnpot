@@ -1,5 +1,3 @@
-import Link from "next/link"
-
 import { VulnTag } from "@/components/ctf/vuln-tag"
 import { ConnectRedirect } from "@/components/landing/connect-redirect"
 import { ContractListing } from "@/components/landing/contract-listing"
@@ -7,10 +5,10 @@ import { DisputeFlow } from "@/components/landing/dispute-flow"
 import { ExploitTrace } from "@/components/landing/exploit-trace"
 import { FinalCta } from "@/components/landing/final-cta"
 import { HeroActions } from "@/components/landing/hero-actions"
+import { LiveCtfLink } from "@/components/landing/live-ctf-link"
 import { Settlement } from "@/components/landing/settlement"
 import { TrustList } from "@/components/landing/trust-list"
-import { formatEth, formatRemaining } from "@/lib/format"
-import { ctfs, type Vuln } from "@/lib/mock/explore"
+import { type Vuln } from "@/lib/ctf/types"
 import { TextLink } from "@/components/site/text-link"
 
 // Les trois épreuves de docs/CHALLENGES.md.
@@ -58,11 +56,6 @@ function unlock(bytes32 attempt) external {
   },
 ]
 
-const liveCtfs = ctfs
-  .filter((ctf) => ctf.status === "running")
-  .sort((a, b) => (b.prizePool > a.prizePool ? 1 : -1))
-const biggest = liveCtfs[0]
-
 const section = "mx-auto max-w-7xl px-4 sm:px-6 lg:px-12"
 
 export default function HomePage() {
@@ -88,28 +81,7 @@ export default function HomePage() {
             contrat tient la cagnotte.
           </p>
           <HeroActions />
-          {biggest && (
-            <Link
-              href="/explore"
-              className="group flex w-fit items-center gap-3 rounded-lg text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <span aria-hidden className="relative flex size-2">
-                <span className="absolute inset-0 animate-ping rounded-full bg-success opacity-60 motion-reduce:animate-none" />
-                <span className="relative size-2 rounded-full bg-success" />
-              </span>
-              <span className="text-muted-foreground">
-                En ce moment,{" "}
-                <span className="font-mono font-medium text-foreground tabular-nums">
-                  {formatEth(biggest.prizePool)}
-                </span>{" "}
-                à prendre sur{" "}
-                <span className="font-medium text-foreground group-hover:underline group-hover:underline-offset-4">
-                  {biggest.title}
-                </span>
-                , encore {formatRemaining(biggest.remaining)}.
-              </span>
-            </Link>
-          )}
+          <LiveCtfLink />
         </div>
         <ExploitTrace />
       </section>

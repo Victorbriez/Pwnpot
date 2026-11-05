@@ -43,7 +43,8 @@ import { usePlatformTx } from "@/hooks/use-platform-tx"
 import { gainLines } from "@/lib/ctf/gains"
 import { nowSeconds } from "@/lib/ctf/params"
 import { formatEth } from "@/lib/format"
-import { withdrawals, type Withdrawal } from "@/lib/mock/gains"
+import { useWithdrawals } from "@/hooks/use-withdrawals"
+import type { Withdrawal } from "@/lib/mock/gains"
 import { explorerTxUrl } from "@/lib/site"
 
 // Fuseau fixe : même rendu côté serveur et navigateur.
@@ -54,13 +55,17 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
 })
 
 export function GainsView() {
-  const { playing, organizing, isDemo, needsWallet } = useMyCtfs()
+  const { playing, organizing, totals, isDemo, needsWallet } = useMyCtfs()
+  const withdrawals = useWithdrawals()
   const tx = usePlatformTx()
-  // Après un retrait : solde à zéro et retrait ajouté à l'historique.
+  // Démo : après un retrait, solde à zéro et retrait ajouté à l'historique.
+  // Avec le contrat, les lectures se rafraîchissent après la transaction.
   const [justWithdrawn, setJustWithdrawn] = useState<Withdrawal>()
 
   const lines = justWithdrawn ? [] : gainLines(playing, organizing)
-  const owed = lines.reduce((sum, line) => sum + line.amount, BigInt(0))
+  const owed = isDemo
+    ? lines.reduce((sum, line) => sum + line.amount, BigInt(0))
+    : totals.owed
   const history = justWithdrawn ? [justWithdrawn, ...withdrawals] : withdrawals
   const busy = tx.status === "signing" || tx.status === "confirming"
 
@@ -89,6 +94,7 @@ export function GainsView() {
       { functionName: "withdraw", args: [] },
       {
         onSuccess: () =>
+          isDemo &&
           setJustWithdrawn({
             amount,
             date: new Date(nowSeconds() * 1000).toISOString(),
@@ -198,6 +204,11 @@ export function GainsView() {
             <CardDescription>Lus dans l&apos;event Withdrawn.</CardDescription>
           </CardHeader>
           <CardContent>
+            {history.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Aucun retrait pour l&apos;instant.
+              </p>
+            )}
             <ItemGroup className="gap-2">
               {history.map((w) => (
                 <Item key={`${w.hash}-${w.date}`} variant="muted">
@@ -206,7 +217,7 @@ export function GainsView() {
                       {formatEth(w.amount)}
                     </ItemTitle>
                     <ItemDescription>
-                      {dateFormatter.format(new Date(w.date))}
+                      {w.date ? dateFormatter.format(new Date(w.date)) : "…"}
                     </ItemDescription>
                   </ItemContent>
                   {!isDemo && (

@@ -41,6 +41,7 @@ import {
   FieldSet,
   FieldTitle,
 } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import {
   InputGroup,
   InputGroupAddon,
@@ -56,6 +57,7 @@ import { useCreateCtf } from "@/hooks/use-create-ctf"
 import {
   DURATION_DAYS,
   MAX_PLAYERS,
+  MAX_TITLE_BYTES,
   MIN_PLAYERS,
   nowSeconds,
   parseEth,
@@ -64,9 +66,32 @@ import {
   type DurationDays,
 } from "@/lib/ctf/params"
 import { formatEth } from "@/lib/format"
-import { knownFactories, knownFactoryAddress } from "@/lib/onchain/factories"
+import {
+  knownFactories,
+  knownFactoryAddress,
+  testFactoryAddress,
+  type KnownFactory,
+} from "@/lib/onchain/factories"
 import { truncateAddress } from "@/lib/onchain/format"
 import { cn } from "@/lib/utils"
+
+type FactoryOption = Omit<KnownFactory, "vuln"> & {
+  vuln?: KnownFactory["vuln"]
+}
+
+// La factory de test (`pnpm chain:deploy`) n'existe qu'en local.
+const factoryOptions: FactoryOption[] = testFactoryAddress
+  ? [
+      ...knownFactories,
+      { id: "test", name: "Factory de test", address: testFactoryAddress },
+    ]
+  : knownFactories
+
+function optionAddress(option: FactoryOption) {
+  return option.vuln
+    ? knownFactoryAddress(option as KnownFactory)
+    : (option.address as Address)
+}
 
 type Amounts = { cashPrize: string; ticketPrice: string; maxPlayers: string }
 
@@ -92,6 +117,7 @@ export function CreateCtfForm() {
   const { isConnected, chainId } = useConnection()
   const switchChain = useSwitchChain()
 
+  const [title, setTitle] = useState("")
   const [amounts, setAmounts] = useState<Amounts>(defaultAmounts)
   const [selected, setSelected] = useState<string[]>([])
   const [custom, setCustom] = useState<Address[]>([])
@@ -105,12 +131,11 @@ export function CreateCtfForm() {
 
   // L'ordre des factories donne l'index des épreuves dans le CTF.
   const factories: Address[] = [
-    ...knownFactories
-      .filter((f) => selected.includes(f.id))
-      .map(knownFactoryAddress),
+    ...factoryOptions.filter((f) => selected.includes(f.id)).map(optionAddress),
     ...custom,
   ]
   const draft = {
+    title,
     ...amounts,
     factories,
     start: combine(day, time),
@@ -168,6 +193,7 @@ export function CreateCtfForm() {
 
   const handleReset = () => {
     tx.reset()
+    setTitle("")
     setAmounts(defaultAmounts)
     setSelected([])
     setCustom([])
@@ -188,7 +214,31 @@ export function CreateCtfForm() {
         <CardContent>
           <FieldGroup>
             <FieldSet disabled={locked}>
-              <FieldLegend>1. Épreuves</FieldLegend>
+              <FieldLegend>1. Nom</FieldLegend>
+              <Field data-invalid={!!errorFor("title") || undefined}>
+                <FieldLabel htmlFor="ctf-title">Titre du CTF</FieldLabel>
+                <Input
+                  id="ctf-title"
+                  value={title}
+                  placeholder="Reentrancy Rumble"
+                  aria-invalid={!!errorFor("title") || undefined}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onBlur={() => touch("title")}
+                />
+                {errorFor("title") ? (
+                  <FieldError>{errorFor("title")}</FieldError>
+                ) : (
+                  <FieldDescription>
+                    Affiché sur Explorer. {MAX_TITLE_BYTES} octets au plus.
+                  </FieldDescription>
+                )}
+              </Field>
+            </FieldSet>
+
+            <FieldSeparator />
+
+            <FieldSet disabled={locked}>
+              <FieldLegend>2. Épreuves</FieldLegend>
               <FieldDescription>
                 Chaque joueur exploite sa propre instance de chaque épreuve.
               </FieldDescription>
@@ -196,7 +246,7 @@ export function CreateCtfForm() {
                 data-slot="checkbox-group"
                 className="grid sm:grid-cols-3"
               >
-                {knownFactories.map((factory) => {
+                {factoryOptions.map((factory) => {
                   const unavailable = !factory.address && !tx.isDemo
                   const id = `factory-${factory.id}`
                   return (
@@ -207,7 +257,13 @@ export function CreateCtfForm() {
                       >
                         <FieldContent className="gap-2">
                           <FieldTitle>{factory.name}</FieldTitle>
-                          <VulnTag vuln={factory.vuln} />
+                          {factory.vuln ? (
+                            <VulnTag vuln={factory.vuln} />
+                          ) : (
+                            <Badge variant="muted" className="h-6 px-2.5">
+                              Sans exploit
+                            </Badge>
+                          )}
                         </FieldContent>
                         <Checkbox
                           id={id}
@@ -315,7 +371,7 @@ export function CreateCtfForm() {
             <FieldSeparator />
 
             <FieldSet disabled={locked}>
-              <FieldLegend>2. Cagnotte</FieldLegend>
+              <FieldLegend>3. Cagnotte</FieldLegend>
               <FieldDescription>
                 Le podium se partage le cash prize et les tickets vendus (60 /
                 30 / 10 %).
@@ -359,7 +415,7 @@ export function CreateCtfForm() {
             <FieldSeparator />
 
             <FieldSet disabled={locked}>
-              <FieldLegend>3. Dates</FieldLegend>
+              <FieldLegend>4. Dates</FieldLegend>
               <FieldGroup className="grid md:grid-cols-[minmax(0,1fr)_auto]">
                 <Field data-invalid={!!errorFor("start") || undefined}>
                   <FieldLabel htmlFor="start-date">Début</FieldLabel>

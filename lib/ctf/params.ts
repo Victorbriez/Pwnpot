@@ -6,23 +6,30 @@ import { parseEther, type Address } from "viem"
 export const MIN_TICKET_PRICE = parseEther("0.0001")
 export const MIN_PLAYERS = 1
 export const MAX_PLAYERS = 200
+/** Longueur maximale du titre, en octets (UTF-8), comme `MAX_TITLE_LENGTH`. */
+export const MAX_TITLE_BYTES = 100
 
 /** Durées proposées, toutes dans les bornes du contrat (1 h à 30 jours). */
 export const DURATION_DAYS = [1, 3, 7, 14, 30] as const
 export type DurationDays = (typeof DURATION_DAYS)[number]
 
-/** Paramètres envoyés à `createCTF`, en wei et en secondes. */
+/**
+ * Paramètres envoyés à `createCTF`, en wei et en secondes. Même forme que le
+ * struct `CTFParams` du contrat.
+ */
 export type CtfParams = {
-  cashPrize: bigint
-  ticketPrice: bigint
-  maxPlayers: number
-  organizerBond: bigint
+  title: string
   startTime: bigint
   endTime: bigint
+  ticketPrice: bigint
+  maxPlayers: bigint
+  cashPrize: bigint
+  organizerBond: bigint
 }
 
 /** Ce que l'utilisateur a saisi. */
 export type CtfDraft = {
+  title: string
   factories: Address[]
   cashPrize: string
   ticketPrice: string
@@ -33,7 +40,7 @@ export type CtfDraft = {
 }
 
 export type CtfField =
-  "factories" | "cashPrize" | "ticketPrice" | "maxPlayers" | "start"
+  "title" | "factories" | "cashPrize" | "ticketPrice" | "maxPlayers" | "start"
 
 export type CtfValidation = {
   params?: CtfParams
@@ -79,6 +86,11 @@ function amountError(value: string) {
   return value.trim() === "" ? "Montant requis." : "Montant invalide."
 }
 
+/** Taille d'un texte en octets UTF-8 (le contrat compte en octets). */
+export function byteLength(value: string): number {
+  return new TextEncoder().encode(value).length
+}
+
 /** Heure courante, en secondes Unix. */
 export function nowSeconds(): number {
   return Math.floor(Date.now() / 1000)
@@ -93,6 +105,11 @@ export function validateCtfDraft(
   { now }: { now?: number } = {}
 ): CtfValidation {
   const errors: CtfValidation["errors"] = {}
+
+  const title = draft.title.trim()
+  if (title === "") errors.title = "Donne un nom au CTF."
+  else if (byteLength(title) > MAX_TITLE_BYTES)
+    errors.title = `${MAX_TITLE_BYTES} octets au plus (les accents comptent double).`
 
   const factories = draft.factories
   if (factories.length === 0) {
@@ -151,12 +168,13 @@ export function validateCtfDraft(
     end: end !== undefined ? new Date(end * 1000) : undefined,
     params: valid
       ? {
-          cashPrize,
-          ticketPrice,
-          maxPlayers,
-          organizerBond: bond,
+          title,
           startTime: BigInt(start),
           endTime: BigInt(end),
+          ticketPrice,
+          maxPlayers: BigInt(maxPlayers),
+          cashPrize,
+          organizerBond: bond,
         }
       : undefined,
   }

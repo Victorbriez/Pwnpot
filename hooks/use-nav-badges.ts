@@ -5,9 +5,14 @@ import { useMyCtfs } from "@/hooks/use-my-ctfs"
 import { formatEth } from "@/lib/format"
 import { disputeRows, isDisputeInProgress } from "@/lib/mock/disputes"
 import { ctfs } from "@/lib/mock/explore"
+import { ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
 
-// Mocks : calculé une fois. Avec le contrat, viendra des events DisputeOpened.
-const disputesInProgress = disputeRows(ctfs).filter(isDisputeInProgress).length
+// Mocks : calculé une fois. Le contrat ne gère pas encore les litiges (#15) ;
+// avec eux, ce nombre viendra des events DisputeOpened.
+const disputesInProgress =
+  ctfPlatformAddress === undefined
+    ? disputeRows(ctfs).filter(isDisputeInProgress).length
+    : 0
 
 export type NavBadgeInfo = {
   label: string

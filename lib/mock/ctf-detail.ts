@@ -2,16 +2,12 @@
 // Le classement réel sera reconstruit depuis les events `LevelSolved`.
 import type { Address } from "viem"
 
-import type { Ctf } from "@/lib/mock/explore"
+import type { LeaderboardEntry } from "@/lib/ctf/leaderboard"
+import { type Ctf } from "@/lib/ctf/types"
 import { demoAddress, myParticipations } from "@/lib/mock/my-ctfs"
 import { knownFactories, type KnownFactory } from "@/lib/onchain/factories"
 
-export type LeaderboardEntry = {
-  rank: number
-  address: Address
-  score: number
-  isMe: boolean
-}
+export type { LeaderboardEntry }
 
 /** Épreuves du CTF, dans l'ordre (levelIndex). */
 export function ctfChallenges(ctf: Ctf): KnownFactory[] {

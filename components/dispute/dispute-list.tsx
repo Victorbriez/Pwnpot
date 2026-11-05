@@ -27,8 +27,11 @@ import {
   type DisputeRow,
 } from "@/lib/mock/disputes"
 import { ctfs } from "@/lib/mock/explore"
+import { ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
 
-const rows = disputeRows(ctfs)
+// Le contrat ne gère pas encore les litiges (#15) : rien à lister hors démo.
+const isDemo = ctfPlatformAddress === undefined
+const rows = isDemo ? disputeRows(ctfs) : []
 type Row = DisputeRow
 
 const inProgress = rows.filter(isDisputeInProgress)
@@ -37,6 +40,20 @@ const contestable = rows.filter((r) => r.dispute.phase === "contestation")
 export function DisputeList() {
   return (
     <div className="flex flex-col gap-10">
+      {!isDemo && (
+        <Empty className="border border-dashed">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ScaleIcon />
+            </EmptyMedia>
+            <EmptyTitle>Les litiges arrivent bientôt</EmptyTitle>
+            <EmptyDescription>
+              Le contrat déployé ne gère pas encore l&apos;ouverture d&apos;un
+              litige ni le vote : les CTF se terminent sans contestation.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      )}
       <Section
         title="Litiges en cours"
         empty="Aucun litige en cours."
