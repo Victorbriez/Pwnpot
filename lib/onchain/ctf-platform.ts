@@ -62,6 +62,37 @@ export const ctfPlatformAbi = [
   },
   {
     type: "function",
+    name: "openDispute",
+    stateMutability: "payable",
+    inputs: [{ name: "ctfId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "vote",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "ctfId", type: "uint256" },
+      { name: "cheated", type: "bool" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "appeal",
+    stateMutability: "payable",
+    inputs: [{ name: "ctfId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "finalize",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "ctfId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
     name: "withdraw",
     stateMutability: "nonpayable",
     inputs: [],
@@ -101,6 +132,43 @@ export const ctfPlatformAbi = [
     inputs: [
       { name: "to", type: "address", indexed: true },
       { name: "amount", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "DisputeOpened",
+    anonymous: false,
+    inputs: [
+      { name: "ctfId", type: "uint256", indexed: true },
+      { name: "contester", type: "address", indexed: true },
+    ],
+  },
+  {
+    type: "event",
+    name: "Voted",
+    anonymous: false,
+    inputs: [
+      { name: "ctfId", type: "uint256", indexed: true },
+      { name: "voter", type: "address", indexed: true },
+      { name: "cheated", type: "bool", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "Appealed",
+    anonymous: false,
+    inputs: [
+      { name: "ctfId", type: "uint256", indexed: true },
+      { name: "disputeID", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "Ruled",
+    anonymous: false,
+    inputs: [
+      { name: "ctfId", type: "uint256", indexed: true },
+      { name: "cheated", type: "bool", indexed: false },
     ],
   },
 ] as const

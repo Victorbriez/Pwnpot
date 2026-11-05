@@ -9,7 +9,7 @@ export const appNav: NavLink[] = [
   { href: "/", label: "Accueil" },
   { href: "/explore", label: "Explorer" },
   { href: "/my-ctfs", label: "Mes CTF" },
-  { href: "/disputes", label: "Litiges", soon: true },
+  { href: "/disputes", label: "Litiges" },
   { href: "/create", label: "Organiser" },
   { href: "/docs", label: "Docs", soon: true },
 ]

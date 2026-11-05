@@ -3,10 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeftIcon } from "lucide-react"
 
-import { remainingLabel } from "@/components/ctf/ctf-card"
 import { CtfPlay } from "@/components/ctf/ctf-play"
-import { StatusPill } from "@/components/ctf/status-pill"
-import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { ctfs } from "@/lib/mock/explore"
 
@@ -48,15 +45,6 @@ export default async function CtfPage({ params }: PageProps<"/ctf/[id]">) {
           <ArrowLeftIcon data-icon="inline-start" />
           Explorer
         </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <StatusPill status={ctf.status} />
-          <span className="font-mono text-sm text-muted-foreground tabular-nums">
-            {remainingLabel(ctf)}
-          </span>
-          <Badge variant="warning" className="h-6 px-2.5">
-            Données de démonstration
-          </Badge>
-        </div>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           {ctf.title}
         </h1>
