@@ -4,6 +4,7 @@ node_modules/
 .turbo/
 coverage/
 pnpm-lock.yaml
-.pnpm-store/contracts/artifacts/
+.pnpm-store/
+contracts/artifacts/
 contracts/cache/
 contracts/types/
