@@ -84,6 +84,7 @@ pnpm abi                  # recopie l'ABI de CTFPlatform dans lib/onchain/ (apr�
 pnpm chain                # nœud Hardhat local (chain id 84532, comme Base Sepolia)
 pnpm chain:deploy         # déploie CTFPlatform + TestLevel en local, 2 CTF d'exemple, écrit .env.local
 ADVANCE=7200 pnpm chain:time  # avance l'horloge du nœud local (en secondes)
+PLAYER=2 CTF=0 LEVEL=0 pnpm chain:solve  # résout l'instance de test d'un joueur (« exploit » de TestLevel)
 ```
 
 Avant de considérer une tâche finie : `pnpm lint` et `pnpm typecheck` passent, plus `pnpm contracts:test` si un contrat a changé.

@@ -14,7 +14,7 @@ import {
   type DisputeState,
 } from "@/lib/ctf/dispute"
 import { initialDispute } from "@/lib/mock/disputes"
-import type { Ctf, CtfStatus } from "@/lib/mock/explore"
+import { type Ctf, type CtfStatus } from "@/lib/ctf/types"
 
 const statusOf: Record<DisputePhase, CtfStatus> = {
   contestation: "contestation",

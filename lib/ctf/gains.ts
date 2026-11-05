@@ -1,7 +1,7 @@
 // Détail de ce que doit la plateforme à une adresse, CTF par CTF.
 // On-chain, `owed` est un seul solde par adresse : ce détail sert à
 // l'expliquer, `withdraw()` retire toujours le total.
-import type { Ctf } from "@/lib/mock/explore"
+import { type Ctf } from "@/lib/ctf/types"
 import type { MyOrganized, MyParticipation } from "@/lib/mock/my-ctfs"
 
 export type GainLine = {

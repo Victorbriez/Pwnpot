@@ -48,6 +48,9 @@ const periods = {
   arbitratorTimeout: 30n * MINUTE,
 }
 
+// Point de départ de la lecture des events par le front.
+const deployBlock = await publicClient.getBlockNumber()
+
 // Le premier compte (deployer) déploie par défaut.
 const platform = await viem.deployContract("CTFPlatform", [
   arbitrator.account.address,
@@ -106,6 +109,8 @@ const envPath = fileURLToPath(new URL("../../.env.local", import.meta.url))
 const values: Record<string, string> = {
   NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL: LOCAL_RPC,
   NEXT_PUBLIC_CTF_PLATFORM_ADDRESS: platform.address,
+  NEXT_PUBLIC_CTF_PLATFORM_DEPLOY_BLOCK: deployBlock.toString(),
+  NEXT_PUBLIC_TEST_FACTORY_ADDRESS: testLevel.address,
 }
 let env = existsSync(envPath) ? readFileSync(envPath, "utf8") : ""
 for (const [key, value] of Object.entries(values)) {
@@ -119,7 +124,7 @@ writeFileSync(envPath, env)
 
 console.log(`
 CTFPlatform  ${platform.address}
-TestLevel    ${testLevel.address}  (factory de test, à coller dans le formulaire de création)
+TestLevel    ${testLevel.address}  (factory de test, proposée dans le formulaire de création)
 
 Comptes (clés privées affichées par \`pnpm chain\`) :
   #0 déployeur    ${deployer.account.address}

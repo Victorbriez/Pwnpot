@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import type {
   ContractFunctionArgs,
   ContractFunctionName,
@@ -57,6 +58,7 @@ function demoHash(): Hash {
  * contrat, la transaction est simulée avec la même interface.
  */
 export function usePlatformTx(): PlatformTx {
+  const queryClient = useQueryClient()
   const write = useWriteContract()
   const receipt = useWaitForTransactionReceipt({
     hash: write.data,
@@ -78,7 +80,9 @@ export function usePlatformTx(): PlatformTx {
     if (!confirmedReceipt) return
     onSuccess.current?.(confirmedReceipt)
     onSuccess.current = undefined
-  }, [confirmedReceipt])
+    // Toutes les lectures du contrat et des events se rafraîchissent.
+    void queryClient.invalidateQueries()
+  }, [confirmedReceipt, queryClient])
 
   const isDemo = ctfPlatformAddress === undefined
 

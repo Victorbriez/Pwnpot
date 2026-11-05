@@ -2,7 +2,7 @@
 
 import { useConnection } from "wagmi"
 
-import { isClosed } from "@/lib/mock/explore"
+import { isClosed } from "@/lib/ctf/types"
 import {
   myOrganized,
   myParticipations,

@@ -10,7 +10,8 @@ import { HeroActions } from "@/components/landing/hero-actions"
 import { Settlement } from "@/components/landing/settlement"
 import { TrustList } from "@/components/landing/trust-list"
 import { formatEth, formatRemaining } from "@/lib/format"
-import { ctfs, type Vuln } from "@/lib/mock/explore"
+import { type Vuln } from "@/lib/ctf/types"
+import { ctfs } from "@/lib/mock/explore"
 import { TextLink } from "@/components/site/text-link"
 
 // Les trois épreuves de docs/CHALLENGES.md.

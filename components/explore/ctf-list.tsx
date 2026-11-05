@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/empty"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { SectionHeading } from "@/components/site/page-header"
-import { isClosed, type Ctf } from "@/lib/mock/explore"
+import { isClosed, type Ctf } from "@/lib/ctf/types"
 
 const filters = {
   all: { label: "Tous", test: () => true },

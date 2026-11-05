@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge"
-import type { CtfStatus } from "@/lib/mock/explore"
+import { type CtfStatus } from "@/lib/ctf/types"
 import { cn } from "@/lib/utils"
 
 type Variant = "brand" | "success" | "warning" | "info" | "muted"

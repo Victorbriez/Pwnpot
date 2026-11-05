@@ -2,59 +2,9 @@
 // Elles seront remplacées par la lecture de l'état et des events du contrat.
 // Les valeurs suivent docs/DESIGN.md : maxPlayers ≤ 200 et
 // caution ≥ cashPrize + maxPlayers × ticketPrice.
-import { parseEther, type Address } from "viem"
+import { parseEther } from "viem"
 
-/** Les trois épreuves de lancement (docs/CHALLENGES.md). */
-export type Vuln = "reentrancy" | "tx-origin" | "storage"
-
-/** Phases du cycle de vie d'un CTF (docs/DESIGN.md). */
-export type CtfStatus =
-  | "open"
-  | "running"
-  | "contestation"
-  | "voting"
-  | "appeal"
-  | "finalized"
-  | "cheated"
-
-export type CtfLevel = "beginner" | "advanced"
-
-export type Ctf = {
-  id: number
-  title: string
-  organizer: Address
-  challenges: number
-  cashPrize: bigint
-  ticketPrice: bigint
-  /** Cagnotte : cash prize + tickets vendus. */
-  prizePool: bigint
-  bond: bigint
-  players: number
-  maxPlayers: number
-  status: CtfStatus
-  level: CtfLevel
-  vulns: Vuln[]
-  /** Secondes avant la fin de la phase en cours. */
-  remaining: number
-  /** Part de la phase déjà écoulée, entre 0 et 1. */
-  elapsed: number
-}
-
-export const vulnLabels: Record<Vuln, string> = {
-  reentrancy: "Réentrance",
-  "tx-origin": "tx.origin",
-  storage: "Storage privé",
-}
-
-/** Phases où le CTF est terminé et les fonds sont à retirer. */
-export function isClosed(status: CtfStatus) {
-  return status === "finalized" || status === "cheated"
-}
-
-/** Phases où un litige est en cours. */
-export function inDispute(status: CtfStatus) {
-  return status === "voting" || status === "appeal"
-}
+import { inDispute, isClosed, type Ctf, type Vuln } from "@/lib/ctf/types"
 
 function ctf(
   data: Omit<Ctf, "prizePool" | "cashPrize" | "ticketPrice" | "bond"> & {
