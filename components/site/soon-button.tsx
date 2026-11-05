@@ -12,7 +12,7 @@ export function PublishCtfButton({
   size?: "default" | "lg"
 }) {
   return (
-    <Link href="/create" className={buttonVariants({ variant, size })}>
+    <Link href="/organize/new" className={buttonVariants({ variant, size })}>
       <PlusIcon data-icon="inline-start" />
       Publier un CTF
     </Link>
