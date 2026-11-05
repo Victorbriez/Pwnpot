@@ -134,7 +134,7 @@ Une **tranche verticale par membre** : chacun porte le contrat, les tests **et**
 | Tranche | Responsable | Contrat + tests | Écran | Issues |
 | --- | --- | --- | --- | --- |
 | **A — Litiges** | Baptiste (`BaptisteMERY`) | Ouverture, vote, `MockArbitrator`, appel ERC-792, issues avec litige, tests de conservation | Écrans de litige | #15, #16, #17, #18, #19, #26 |
-| **B — Épreuves et sécurité** | *[nom à compléter]* | Épreuves 1 et 2, factories malveillantes, Slither | Badge de confiance des factories | #13, #14, #20, #22, #25 |
+| **B — Épreuves et sécurité** | *Yann* | Épreuves 1 et 2, factories malveillantes, Slither | Badge de confiance des factories | #13, #14, #20, #22, #25 |
 | **C — Production et parcours joueur** | Victor (`Victorbriez`) | Profil production en CI, déploiement final | Formulaire de création, « mes gains », landing | #21, #23, #24, #27, #28 |
 | **Tous** | les trois | — | — | #29 (doc finale), #30 (DEMO.md + répétitions) |
 | **Going further** | A ou B selon l'avancement | Tests d'invariants Foundry | — | #31 |
