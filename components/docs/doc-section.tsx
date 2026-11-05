@@ -1,5 +1,6 @@
 import { LightbulbIcon } from "lucide-react"
 
+import { ProseSection } from "@/components/site/prose-section"
 import { cn } from "@/lib/utils"
 
 /** Sections de la doc, dans l'ordre : sert au sommaire et aux ancres. */
@@ -18,43 +19,14 @@ export const docSections = [
 
 export type DocSectionId = (typeof docSections)[number]["id"]
 
-/** Section avec un titre ancré (#) qu'on peut copier pour partager. */
-export function DocSection({
-  id,
-  title,
-  lead,
-  children,
-}: {
+/** Section de la doc : même gabarit que les pages légales. */
+export function DocSection(props: {
   id: DocSectionId
   title: string
   lead?: React.ReactNode
   children: React.ReactNode
 }) {
-  return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-titre`}
-      className="flex scroll-mt-24 flex-col gap-5 border-t pt-10 first:border-t-0 first:pt-0"
-    >
-      <div className="flex flex-col gap-2">
-        <h2
-          id={`${id}-titre`}
-          className="group text-2xl font-semibold tracking-tight text-balance"
-        >
-          {title}
-          <a
-            href={`#${id}`}
-            aria-label={`Lien vers « ${title} »`}
-            className="ml-2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-          >
-            #
-          </a>
-        </h2>
-        {lead && <p className="text-pretty text-muted-foreground">{lead}</p>}
-      </div>
-      {children}
-    </section>
-  )
+  return <ProseSection {...props} />
 }
 
 export function DocSubheading({ children }: { children: React.ReactNode }) {
