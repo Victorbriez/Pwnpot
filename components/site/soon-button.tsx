@@ -1,11 +1,9 @@
-"use client"
-
+import Link from "next/link"
 import { PlusIcon } from "lucide-react"
-import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 
-/** « Publier un CTF » : la page arrive avec le contrat CTFPlatform. */
+/** « Publier un CTF » : mène au formulaire de création. */
 export function PublishCtfButton({
   variant = "default",
   size = "lg",
@@ -14,18 +12,9 @@ export function PublishCtfButton({
   size?: "default" | "lg"
 }) {
   return (
-    <Button
-      variant={variant}
-      size={size}
-      onClick={() =>
-        toast("Publication bientôt disponible", {
-          description:
-            "Elle arrive avec le déploiement du contrat CTFPlatform.",
-        })
-      }
-    >
+    <Link href="/create" className={buttonVariants({ variant, size })}>
       <PlusIcon data-icon="inline-start" />
       Publier un CTF
-    </Button>
+    </Link>
   )
 }
