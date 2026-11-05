@@ -29,7 +29,7 @@ const phasePrefix: Record<CtfStatus, string> = {
   cheated: "",
 }
 
-function remainingLabel(ctf: Ctf) {
+export function remainingLabel(ctf: Ctf) {
   if (isClosed(ctf.status)) return "clôturé"
   return `${phasePrefix[ctf.status]} ${formatRemaining(ctf.remaining)}`
 }
