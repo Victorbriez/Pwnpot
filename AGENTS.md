@@ -58,6 +58,11 @@ lib/mock/                      données fictives en attendant CTFPlatform
 - Montants en `bigint` (wei) jusqu'à l'affichage ; formater avec `formatEther` / `formatUnits`.
 - Une seule config wagmi : `wagmiConfig` dans `lib/onchain/wagmi.ts`, typée via `Register`. Ne pas en créer d'autre.
 - `@base-org/account` est exclu du bundle serveur (`serverExternalPackages` dans `next.config.ts`) : ne pas retirer cette ligne, le build casse sinon.
+- **Mode démo / mode contrat** : sans `NEXT_PUBLIC_CTF_PLATFORM_ADDRESS`, les hooks renvoient les mocks de `lib/mock/` et les transactions sont simulées ; avec, tout est lu dans le contrat. Les composants passent par les hooks (`useCtfs`, `useCtf`, `useCtfPlay`, `useMyCtfs`, `useWithdrawals`) ; seuls les graphiques d'Explorer et les litiges lisent les mocks directement, et ne s'affichent qu'en démo.
+- ABI : `lib/onchain/ctf-platform-abi.ts` est généré (`pnpm abi`), ne pas l'écrire à la main. La CI échoue s'il n'est pas à jour.
+- Events : `usePlatformEvents(nom, args)` lit depuis `NEXT_PUBLIC_CTF_PLATFORM_DEPLOY_BLOCK`. Types partagés dans `lib/ctf/types.ts`, conversion contrat → `Ctf` dans `lib/onchain/mappers.ts`.
+- Après une transaction confirmée, `usePlatformTx` invalide toutes les requêtes : pas de mise à jour manuelle de l'état.
+- Litiges : pas encore dans le contrat, donc démo seulement (état vide « bientôt » en mode contrat).
 
 ## Contrats
 
