@@ -25,6 +25,9 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
     uint256 public constant MAX_PLAYERS = 200;
     uint256 public constant MIN_DURATION = 1 hours;
     uint256 public constant MAX_DURATION = 30 days;
+    uint256 public constant MAX_LEVELS = 10;
+    /// Longueur maximale du titre, en octets.
+    uint256 public constant MAX_TITLE_LENGTH = 100;
     /// Gaz maximal donné à `validateInstance`.
     uint256 public constant VALIDATION_GAS = 300_000;
 
@@ -88,6 +91,7 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
         CTFParams calldata p,
         address[] calldata factories
     ) external payable nonReentrant returns (uint256 ctfId) {
+        if (bytes(p.title).length > MAX_TITLE_LENGTH) revert TitleTooLong();
         if (p.startTime < block.timestamp) revert StartInPast();
         if (p.endTime <= p.startTime) revert InvalidDuration();
         uint256 duration = p.endTime - p.startTime;
@@ -100,6 +104,7 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
         uint256 expected = p.cashPrize + p.organizerBond;
         if (msg.value != expected) revert WrongValue(expected, msg.value);
         if (factories.length == 0) revert NoLevels();
+        if (factories.length > MAX_LEVELS) revert TooManyLevels();
 
         ctfId = ctfCount++;
 
@@ -132,10 +137,12 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
     // ---------------------------------------------------------------------
 
     /// Un seul ticket par adresse, jusqu'à `maxPlayers`, avant `endTime`.
+    /// L'organisateur ne peut pas jouer à son propre CTF.
     function buyTicket(uint256 ctfId) external payable nonReentrant {
         CTF storage c = _ctf(ctfId);
         Phase phase = _phase(c);
         if (phase != Phase.Open && phase != Phase.Running) revert WrongPhase(phase);
+        if (msg.sender == c.organizer) revert OrganizerCannotPlay();
         Player storage player = _players[ctfId][msg.sender];
         if (player.hasTicket) revert AlreadyHasTicket();
         if (c.playerCount >= c.maxPlayers) revert CTFFull();
