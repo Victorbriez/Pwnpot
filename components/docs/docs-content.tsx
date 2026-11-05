@@ -296,7 +296,7 @@ function DataTable({
 
 export function DocsContent() {
   return (
-    <div className="flex max-w-3xl min-w-0 flex-col gap-12">
+    <>
       <DocSection
         id="principe"
         title="Le principe"
@@ -743,6 +743,6 @@ export function DocsContent() {
           ))}
         </dl>
       </DocSection>
-    </div>
+    </>
   )
 }

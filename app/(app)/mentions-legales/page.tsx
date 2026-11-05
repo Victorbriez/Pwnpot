@@ -31,14 +31,14 @@ export default function LegalPage() {
       title="Mentions légales"
       sections={sections}
       intro={
-        <p>
+        <>
           Pwnpot est un projet étudiant, déployé uniquement sur le réseau de
           test Base Sepolia. L&apos;utilisation du site est encadrée par les{" "}
           <InternalLink href="/cgu">
             conditions générales d&apos;utilisation
           </InternalLink>
           . Mise à jour : {site.legalUpdatedAt}.
-        </p>
+        </>
       }
     >
       <LegalSection id="editeur" title="Éditeur">

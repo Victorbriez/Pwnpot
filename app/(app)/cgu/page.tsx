@@ -33,13 +33,13 @@ export default function CguPage() {
       title="Conditions générales d'utilisation"
       sections={sections}
       intro={
-        <p>
+        <>
           Ces conditions encadrent l&apos;utilisation du site Pwnpot. Les
           informations sur l&apos;éditeur et les données personnelles sont dans
           les{" "}
           <InternalLink href="/mentions-legales">mentions légales</InternalLink>
           . Mise à jour : {site.legalUpdatedAt}.
-        </p>
+        </>
       }
     >
       <LegalSection id="objet" title="Objet">
