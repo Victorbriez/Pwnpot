@@ -1,4 +1,9 @@
+import { contestBond } from "@/lib/ctf/dispute"
+import { formatEth } from "@/lib/format"
 import { cn } from "@/lib/utils"
+
+// Plancher de la caution de contestation (avec un ticket gratuit).
+const minContestBond = formatEth(contestBond(BigInt(0)))
 
 // Étapes et durées de docs/DESIGN.md (§ Litiges et appel, § Paramètres).
 const steps: {
@@ -12,14 +17,14 @@ const steps: {
     title: "Ouvrir le litige",
     who: "Un détenteur de ticket",
     duration: "48 h après la deadline",
-    body: "Il dépose une caution de contestation (3 × le ticket). Un seul litige par CTF. Rejeté, il perd sa caution au profit de l'organisateur.",
+    body: `Il dépose une caution de contestation : 3 × le ticket, ${minContestBond} au minimum. Un seul litige par CTF. Rejeté, il perd sa caution au profit de l'organisateur.`,
     call: "openDispute(ctfId)",
   },
   {
     title: "Voter",
     who: "Les détenteurs de tickets",
     duration: "48 h",
-    body: "1 ticket = 1 voix. La triche est retenue avec plus de 50 % des voix exprimées, et seulement si 20 % des tickets ont voté.",
+    body: "1 ticket = 1 voix. La triche est retenue avec plus de 50 % des voix exprimées, à condition d'avoir au moins 3 votants et au moins 20 % des tickets. Quorum raté : pas de triche.",
     call: "vote(ctfId, cheated)",
   },
   {
