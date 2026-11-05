@@ -34,7 +34,7 @@ N'importe qui peut publier un CTF. Chaque épreuve est un contrat volontairement
 | Écrans du frontend (liste des CTF, jeu, litiges) | ⏳ à faire |
 | Déploiement vérifié sur Basescan | ⏳ à faire |
 
-> Le design ci-dessous est la cible. Les points encore ouverts sont listés dans [docs/DESIGN.md § Décisions à trancher](docs/DESIGN.md#décisions-à-trancher).
+> Le design ci-dessous est la cible. Les choix de l'équipe sont résumés dans [docs/DESIGN.md § Décisions actées](docs/DESIGN.md#décisions-actées).
 
 ---
 
@@ -56,13 +56,13 @@ flowchart LR
     platform -->|"withdraw()"| winner(["Gagnant"])
 ```
 
-1. **Création** : l'organisateur publie un CTF (une ou plusieurs épreuves, chacune avec sa factory). Il dépose le **cash prize** et une **caution**, et fixe le prix du ticket, le nombre maximum de joueurs et les dates.
-2. **Inscription** : le joueur paie son ticket. Le montant s'ajoute à la cagnotte.
+1. **Création** : l'organisateur publie un CTF (une ou plusieurs épreuves, chacune avec sa factory). Il dépose le **cash prize** et une **caution** d'au moins `cashPrize + maxPlayers × ticketPrice`, et fixe le prix du ticket (minimum 0.0001 ETH), le nombre maximum de joueurs (1 à 200) et les dates.
+2. **Inscription** : le joueur paie son ticket, un seul par adresse. Le montant s'ajoute à la cagnotte.
 3. **Jeu** : pour chaque épreuve, le joueur demande **sa propre instance** du contrat vulnérable, puis l'exploite depuis son wallet ou avec son propre contrat d'attaque.
 4. **Validation** : le joueur soumet. La plateforme demande à la factory si l'instance est résolue (`validateInstance`, appelé en `staticcall` avec une limite de gaz). Si oui, la réussite et son horodatage sont enregistrés on-chain.
-5. **Fin** : après la deadline et une fenêtre de contestation, les gains sont crédités. Chacun appelle `withdraw()` (*pull payment*).
+5. **Fin** : après la deadline et une fenêtre de contestation de 48 h, cash prize et tickets sont crédités au podium (60 / 30 / 10 %). Chacun appelle `withdraw()` (*pull payment*).
 6. **Personne n'a réussi** : les tickets sont remboursés. L'organisateur récupère son cash prize et sa caution, mais ne gagne rien.
-7. **Litige** : si un joueur soupçonne une triche de l'organisateur (solution fuitée à un complice, épreuve truquée), il ouvre un litige en déposant une caution. Les joueurs votent, puis le camp perdant peut faire appel à un arbitre ERC-792.
+7. **Litige** : si un joueur soupçonne une triche de l'organisateur (solution fuitée à un complice, épreuve truquée), il ouvre un litige en déposant une caution de contestation. Les joueurs votent (1 adresse = 1 voix), puis le camp perdant peut faire appel à un arbitre ERC-792. Si la triche est confirmée, la caution de l'organisateur est brûlée, son cash prize lui est rendu et les tickets sont remboursés.
 
 Le détail des phases, des flux d'argent et des règles est dans [docs/DESIGN.md](docs/DESIGN.md).
 
@@ -78,7 +78,7 @@ Les quatre points ci-dessous suivent la structure du test de décentralisation d
 4. **Ce qui reste trusted.**
    - **L'organisateur connaît les solutions** et peut les fuiter à un complice. Ce n'est pas prouvable on-chain. C'est dissuadé économiquement par sa caution, et contestable par un litige.
    - **Une factory est écrite par l'organisateur** : elle peut être truquée (validation qui refuse certains joueurs, porte dérobée). Les joueurs doivent lire le code vérifié avant de payer. Le litige couvre ce cas.
-   - **Le vote des joueurs est intéressé** : les perdants ont intérêt à voter « triche », et l'organisateur peut acheter des tickets pour peser dans le vote. L'appel à l'arbitre corrige ces deux biais.
+   - **Le vote des joueurs est intéressé** : les perdants ont intérêt à voter « triche », et l'organisateur peut inscrire des complices (un ticket payant par adresse) pour peser dans le vote. L'appel à l'arbitre corrige ces deux biais.
    - **L'arbitre**, fixé au déploiement, est trusted en appel, et seulement sur les fonds du litige.
 
 > Pwnpot n'est pas « fully decentralised » : il réduit la confiance au minimum, rend sa trahison coûteuse, et l'écrit noir sur blanc.
@@ -89,9 +89,9 @@ Les quatre points ci-dessous suivent la structure du test de décentralisation d
 
 | Rôle | Ce qu'il peut faire | S'il agit de mauvaise foi | S'il disparaît |
 | --- | --- | --- | --- |
-| **Organisateur** | Publier un CTF, choisir ses factories, déposer cash prize + caution | Fuiter une solution, publier une épreuve impossible ou truquée. **Limite :** il ne peut pas toucher aux fonds. Une épreuve impossible ne lui rapporte rien (tickets remboursés). Une triche prouvée par litige lui coûte sa caution. | Rien n'est bloqué : le CTF va jusqu'à sa deadline, puis les fonds sont distribués selon les règles. |
-| **Joueur** | Payer un ticket, créer ses instances, soumettre, contester, voter | Contester à tort : il perd sa caution de contestation, versée à l'organisateur. Acheter plusieurs tickets pour peser dans un vote : coûteux, et corrigé par l'appel. | Aucun impact sur les autres. |
-| **Votants** (détenteurs de tickets) | Trancher un litige en première instance | Voter par intérêt plutôt que sur les faits. Corrigé par l'appel. | Quorum non atteint : pas de sanction, le CTF se termine normalement. |
+| **Organisateur** | Publier un CTF, choisir ses factories, déposer cash prize + caution | Fuiter une solution, publier une épreuve impossible ou truquée. **Limite :** il ne peut pas toucher aux fonds. Une épreuve impossible ne lui rapporte rien (tickets remboursés). Une triche prouvée par litige lui coûte sa caution, qui est brûlée (son cash prize lui est rendu). | Rien n'est bloqué : le CTF va jusqu'à sa deadline, puis les fonds sont distribués selon les règles. |
+| **Joueur** | Payer un ticket, créer ses instances, soumettre, contester, voter | Contester à tort : il perd sa caution de contestation, versée à l'organisateur. Multiplier les adresses pour peser dans un vote : un ticket par adresse, donc coûteux, et corrigé par l'appel. | Aucun impact sur les autres. |
+| **Votants** (détenteurs de tickets, 1 adresse = 1 voix) | Trancher un litige en première instance | Voter par intérêt plutôt que sur les faits. Corrigé par l'appel. | Quorum (max(3 votants, 20 % des tickets)) non atteint : résultat « pas de triche », le contestataire peut faire appel. |
 | **Arbitre** (ERC-792, `immutable`) | Trancher un litige **en appel uniquement** | Orienter les fonds **du litige** dans un sens ou dans l'autre. Il ne peut jamais toucher les fonds hors litige ni les autres CTF. | Après un timeout, la décision du vote s'applique. |
 | **Factory d'épreuve** (code tiers) | Déployer une instance, répondre à `validateInstance` | Refuser la validation, consommer tout le gaz, tenter une réentrance. Mitigé par `staticcall` + limite de gaz + `nonReentrant`, le reste relève du litige. | Une factory qui revert bloque seulement son épreuve, jamais les fonds. |
 | **Déployeur** | Déployer `CTFPlatform` et choisir l'arbitre | **Aucun pouvoir après le déploiement** : pas d'owner, pas de proxy, pas de pause. Son seul choix structurant est l'arbitre, visible par tous. | Aucun impact. |
@@ -197,7 +197,7 @@ pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532 --netwo
 
 | Document | Contenu |
 | --- | --- |
-| [docs/DESIGN.md](docs/DESIGN.md) | Cycle de vie d'un CTF, flux d'argent, litiges et appel, réponse à chaque problématique, paramètres, décisions à trancher |
+| [docs/DESIGN.md](docs/DESIGN.md) | Cycle de vie d'un CTF, flux d'argent, litiges et appel, réponse à chaque problématique, paramètres, décisions actées |
 | [docs/CHALLENGES.md](docs/CHALLENGES.md) | Interface d'une épreuve, les 3 épreuves (faille, condition de réussite, exploit), comment en ajouter une |
 | [docs/SECURITY.md](docs/SECURITY.md) | Modèle de menace : attaques possibles, parades, limites connues |
 | [contracts/README.md](contracts/README.md) | Travailler dans le workspace Hardhat |
