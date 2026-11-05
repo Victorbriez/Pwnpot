@@ -66,9 +66,32 @@ import {
   type DurationDays,
 } from "@/lib/ctf/params"
 import { formatEth } from "@/lib/format"
-import { knownFactories, knownFactoryAddress } from "@/lib/onchain/factories"
+import {
+  knownFactories,
+  knownFactoryAddress,
+  testFactoryAddress,
+  type KnownFactory,
+} from "@/lib/onchain/factories"
 import { truncateAddress } from "@/lib/onchain/format"
 import { cn } from "@/lib/utils"
+
+type FactoryOption = Omit<KnownFactory, "vuln"> & {
+  vuln?: KnownFactory["vuln"]
+}
+
+// La factory de test (`pnpm chain:deploy`) n'existe qu'en local.
+const factoryOptions: FactoryOption[] = testFactoryAddress
+  ? [
+      ...knownFactories,
+      { id: "test", name: "Factory de test", address: testFactoryAddress },
+    ]
+  : knownFactories
+
+function optionAddress(option: FactoryOption) {
+  return option.vuln
+    ? knownFactoryAddress(option as KnownFactory)
+    : (option.address as Address)
+}
 
 type Amounts = { cashPrize: string; ticketPrice: string; maxPlayers: string }
 
@@ -108,9 +131,7 @@ export function CreateCtfForm() {
 
   // L'ordre des factories donne l'index des épreuves dans le CTF.
   const factories: Address[] = [
-    ...knownFactories
-      .filter((f) => selected.includes(f.id))
-      .map(knownFactoryAddress),
+    ...factoryOptions.filter((f) => selected.includes(f.id)).map(optionAddress),
     ...custom,
   ]
   const draft = {
@@ -225,7 +246,7 @@ export function CreateCtfForm() {
                 data-slot="checkbox-group"
                 className="grid sm:grid-cols-3"
               >
-                {knownFactories.map((factory) => {
+                {factoryOptions.map((factory) => {
                   const unavailable = !factory.address && !tx.isDemo
                   const id = `factory-${factory.id}`
                   return (
@@ -236,7 +257,13 @@ export function CreateCtfForm() {
                       >
                         <FieldContent className="gap-2">
                           <FieldTitle>{factory.name}</FieldTitle>
-                          <VulnTag vuln={factory.vuln} />
+                          {factory.vuln ? (
+                            <VulnTag vuln={factory.vuln} />
+                          ) : (
+                            <Badge variant="muted" className="h-6 px-2.5">
+                              Sans exploit
+                            </Badge>
+                          )}
                         </FieldContent>
                         <Checkbox
                           id={id}
