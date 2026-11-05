@@ -11,6 +11,7 @@ import { Settlement } from "@/components/landing/settlement"
 import { TrustList } from "@/components/landing/trust-list"
 import { formatEth, formatRemaining } from "@/lib/format"
 import { ctfs, type Vuln } from "@/lib/mock/explore"
+import { TextLink } from "@/components/site/text-link"
 
 // Les trois épreuves de docs/CHALLENGES.md.
 const challenges: {
@@ -138,6 +139,9 @@ export default function HomePage() {
               Personne ne reçoit de virement : chacun voit son solde crédité et
               le retire lui-même.
             </p>
+            <TextLink href="/docs" className="text-sm">
+              Lire toutes les règles
+            </TextLink>
           </div>
           <Settlement />
         </div>

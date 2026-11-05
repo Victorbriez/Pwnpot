@@ -49,3 +49,7 @@ export const site = {
 export function explorerAddressUrl(address: Address) {
   return `${site.links.explorer}/address/${address}`
 }
+
+export function explorerTxUrl(hash: `0x${string}`) {
+  return `${site.links.explorer}/tx/${hash}`
+}

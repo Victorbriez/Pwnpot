@@ -7,6 +7,7 @@ import {
   LegalSection,
 } from "@/components/legal/legal-doc"
 import { site } from "@/lib/site"
+import { TextLink } from "@/components/site/text-link"
 
 export const metadata: Metadata = {
   title: "Mentions légales",
@@ -31,14 +32,14 @@ export default function LegalPage() {
       title="Mentions légales"
       sections={sections}
       intro={
-        <p>
+        <>
           Pwnpot est un projet étudiant, déployé uniquement sur le réseau de
           test Base Sepolia. L&apos;utilisation du site est encadrée par les{" "}
           <InternalLink href="/cgu">
             conditions générales d&apos;utilisation
           </InternalLink>
           . Mise à jour : {site.legalUpdatedAt}.
-        </p>
+        </>
       }
     >
       <LegalSection id="editeur" title="Éditeur">
@@ -54,12 +55,9 @@ export default function LegalPage() {
         {editor.contact ? (
           <p>
             Contact :{" "}
-            <a
-              href={`mailto:${editor.contact}`}
-              className="font-medium text-foreground underline underline-offset-4"
-            >
+            <TextLink href={`mailto:${editor.contact}`}>
               {editor.contact}
-            </a>
+            </TextLink>
           </p>
         ) : (
           <p>

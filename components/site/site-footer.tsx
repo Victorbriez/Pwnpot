@@ -13,9 +13,10 @@ const columns: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: "Accueil", href: "/" },
       { label: "Explorer les CTF", href: "/explore" },
-      { label: "Où va l'argent", href: "/#comment-ca-marche" },
-      { label: "Contester une triche", href: "/#litiges" },
-      { label: "Les épreuves", href: "/#epreuves" },
+      { label: "Documentation", href: "/docs" },
+      { label: "Où va l'argent", href: "/docs#argent" },
+      { label: "Contester une triche", href: "/docs#litiges" },
+      { label: "Les épreuves", href: "/docs#epreuves" },
     ],
   },
   {

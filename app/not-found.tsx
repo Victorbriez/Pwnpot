@@ -4,6 +4,7 @@ import Link from "next/link"
 import { NotFoundTrace } from "@/components/status/not-found-trace"
 import { StatusScreen } from "@/components/status/status-screen"
 import { buttonVariants } from "@/components/ui/button"
+import { TextLink } from "@/components/site/text-link"
 
 export const metadata: Metadata = {
   title: "Page introuvable",
@@ -32,12 +33,9 @@ export default function NotFound() {
       hint={
         <>
           Tu cherchais une faille ?{" "}
-          <Link
-            href="/#epreuves"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
+          <TextLink href="/docs#epreuves">
             Les vraies sont dans les épreuves.
-          </Link>
+          </TextLink>
         </>
       }
       aside={<NotFoundTrace />}
