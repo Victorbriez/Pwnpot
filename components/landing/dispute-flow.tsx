@@ -18,7 +18,7 @@ const steps: Step[] = [
     title: "Voter",
     who: "Les détenteurs de tickets",
     duration: "48 h",
-    body: "1 ticket = 1 voix. La triche est retenue avec plus de 50 % des voix exprimées, à condition d'avoir au moins 3 votants et au moins 20 % des tickets. Quorum raté : pas de triche.",
+    body: "1 adresse = 1 voix. La triche est retenue avec plus de 50 % des voix exprimées, à condition d'avoir au moins 3 votants et au moins 20 % des tickets. Quorum raté : pas de triche.",
     call: "vote(ctfId, cheated)",
   },
   {
@@ -50,8 +50,8 @@ export function DisputeFlow() {
     <div className="flex flex-col gap-8">
       <StepList steps={steps} />
       <p className="text-xs text-pretty text-muted-foreground">
-        Durées et seuils proposés dans le dossier de conception, raccourcis à
-        quelques minutes pour la démo.
+        Durées et seuils du dossier de conception, raccourcis à quelques minutes
+        pour la démo.
       </p>
     </div>
   )

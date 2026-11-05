@@ -58,7 +58,7 @@ const outcomes: {
   {
     label: "Des gagnants",
     when: "Au moins une épreuve validée avant la deadline.",
-    note: "Partage du podium 60 / 30 / 10 % (proposé).",
+    note: "Partage du podium 60 / 30 / 10 %.",
     flows: [
       { to: "winners", amount: parseEther("1.2") },
       { to: "organizer", amount: parseEther("1.4") },
@@ -85,7 +85,7 @@ const outcomes: {
   {
     label: "Triche confirmée",
     when: "Le litige retient la triche de l'organisateur.",
-    note: "Le sort du cash prize est encore à trancher : ici, il est rendu.",
+    note: "La caution est brûlée ; le cash prize est rendu à l'organisateur.",
     flows: [
       { to: "players", amount: parseEther("0.8") },
       { to: "contester", amount: parseEther("0.15") },
