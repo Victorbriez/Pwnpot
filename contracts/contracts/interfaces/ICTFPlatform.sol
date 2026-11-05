@@ -89,6 +89,7 @@ interface ICTFPlatform is IArbitrable {
     error ZeroPeriod();
 
     // createCTF
+    error TitleTooLong();
     error StartInPast();
     error InvalidDuration();
     error InvalidMaxPlayers();
@@ -96,6 +97,7 @@ interface ICTFPlatform is IArbitrable {
     error ZeroCashPrize();
     error BondTooLow(uint256 required, uint256 provided);
     error NoLevels();
+    error TooManyLevels();
     error FactoryNotContract(address factory);
 
     // Commun
@@ -104,6 +106,7 @@ interface ICTFPlatform is IArbitrable {
     error WrongValue(uint256 expected, uint256 sent);
 
     // buyTicket
+    error OrganizerCannotPlay();
     error AlreadyHasTicket();
     error CTFFull();
 
