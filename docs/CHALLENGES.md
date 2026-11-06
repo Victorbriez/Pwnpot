@@ -65,7 +65,11 @@ La plateforme enregistre l'instance de chaque joueur au moment de sa création. 
 
 ```solidity
 contract Vault {
-    mapping(address => uint256) public balances;
+    uint256 public immutable initialBalance;
+    mapping(address account => uint256 amount) public balances;
+    bool public drained;   // ne revient jamais à false
+
+    constructor() payable { initialBalance = msg.value; }   // alimenté par la factory
 
     function deposit() external payable { balances[msg.sender] += msg.value; }
 
@@ -73,23 +77,34 @@ contract Vault {
         uint256 amount = balances[msg.sender];
         (bool ok, ) = msg.sender.call{value: amount}("");   // interaction AVANT l'effet
         require(ok);
+        if (address(this).balance == 0) drained = true;     // résolu pour de bon
         balances[msg.sender] = 0;
     }
 }
 ```
 
-**Condition de réussite.** `initialBalance > 0 && address(instance).balance == 0`, où `initialBalance` est le solde enregistré par l'instance à sa création.
+**Condition de réussite.** `initialBalance > 0 && drained`, où `initialBalance` est le solde enregistré par l'instance à sa création et `drained` un drapeau définitif posé par `withdraw` quand il laisse le coffre vide. Inutile de relire le solde : l'ETH ne peut sortir du coffre que par `withdraw`, qui pose `drained` dès qu'il le vide. L'instance doit aussi avoir été créée par la factory pour ce joueur.
 
-**Exploit attendu.** Le joueur déploie un contrat d'attaque, fait un petit dépôt, puis appelle `withdraw`. Son `receive()` rappelle `withdraw` tant que le coffre n'est pas vide.
+**Exploit attendu.** Le joueur déploie un contrat d'attaque, fait un petit dépôt, puis appelle `withdraw`. Son `receive()` rappelle `withdraw` tant que le coffre n'est pas vide. Pour que le coffre finisse exactement à 0, le dépôt est égal au solde du coffre lu dans la même transaction : deux retraits le vident (exemple de test : `contracts/contracts/exploits/VaultAttack.sol`, qui accepte une marge et rend l'excédent).
 
 **Ce que ça enseigne.** Checks-effects-interactions, et pourquoi `CTFPlatform` remet les soldes à zéro avant de payer (voir [SECURITY.md](SECURITY.md)).
 
 **Point de conception.** Le solde des coffres est géré par la factory, pas par `CTFPlatform`, qui reste générique.
 
-- L'organisateur **alimente sa factory** avec `maxPlayers × 0.0001 ETH`. Chaque instance démarre avec 0.0001 ETH.
-- `createInstance` **revert** si la factory ne peut plus alimenter une nouvelle instance.
-- L'instance **enregistre son solde initial**. La condition de réussite devient « solde initial > 0 **et** solde actuel == 0 ». Sans ça, un coffre jamais alimenté serait « résolu » sans exploit.
-- Ce que le joueur vide, il le garde. Après le CTF, l'organisateur récupère le reste via une fonction de la factory.
+- L'organisateur déploie `VaultFactory` et **l'alimente** avec `maxPlayers × 0.0001 ETH` (`SEED`, constante). Chaque instance démarre avec 0.0001 ETH.
+- Après `createCTF`, l'organisateur appelle **`bind(ctfId)`** une seule fois : la factory vérifie sur `CTFPlatform` qu'il est bien l'organisateur de ce CTF, que celui-ci la liste **une seule fois** parmi ses épreuves, et qu'elle détient déjà `maxPlayers × SEED` (sinon `InsufficientFunds`).
+- `createInstance` n'accepte que `CTFPlatform`, et seulement pour un joueur qui a un ticket dans le CTF lié, pendant sa phase `Running`, **une instance par joueur**. Quelqu'un qui reprend la factory dans son propre CTF ne peut donc pas vider ses fonds : il y a au plus `maxPlayers` coffres.
+- `createInstance` **revert** (`InsufficientFunds`) si la factory ne peut plus alimenter une nouvelle instance. Grâce au contrôle de `bind` et au blocage de `recover()` pendant le CTF, ça ne devrait pas arriver.
+- L'instance **enregistre son solde initial**. La condition de réussite devient « solde initial > 0 **et** coffre vidé ». Sans ça, un coffre jamais alimenté serait « résolu » sans exploit.
+- Ce que le joueur vide, il le garde. Une fois le CTF terminé, dans les phases `Contestation`, `Finalized` ou `Cheated` uniquement (pas pendant un litige : `Voting`, `AppealWindow`, `Appealed`), l'organisateur, et lui seul, récupère le reste avec **`recover()`**. Avant `bind`, aucun coffre ne peut exister : `recover()` est alors possible à tout moment.
+- L'ETH resté dans un coffre jamais vidé y reste : l'organisateur ne peut pas le récupérer, seul quelqu'un qui exploite le coffre peut le prendre (au plus 0.0001 ETH par instance non résolue).
+
+**Limites connues.**
+
+- Si l'organisateur n'appelle pas `bind(ctfId)` avant le début du CTF, `createInstance` revert (`NotBound`) : l'épreuve est injouable tant que ce n'est pas fait.
+- Forcer l'envoi de quelques wei (`selfdestruct`) vers un coffre **déjà vidé** ne le rend plus « non résolu » : dès qu'un `withdraw` laisse le coffre à 0, il passe `drained = true`, et ce drapeau ne revient jamais à `false`. Avant le premier vidage, un rival peut encore envoyer quelques wei juste avant l'exploit ; un contrat d'attaque qui dépose le solde lu dans la même transaction (comme `VaultAttack`) vide quand même le coffre, alors qu'un dépôt calculé à l'avance peut laisser un reste ou échouer.
+- N'importe qui peut vider le coffre d'un autre joueur, et la réussite compte pour le **propriétaire** du coffre, pas pour celui qui l'a vidé. Un complice peut donc résoudre l'épreuve à la place d'un joueur. C'est équivalent à lui donner l'exploit, limite déjà assumée (exploits recopiables, voir [DESIGN.md](DESIGN.md#problématiques-et-réponses)).
+- La factory ne sait pas quel CTF l'appelle : elle tient **un coffre par joueur**, tous CTF confondus. Un joueur qui crée d'abord son coffre via un autre CTF listant la même factory ne peut plus en créer dans le CTF lié (`AlreadyHasInstance`). Seul ce joueur est pénalisé, et c'est cette limite qui garantit que le financement suffit.
 
 ---
 
