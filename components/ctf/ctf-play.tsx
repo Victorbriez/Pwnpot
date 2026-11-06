@@ -3,36 +3,36 @@
 import Link from "next/link"
 import {
   ArrowDownToLineIcon,
-  BoxIcon,
-  LinkIcon,
-  VaultIcon,
   CircleCheckIcon,
   FlagIcon,
+  LinkIcon,
   SearchXIcon,
   ShieldCheckIcon,
   TicketIcon,
-  TrophyIcon,
+  VaultIcon,
 } from "lucide-react"
 import { baseSepolia } from "viem/chains"
 
 import { remainingLabel } from "@/components/ctf/ctf-card"
+import { CtfTimeline } from "@/components/ctf/ctf-timeline"
 import { FactoryVerificationBadge } from "@/components/ctf/factory-verification-badge"
 import { StatusPill } from "@/components/ctf/status-pill"
 import { VulnTag } from "@/components/ctf/vuln-tag"
 import { DisputeCard } from "@/components/dispute/dispute-card"
 import { ChainError, ChainLoading } from "@/components/onchain/chain-state"
 import { TxStatusAlert } from "@/components/onchain/tx-status"
+import { DataList, DataRow } from "@/components/site/data-list"
 import { AddressDisplay } from "@/components/ui/address-display"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { ConnectWallet } from "@/components/ui/connect-wallet"
 import {
   Empty,
   EmptyDescription,
@@ -40,15 +40,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
@@ -60,11 +51,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { DataList, DataRow } from "@/components/site/data-list"
 import {
   useCtfPlay,
   type CtfPlayModel,
   type PlayAction,
+  type PlayChallenge,
 } from "@/hooks/use-ctf-play"
 import { formatEth, formatInt, formatRemaining } from "@/lib/format"
 import { truncateAddress } from "@/lib/onchain/format"
@@ -76,6 +67,8 @@ const toneVariant = {
   warning: "warning",
   money: "success",
 } as const
+
+const placeLabels = ["1er", "2e", "3e"]
 
 export function CtfPlay({ ctfId }: { ctfId: number }) {
   const state = useCtfPlay(ctfId)
@@ -103,7 +96,7 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
 
 function CtfPlayView({ model }: { model: CtfPlayModel }) {
   const {
-    ctf: live,
+    ctf,
     challenges,
     players,
     pool,
@@ -111,22 +104,19 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
     board,
     myRank,
     solvedCount,
-    hasTicket: playerHas,
+    hasTicket,
     isOrganizer,
     role,
     dispute,
     step,
-    canBuy,
     canFinalize,
-    canRefund,
     needsWallet,
     tx,
     action,
     vaults,
   } = model
-  const ctf = live
   const busy = tx.status === "signing" || tx.status === "confirming"
-  const playing = live.status === "running"
+  const playing = ctf.status === "running"
 
   const pendingOn = (kind: PlayAction["kind"], level?: number) =>
     busy &&
@@ -140,26 +130,44 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
 
   const lockedReason = needsWallet
     ? "Connecte ton wallet pour jouer."
-    : !playerHas
+    : !hasTicket
       ? isOrganizer
-        ? "Tu organises ce CTF."
+        ? "Tu organises ce CTF : tu ne peux pas jouer."
         : "Achète un ticket pour jouer."
-      : live.status === "open"
-        ? `Les épreuves ouvrent dans ${formatRemaining(live.remaining)}.`
+      : ctf.status === "open"
+        ? `Les épreuves ouvrent dans ${formatRemaining(ctf.remaining)}.`
         : !playing
           ? "Le CTF est terminé : plus de soumission possible."
           : undefined
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <StatusPill status={live.status} />
-        <span className="font-mono text-sm text-muted-foreground tabular-nums">
-          {remainingLabel(live)}
-        </span>
-      </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-        <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
+      <header className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <StatusPill status={ctf.status} />
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {remainingLabel(ctf)}
+            </span>
+          </div>
+          <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+            {ctf.title}
+          </h1>
+          <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
+            {ctf.challenges} épreuve{ctf.challenges > 1 ? "s" : ""} · organisé
+            par
+            <AddressDisplay
+              address={ctf.organizer}
+              chainId={baseSepolia.id}
+              addressClassName="font-mono text-sm text-foreground"
+            />
+          </p>
+        </div>
+        <CtfTimeline ctf={ctf} />
+      </header>
+
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-8">
+        <div className="flex flex-col gap-10">
           {dispute && role && (
             <DisputeCard
               dispute={dispute}
@@ -170,13 +178,13 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
               onRoleChange={role.set}
             />
           )}
-          {!tx.isDemo && live.status === "contestation" && (
+          {!tx.isDemo && ctf.status === "contestation" && (
             <Card>
               <CardHeader>
                 <CardTitle>Contestation</CardTitle>
                 <CardDescription>
-                  {live.remaining > 0
-                    ? `Fenêtre de contestation ouverte encore ${formatRemaining(live.remaining)}. L'ouverture d'un litige arrive avec la prochaine version du contrat.`
+                  {ctf.remaining > 0
+                    ? `Fenêtre de contestation ouverte encore ${formatRemaining(ctf.remaining)}. L'ouverture d'un litige arrive avec la prochaine version du contrat.`
                     : "La fenêtre de contestation est passée : n'importe qui peut finaliser le CTF."}
                 </CardDescription>
               </CardHeader>
@@ -194,50 +202,48 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
               )}
             </Card>
           )}
+
           {vaults.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Ton Coffre</CardTitle>
-                <CardDescription>
-                  Chaque joueur reçoit un coffre de{" "}
-                  {formatEth(vaults[0].needed / BigInt(ctf.maxPlayers))} pris
-                  sur ces fonds. Ce qu&apos;il vide, il le garde ; tu récupères
-                  le reste après la fin du CTF.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ItemGroup className="gap-3">
-                  {vaults.map((vault) => (
-                    <Item
-                      key={vault.factory}
-                      variant="outline"
-                      className="gap-4"
-                    >
-                      <ItemMedia variant="icon">
-                        <VaultIcon />
-                      </ItemMedia>
-                      <ItemContent>
-                        <ItemTitle className="line-clamp-none flex-wrap">
-                          <AddressDisplay
-                            address={vault.factory}
-                            chainId={baseSepolia.id}
-                            addressClassName="font-mono text-sm"
-                          />
-                          {vault.bound ? (
-                            <Badge variant="success">Lié au CTF</Badge>
-                          ) : (
-                            <Badge variant="warning">Pas encore lié</Badge>
-                          )}
-                        </ItemTitle>
-                        <ItemDescription>
-                          Solde : {formatEth(vault.balance)}
-                          {!vault.bound &&
-                            (vault.funded
-                              ? ". Lie-le pour que les joueurs puissent créer leur instance."
-                              : `. Il faut ${formatEth(vault.needed)} pour le lier.`)}
-                        </ItemDescription>
-                      </ItemContent>
-                      <ItemActions>
+            <section aria-labelledby="vaults" className="flex flex-col gap-4">
+              <SectionTitle
+                id="vaults"
+                description={`Chaque joueur reçoit un coffre de ${formatEth(vaults[0].needed / BigInt(ctf.maxPlayers))} pris sur ces fonds. Ce qu'il vide, il le garde ; tu récupères le reste après la fin du CTF.`}
+              >
+                Ton Coffre
+              </SectionTitle>
+              <ul className="divide-y rounded-xl border bg-card">
+                {vaults.map((vault) => (
+                  <li
+                    key={vault.factory}
+                    className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center"
+                  >
+                    <VaultIcon
+                      aria-hidden
+                      className="hidden size-5 shrink-0 text-muted-foreground sm:block"
+                    />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <AddressDisplay
+                          address={vault.factory}
+                          chainId={baseSepolia.id}
+                          addressClassName="font-mono text-sm"
+                        />
+                        {vault.bound ? (
+                          <Badge variant="success">Lié au CTF</Badge>
+                        ) : (
+                          <Badge variant="warning">Pas encore lié</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Solde : {formatEth(vault.balance)}
+                        {!vault.bound &&
+                          (vault.funded
+                            ? ". Lie-le pour que les joueurs puissent créer leur instance."
+                            : `. Il faut ${formatEth(vault.needed)} pour le lier.`)}
+                      </p>
+                    </div>
+                    {(vault.canBind || vault.canRecover) && (
+                      <div className="flex shrink-0 gap-2">
                         {vault.canBind && (
                           <Button
                             size="sm"
@@ -267,145 +273,120 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                             Récupérer le reste
                           </Button>
                         )}
-                      </ItemActions>
-                    </Item>
-                  ))}
-                </ItemGroup>
-              </CardContent>
-            </Card>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
-          <Card>
-            <CardHeader>
-              <CardTitle>Épreuves</CardTitle>
-              <CardDescription>
-                {lockedReason ??
-                  `Crée ton instance, exploite-la, puis demande la vérification. Le contrat appelle validateInstance : pas de flag à recopier.${tx.isDemo ? " En démo, la vérification réussit toujours." : ""}`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ItemGroup className="gap-3">
-                {challenges.map((challenge, level) => {
-                  const done = challenge.done
-                  const instance = challenge.instance
-                  return (
-                    <Item
-                      key={challenge.key}
-                      variant="outline"
-                      className="gap-4"
-                    >
-                      <ItemMedia variant="icon">
-                        {done ? (
-                          <CircleCheckIcon className="text-success-text" />
-                        ) : (
-                          <BoxIcon />
-                        )}
-                      </ItemMedia>
-                      <ItemContent>
-                        <ItemTitle className="line-clamp-none flex-wrap">
-                          {level + 1}. {challenge.name}
-                          {challenge.vuln && <VulnTag vuln={challenge.vuln} />}
-                          {challenge.factory && (
-                            <FactoryVerificationBadge
-                              factory={challenge.factory}
-                              matchedByCode={challenge.matchedByCode}
-                            />
-                          )}
-                        </ItemTitle>
-                        <ItemDescription className="flex flex-col gap-1">
-                          {challenge.goal && !done && (
-                            <span>Objectif : {challenge.goal}</span>
-                          )}
-                          {done ? (
-                            <span>Réussie : 1 point.</span>
-                          ) : instance ? (
-                            <span className="flex flex-wrap items-center gap-x-2">
-                              Ton instance :
-                              <AddressDisplay
-                                address={instance}
-                                chainId={baseSepolia.id}
-                                truncate={false}
-                                addressClassName="font-mono text-xs break-all"
-                              />
-                            </span>
-                          ) : challenge.blocked && playing ? (
-                            <span>{challenge.blocked}</span>
-                          ) : playing ? (
-                            <span>Pas encore d&apos;instance.</span>
-                          ) : (
-                            <span>Non résolue.</span>
-                          )}
-                        </ItemDescription>
-                      </ItemContent>
-                      {!done &&
-                        !lockedReason &&
-                        !(challenge.blocked && !instance) && (
-                          <ItemActions>
-                            {instance ? (
-                              <Button
-                                size="sm"
-                                disabled={busy}
-                                onClick={() => model.submit(level)}
-                              >
-                                {pendingOn("submit", level) ? (
-                                  <Spinner data-icon="inline-start" />
-                                ) : (
-                                  <ShieldCheckIcon data-icon="inline-start" />
-                                )}
-                                Vérifier ma réussite
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={busy}
-                                onClick={() => model.createInstance(level)}
-                              >
-                                {pendingOn("instance", level) && (
-                                  <Spinner data-icon="inline-start" />
-                                )}
-                                Créer mon instance
-                              </Button>
-                            )}
-                          </ItemActions>
-                        )}
-                      {done && (
-                        <ItemActions>
-                          <Badge variant="success">Réussie</Badge>
-                        </ItemActions>
-                      )}
-                    </Item>
-                  )
-                })}
-              </ItemGroup>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Classement</CardTitle>
-              <CardDescription>
-                1 point par épreuve. À égalité, la dernière réussite la plus tôt
-                passe devant.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {board.length > 0 ? (
+          <section aria-labelledby="challenges" className="flex flex-col gap-4">
+            <SectionTitle
+              id="challenges"
+              aside={
+                hasTicket ? (
+                  <span className="text-sm text-muted-foreground tabular-nums">
+                    {solvedCount} / {ctf.challenges} réussie
+                    {solvedCount > 1 ? "s" : ""}
+                  </span>
+                ) : undefined
+              }
+              description={
+                lockedReason ??
+                `Crée ton instance, exploite-la, puis demande la vérification : le contrat appelle validateInstance, pas de flag à recopier.${tx.isDemo ? " En démo, la vérification réussit toujours." : ""}`
+              }
+            >
+              Épreuves
+            </SectionTitle>
+            <ol className="divide-y rounded-xl border bg-card">
+              {challenges.map((challenge, level) => (
+                <ChallengeRow
+                  key={challenge.key}
+                  challenge={challenge}
+                  level={level}
+                  playing={playing}
+                  locked={!!lockedReason}
+                  busy={busy}
+                  pendingInstance={pendingOn("instance", level)}
+                  pendingSubmit={pendingOn("submit", level)}
+                  onCreate={() => model.createInstance(level)}
+                  onSubmit={() => model.submit(level)}
+                />
+              ))}
+            </ol>
+          </section>
+
+          <section aria-labelledby="ranking" className="flex flex-col gap-4">
+            <SectionTitle
+              id="ranking"
+              description="1 point par épreuve. À égalité, la dernière réussite la plus tôt passe devant. Le podium se partage la cagnotte."
+            >
+              Classement
+            </SectionTitle>
+            <ol className="grid gap-3 sm:grid-cols-3">
+              {placeLabels.map((label, index) => {
+                const holder = board[index]
+                const share = shares[index]
+                return (
+                  <li
+                    key={label}
+                    className={cn(
+                      "flex flex-col gap-3 rounded-xl border bg-card p-4",
+                      index === 0 && "border-primary/40"
+                    )}
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span
+                        className={cn(
+                          "text-sm font-medium",
+                          index === 0 ? "text-primary-text" : "text-foreground"
+                        )}
+                      >
+                        {label}
+                      </span>
+                      <span className="text-lg font-semibold tabular-nums">
+                        {share !== undefined ? formatEth(share) : "—"}
+                      </span>
+                    </div>
+                    <div className="flex min-h-5 items-center gap-2 text-sm">
+                      {holder ? (
+                        <>
+                          <span className="truncate font-mono">
+                            {truncateAddress(holder.address)}
+                          </span>
+                          {holder.isMe && <Badge variant="brand">Toi</Badge>}
+                          <span className="ml-auto text-muted-foreground tabular-nums">
+                            {holder.score} / {ctf.challenges}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          Place libre
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+            {board.length > 3 && (
+              <div className="rounded-xl border bg-card">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-16">Rang</TableHead>
+                      <TableHead className="w-16 pl-4">Rang</TableHead>
                       <TableHead>Joueur</TableHead>
-                      <TableHead className="text-right">Épreuves</TableHead>
-                      <TableHead className="text-right">Gain estimé</TableHead>
+                      <TableHead className="pr-4 text-right">Épreuves</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {board.map((entry) => (
+                    {board.slice(3).map((entry) => (
                       <TableRow
                         key={entry.address}
                         data-state={entry.isMe ? "selected" : undefined}
                       >
-                        <TableCell className="font-medium tabular-nums">
+                        <TableCell className="pl-4 font-medium tabular-nums">
                           {entry.rank}
                         </TableCell>
                         <TableCell>
@@ -416,102 +397,73 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                             {entry.isMe && <Badge variant="brand">Toi</Badge>}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="pr-4 text-right tabular-nums">
                           {entry.score} / {ctf.challenges}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {entry.rank <= 3
-                            ? formatEth(shares[entry.rank - 1])
-                            : "—"}
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              ) : (
-                <Empty className="border border-dashed">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <TrophyIcon />
-                    </EmptyMedia>
-                    <EmptyTitle>Personne n&apos;a encore marqué</EmptyTitle>
-                    <EmptyDescription>
-                      Le classement se remplit à chaque épreuve réussie.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+            {board.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Personne n&apos;a encore marqué : le podium se remplit à chaque
+                épreuve réussie.
+              </p>
+            )}
+          </section>
         </div>
 
-        <div className="flex flex-col gap-6 lg:sticky lg:top-20">
-          <Card>
-            <CardHeader>
-              <CardDescription>Cagnotte</CardDescription>
-              <CardTitle className="text-3xl font-semibold tabular-nums">
-                {formatEth(pool)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4 text-sm">
-              <div className="flex flex-col gap-2">
-                <Progress
-                  value={(players / ctf.maxPlayers) * 100}
-                  aria-label="Places vendues"
-                />
-                <p className="text-muted-foreground tabular-nums">
-                  {formatInt(players)} / {formatInt(ctf.maxPlayers)} joueurs
-                </p>
-              </div>
-              <DataList>
-                <DataRow label="Ticket">{formatEth(ctf.ticketPrice)}</DataRow>
-                <DataRow label="Cash prize">{formatEth(ctf.cashPrize)}</DataRow>
-                <DataRow label="Caution de l'organisateur">
-                  {formatEth(ctf.bond)}
-                </DataRow>
-                <DataRow label="Podium">
-                  {shares
-                    .map((share) => formatEth(share, { unit: false }))
-                    .join(" / ")}{" "}
-                  ETH
-                </DataRow>
-              </DataList>
-              <Separator />
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Organisateur</span>
-                <AddressDisplay
-                  address={ctf.organizer}
-                  chainId={baseSepolia.id}
-                  addressClassName="font-mono text-sm"
-                />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Sur mobile, la cagnotte et l'action principale passent avant les épreuves. */}
+        <aside className="order-first flex flex-col gap-5 rounded-xl border bg-card p-5 lg:sticky lg:top-20 lg:order-none">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-muted-foreground">Cagnotte</span>
+            <span className="text-3xl font-semibold tracking-tight tabular-nums">
+              {formatEth(pool)}
+            </span>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {formatEth(ctf.cashPrize, { unit: false })} de cash prize +{" "}
+              {formatInt(players)} ticket{players > 1 ? "s" : ""}
+            </span>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {isOrganizer ? "Ton CTF" : "Ta participation"}
-              </CardTitle>
-              {(playerHas || isOrganizer) && (
-                <CardDescription>
-                  <Badge
-                    variant={toneVariant[step.tone]}
-                    className="h-auto py-1 whitespace-normal"
-                  >
-                    {step.label}
-                  </Badge>
-                </CardDescription>
-              )}
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4 text-sm">
+          <div className="flex flex-col gap-2">
+            <Progress
+              value={(players / ctf.maxPlayers) * 100}
+              aria-label="Places vendues"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
+              <span>
+                {formatInt(players)} / {formatInt(ctf.maxPlayers)} joueurs
+              </span>
+              <span>
+                {formatInt(Math.max(ctf.maxPlayers - players, 0))} places
+                libres
+              </span>
+            </div>
+          </div>
+
+          {(hasTicket || isOrganizer) && (
+            <div className="flex flex-col gap-3 rounded-lg bg-muted/50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">
+                  {isOrganizer ? "Ton CTF" : "Ta participation"}
+                </span>
+                <Badge
+                  variant={toneVariant[step.tone]}
+                  className="h-auto py-0.5 text-right whitespace-normal"
+                >
+                  {step.label}
+                </Badge>
+              </div>
               {isOrganizer ? (
-                <p className="text-muted-foreground">
-                  Tu organises ce CTF. Ta caution reste bloquée jusqu&apos;à la
-                  fin ; tu la récupères dans « Mes gains » si aucune triche
-                  n&apos;est confirmée.
+                <p className="text-sm text-muted-foreground">
+                  Ta caution reste bloquée jusqu&apos;à la fin ; tu la
+                  récupères dans « Mes gains » si aucune triche n&apos;est
+                  confirmée.
                 </p>
-              ) : playerHas ? (
+              ) : (
                 <DataList>
                   <DataRow label="Épreuves réussies">
                     {solvedCount} / {ctf.challenges}
@@ -522,68 +474,260 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                       : "non classé"}
                   </DataRow>
                 </DataList>
-              ) : (
-                <p className="text-muted-foreground">
-                  {canBuy
-                    ? "Ton ticket entre dans la cagnotte. Il est remboursé si personne ne réussit ou si la triche est confirmée."
-                    : "Les inscriptions sont fermées."}
-                </p>
               )}
-              <TxStatusAlert
-                status={tx.status}
-                hash={tx.hash}
-                error={tx.error}
-                isDemo={tx.isDemo}
-              />
-            </CardContent>
-            {canBuy && !needsWallet && (
-              <CardFooter>
-                <Button
-                  size="lg"
-                  className="w-full"
-                  disabled={busy}
-                  onClick={model.buyTicket}
-                >
-                  {pendingOn("ticket") ? (
-                    <Spinner data-icon="inline-start" />
-                  ) : (
-                    <TicketIcon data-icon="inline-start" />
-                  )}
-                  Acheter un ticket · {formatEth(ctf.ticketPrice)}
-                </Button>
-              </CardFooter>
-            )}
-            {canRefund && (
-              <CardFooter>
-                <Button
-                  size="lg"
-                  className="w-full"
-                  disabled={busy}
-                  onClick={model.claimRefund}
-                >
-                  {pendingOn("refund") ? (
-                    <Spinner data-icon="inline-start" />
-                  ) : (
-                    <TicketIcon data-icon="inline-start" />
-                  )}
-                  Récupérer mon ticket · {formatEth(ctf.ticketPrice)}
-                </Button>
-              </CardFooter>
-            )}
-            {step.tone === "money" && (
-              <CardFooter>
-                <Link
-                  href="/gains"
-                  className={cn(buttonVariants({ size: "lg" }), "w-full")}
-                >
-                  <ArrowDownToLineIcon data-icon="inline-start" />
-                  Retirer dans Mes gains
-                </Link>
-              </CardFooter>
-            )}
-          </Card>
-        </div>
+            </div>
+          )}
+
+          <PrimaryAction model={model} pendingOn={pendingOn} />
+
+          <TxStatusAlert
+            status={tx.status}
+            hash={tx.hash}
+            error={tx.error}
+            isDemo={tx.isDemo}
+          />
+
+          <Separator />
+
+          <DataList>
+            <DataRow label="Ticket">{formatEth(ctf.ticketPrice)}</DataRow>
+            <DataRow label="Cash prize">{formatEth(ctf.cashPrize)}</DataRow>
+            <DataRow
+              label="Caution de l'organisateur"
+              hint="Perdue si une triche est confirmée"
+            >
+              {formatEth(ctf.bond)}
+            </DataRow>
+          </DataList>
+        </aside>
       </div>
     </div>
   )
+}
+
+/** Titre de section de la colonne principale, avec sa phrase d'aide. */
+function SectionTitle({
+  id,
+  description,
+  aside,
+  children,
+}: {
+  id: string
+  description?: React.ReactNode
+  aside?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 id={id} className="text-xl font-semibold tracking-tight">
+          {children}
+        </h2>
+        {aside}
+      </div>
+      {description && (
+        <p className="max-w-prose text-sm text-pretty text-muted-foreground">
+          {description}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function ChallengeRow({
+  challenge,
+  level,
+  playing,
+  locked,
+  busy,
+  pendingInstance,
+  pendingSubmit,
+  onCreate,
+  onSubmit,
+}: {
+  challenge: PlayChallenge
+  level: number
+  playing: boolean
+  locked: boolean
+  busy: boolean
+  pendingInstance: boolean
+  pendingSubmit: boolean
+  onCreate: () => void
+  onSubmit: () => void
+}) {
+  const { done, instance } = challenge
+  const canAct = !done && !locked && !(challenge.blocked && !instance)
+
+  return (
+    <li className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-5">
+      <span
+        aria-hidden
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-lg border font-mono text-sm tabular-nums",
+          done
+            ? "border-success/40 bg-success/10 text-success-text"
+            : "text-muted-foreground"
+        )}
+      >
+        {done ? <CircleCheckIcon className="size-4" /> : level + 1}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="font-medium">
+            <span className="sr-only">Épreuve {level + 1} : </span>
+            {challenge.name}
+          </h3>
+          {challenge.vuln && <VulnTag vuln={challenge.vuln} />}
+          {challenge.factory && (
+            <FactoryVerificationBadge
+              factory={challenge.factory}
+              matchedByCode={challenge.matchedByCode}
+            />
+          )}
+        </div>
+        {challenge.goal && (
+          <p className="text-sm text-pretty">{challenge.goal}</p>
+        )}
+        <p className="text-sm text-muted-foreground">
+          {done ? (
+            "Réussie : 1 point."
+          ) : instance ? (
+            <span className="flex flex-wrap items-center gap-x-2">
+              Ton instance :
+              <AddressDisplay
+                address={instance}
+                chainId={baseSepolia.id}
+                truncate={false}
+                addressClassName="font-mono text-xs break-all text-foreground"
+              />
+            </span>
+          ) : challenge.blocked && playing ? (
+            challenge.blocked
+          ) : playing ? (
+            "Pas encore d'instance."
+          ) : (
+            "Non résolue."
+          )}
+        </p>
+      </div>
+      {canAct && (
+        <div className="col-start-2 sm:col-start-auto sm:pt-0.5">
+          {instance ? (
+            <Button size="sm" disabled={busy} onClick={onSubmit}>
+              {pendingSubmit ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <ShieldCheckIcon data-icon="inline-start" />
+              )}
+              Vérifier ma réussite
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={onCreate}
+            >
+              {pendingInstance && <Spinner data-icon="inline-start" />}
+              Créer mon instance
+            </Button>
+          )}
+        </div>
+      )}
+      {done && (
+        <Badge
+          variant="success"
+          className="col-start-2 self-start sm:col-start-auto"
+        >
+          Réussie
+        </Badge>
+      )}
+    </li>
+  )
+}
+
+/** L'action principale du panneau : connexion, ticket, remboursement ou retrait. */
+function PrimaryAction({
+  model,
+  pendingOn,
+}: {
+  model: CtfPlayModel
+  pendingOn: (kind: PlayAction["kind"]) => boolean
+}) {
+  const { ctf, canBuy, canRefund, needsWallet, step, tx, hasTicket } = model
+  const busy = tx.status === "signing" || tx.status === "confirming"
+
+  if (canBuy && needsWallet)
+    return (
+      <div className="flex flex-col gap-2">
+        <ConnectWallet
+          label="Connecter un wallet pour jouer"
+          className="h-10 w-full justify-center"
+        />
+        <p className="text-xs text-muted-foreground">
+          Ticket à {formatEth(ctf.ticketPrice)}, remboursé si personne ne
+          réussit ou si la triche est confirmée.
+        </p>
+      </div>
+    )
+
+  if (canBuy)
+    return (
+      <div className="flex flex-col gap-2">
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={busy}
+          onClick={model.buyTicket}
+        >
+          {pendingOn("ticket") ? (
+            <Spinner data-icon="inline-start" />
+          ) : (
+            <TicketIcon data-icon="inline-start" />
+          )}
+          Acheter un ticket · {formatEth(ctf.ticketPrice)}
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Ton ticket entre dans la cagnotte. Il est remboursé si personne ne
+          réussit ou si la triche est confirmée.
+        </p>
+      </div>
+    )
+
+  if (canRefund)
+    return (
+      <Button
+        size="lg"
+        className="w-full"
+        disabled={busy}
+        onClick={model.claimRefund}
+      >
+        {pendingOn("refund") ? (
+          <Spinner data-icon="inline-start" />
+        ) : (
+          <TicketIcon data-icon="inline-start" />
+        )}
+        Récupérer mon ticket · {formatEth(ctf.ticketPrice)}
+      </Button>
+    )
+
+  if (step.tone === "money")
+    return (
+      <Link
+        href="/gains"
+        className={cn(buttonVariants({ size: "lg" }), "w-full")}
+      >
+        <ArrowDownToLineIcon data-icon="inline-start" />
+        Retirer dans Mes gains
+      </Link>
+    )
+
+  if (!hasTicket && !model.isOrganizer)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Les inscriptions sont fermées.
+      </p>
+    )
+
+  return null
 }
