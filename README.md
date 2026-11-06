@@ -171,8 +171,10 @@ pnpm --filter @pwnpot/contracts exec hardhat keystore set ETHERSCAN_API_KEY
 # déploiement (profil production, optimiseur activé)
 pnpm --filter @pwnpot/contracts exec hardhat ignition deploy ignition/modules/<Module>.ts --network baseSepolia
 
-# vérification sur Basescan, Blockscout et Sourcify
-pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532 --network baseSepolia
+# vérification sur Basescan, Blockscout et Sourcify. `verify` ne recompile pas :
+# il compare avec les artefacts présents, qui doivent venir du profil production.
+pnpm --filter @pwnpot/contracts exec hardhat build --build-profile production
+pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532 --network baseSepolia --build-profile production
 ```
 
 - La clé de déploiement est celle d'un compte **dédié au testnet**, sans fonds réels.
