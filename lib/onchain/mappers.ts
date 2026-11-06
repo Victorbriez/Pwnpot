@@ -42,7 +42,16 @@ export function toCtf(
   id: number,
   ctf: ChainCtf,
   levels: readonly ChainLevel[],
-  { now, contestationPeriod }: { now: number; contestationPeriod: number }
+  {
+    now,
+    contestationPeriod,
+    vaults,
+  }: {
+    now: number
+    contestationPeriod: number
+    /** Adresses (minuscules) reconnues comme VaultFactory à leur code. */
+    vaults?: ReadonlySet<string>
+  }
 ): Ctf {
   const startTime = Number(ctf.startTime)
   const endTime = Number(ctf.endTime)
@@ -62,10 +71,15 @@ export function toCtf(
     elapsed = clamp01((now - endTime) / contestationPeriod)
   }
 
+  const described = levels.map(({ factory, codehash }) => ({
+    factory,
+    codehash,
+    info: describeFactory(factory, vaults),
+  }))
   const vulns = [
     ...new Set(
-      levels
-        .map((level) => describeFactory(level.factory).vuln)
+      described
+        .map((level) => level.info.vuln)
         .filter((vuln): vuln is Vuln => vuln !== undefined)
     ),
   ]
@@ -89,7 +103,7 @@ export function toCtf(
       startTime,
       endTime,
       contestationEnd,
-      levels: levels.map(({ factory, codehash }) => ({ factory, codehash })),
+      levels: described,
     },
   }
 }

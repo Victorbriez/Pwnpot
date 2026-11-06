@@ -4,6 +4,8 @@ import Link from "next/link"
 import {
   ArrowDownToLineIcon,
   BoxIcon,
+  LinkIcon,
+  VaultIcon,
   CircleCheckIcon,
   FlagIcon,
   SearchXIcon,
@@ -120,6 +122,7 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
     needsWallet,
     tx,
     action,
+    vaults,
   } = model
   const ctf = live
   const busy = tx.status === "signing" || tx.status === "confirming"
@@ -129,6 +132,11 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
     busy &&
     action?.kind === kind &&
     (level === undefined || ("level" in action && action.level === level))
+  const pendingVault = (kind: "bind" | "recover", factory: string) =>
+    busy &&
+    action?.kind === kind &&
+    "factory" in action &&
+    action.factory.toLowerCase() === factory.toLowerCase()
 
   const lockedReason = needsWallet
     ? "Connecte ton wallet pour jouer."
@@ -186,6 +194,86 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
               )}
             </Card>
           )}
+          {vaults.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Ton Coffre</CardTitle>
+                <CardDescription>
+                  Chaque joueur reçoit un coffre de{" "}
+                  {formatEth(vaults[0].needed / BigInt(ctf.maxPlayers))} pris
+                  sur ces fonds. Ce qu&apos;il vide, il le garde ; tu récupères
+                  le reste après la fin du CTF.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ItemGroup className="gap-3">
+                  {vaults.map((vault) => (
+                    <Item
+                      key={vault.factory}
+                      variant="outline"
+                      className="gap-4"
+                    >
+                      <ItemMedia variant="icon">
+                        <VaultIcon />
+                      </ItemMedia>
+                      <ItemContent>
+                        <ItemTitle className="line-clamp-none flex-wrap">
+                          <AddressDisplay
+                            address={vault.factory}
+                            chainId={baseSepolia.id}
+                            addressClassName="font-mono text-sm"
+                          />
+                          {vault.bound ? (
+                            <Badge variant="success">Lié au CTF</Badge>
+                          ) : (
+                            <Badge variant="warning">Pas encore lié</Badge>
+                          )}
+                        </ItemTitle>
+                        <ItemDescription>
+                          Solde : {formatEth(vault.balance)}
+                          {!vault.bound &&
+                            (vault.funded
+                              ? ". Lie-le pour que les joueurs puissent créer leur instance."
+                              : `. Il faut ${formatEth(vault.needed)} pour le lier.`)}
+                        </ItemDescription>
+                      </ItemContent>
+                      <ItemActions>
+                        {vault.canBind && (
+                          <Button
+                            size="sm"
+                            disabled={busy}
+                            onClick={() => model.bindVault(vault.factory)}
+                          >
+                            {pendingVault("bind", vault.factory) ? (
+                              <Spinner data-icon="inline-start" />
+                            ) : (
+                              <LinkIcon data-icon="inline-start" />
+                            )}
+                            Lier au CTF
+                          </Button>
+                        )}
+                        {vault.canRecover && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={busy}
+                            onClick={() => model.recoverVault(vault.factory)}
+                          >
+                            {pendingVault("recover", vault.factory) ? (
+                              <Spinner data-icon="inline-start" />
+                            ) : (
+                              <ArrowDownToLineIcon data-icon="inline-start" />
+                            )}
+                            Récupérer le reste
+                          </Button>
+                        )}
+                      </ItemActions>
+                    </Item>
+                  ))}
+                </ItemGroup>
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Épreuves</CardTitle>
@@ -219,49 +307,67 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                           {challenge.factory && (
                             <FactoryVerificationBadge
                               factory={challenge.factory}
+                              matchedByCode={challenge.matchedByCode}
                             />
                           )}
                         </ItemTitle>
-                        <ItemDescription>
-                          {done
-                            ? "Réussie : 1 point."
-                            : instance
-                              ? `Ton instance : ${truncateAddress(instance)}`
-                              : playing
-                                ? "Pas encore d'instance."
-                                : "Non résolue."}
+                        <ItemDescription className="flex flex-col gap-1">
+                          {challenge.goal && !done && (
+                            <span>Objectif : {challenge.goal}</span>
+                          )}
+                          {done ? (
+                            <span>Réussie : 1 point.</span>
+                          ) : instance ? (
+                            <span className="flex flex-wrap items-center gap-x-2">
+                              Ton instance :
+                              <AddressDisplay
+                                address={instance}
+                                chainId={baseSepolia.id}
+                                truncate={false}
+                                addressClassName="font-mono text-xs break-all"
+                              />
+                            </span>
+                          ) : challenge.blocked && playing ? (
+                            <span>{challenge.blocked}</span>
+                          ) : playing ? (
+                            <span>Pas encore d&apos;instance.</span>
+                          ) : (
+                            <span>Non résolue.</span>
+                          )}
                         </ItemDescription>
                       </ItemContent>
-                      {!done && !lockedReason && (
-                        <ItemActions>
-                          {instance ? (
-                            <Button
-                              size="sm"
-                              disabled={busy}
-                              onClick={() => model.submit(level)}
-                            >
-                              {pendingOn("submit", level) ? (
-                                <Spinner data-icon="inline-start" />
-                              ) : (
-                                <ShieldCheckIcon data-icon="inline-start" />
-                              )}
-                              Vérifier ma réussite
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => model.createInstance(level)}
-                            >
-                              {pendingOn("instance", level) && (
-                                <Spinner data-icon="inline-start" />
-                              )}
-                              Créer mon instance
-                            </Button>
-                          )}
-                        </ItemActions>
-                      )}
+                      {!done &&
+                        !lockedReason &&
+                        !(challenge.blocked && !instance) && (
+                          <ItemActions>
+                            {instance ? (
+                              <Button
+                                size="sm"
+                                disabled={busy}
+                                onClick={() => model.submit(level)}
+                              >
+                                {pendingOn("submit", level) ? (
+                                  <Spinner data-icon="inline-start" />
+                                ) : (
+                                  <ShieldCheckIcon data-icon="inline-start" />
+                                )}
+                                Vérifier ma réussite
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() => model.createInstance(level)}
+                              >
+                                {pendingOn("instance", level) && (
+                                  <Spinner data-icon="inline-start" />
+                                )}
+                                Créer mon instance
+                              </Button>
+                            )}
+                          </ItemActions>
+                        )}
                       {done && (
                         <ItemActions>
                           <Badge variant="success">Réussie</Badge>

@@ -4,9 +4,11 @@ import { baseSepolia } from "viem/chains"
 import { useReadContract, useReadContracts } from "wagmi"
 
 import { REFRESH_MS, useChainNow } from "@/hooks/use-chain-now"
+import { useVaultMatches } from "@/hooks/use-vault-factories"
 import type { Ctf } from "@/lib/ctf/types"
 import { ctfs as demoCtfs } from "@/lib/mock/explore"
 import { ctfPlatformAbi, ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
+import { describeFactory } from "@/lib/onchain/factories"
 import { toCtf, type ChainCtf, type ChainLevel } from "@/lib/onchain/mappers"
 
 export type CtfsState = {
@@ -52,15 +54,28 @@ export function useCtfs(): CtfsState {
     query: { enabled: enabled && ids.length > 0, refetchInterval: REFRESH_MS },
   })
 
+  // Les factories inconnues par leur adresse peuvent être des Coffres,
+  // déployés par chaque organisateur : on compare leur code.
+  const data = ids.length > 0 ? (reads.data ?? []) : []
+  const unknown = data
+    .filter((_, i) => i % 2 === 1)
+    .flatMap((levels) =>
+      (levels as readonly ChainLevel[]).map((l) => l.factory)
+    )
+    .filter((factory) => !describeFactory(factory).known)
+  const vaults = useVaultMatches(unknown)
+
   if (!enabled) return { ctfs: demoCtfs, isLoading: false, isDemo: true }
 
   const error = count.error ?? period.error ?? reads.error ?? undefined
   const loading =
-    count.isPending || period.isPending || (ids.length > 0 && reads.isPending)
+    count.isPending ||
+    period.isPending ||
+    (ids.length > 0 && reads.isPending) ||
+    vaults.isLoading
   if (loading || error || period.data === undefined)
     return { ctfs: [], isLoading: loading, error, isDemo: false }
 
-  const data = ids.length > 0 ? (reads.data ?? []) : []
   const ctfs = ids.flatMap((id, i) => {
     const ctf = data[i * 2] as ChainCtf | undefined
     const levels = data[i * 2 + 1] as readonly ChainLevel[] | undefined
@@ -69,6 +84,7 @@ export function useCtfs(): CtfsState {
       toCtf(Number(id), ctf, levels, {
         now,
         contestationPeriod: Number(period.data),
+        vaults: vaults.matches,
       }),
     ]
   })

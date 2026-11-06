@@ -15,14 +15,41 @@ import { useFactoryVerification } from "@/hooks/use-factory-verification"
 import { canCheckVerification } from "@/lib/onchain/sourcify"
 
 const explorer = baseSepolia.blockExplorers.default.url
+const VAULT_SOURCE_URL =
+  "https://github.com/Victorbriez/Pwnpot/blob/master/contracts/contracts/levels/Vault.sol"
 
 /**
  * Badge « code vérifié » d'une factory, avec un lien vers son code sur Basescan.
  * Les factories sont écrites par les organisateurs : le joueur doit pouvoir
  * lire le code avant de payer son ticket (docs/SECURITY.md).
  */
-export function FactoryVerificationBadge({ factory }: { factory: Address }) {
-  const { data, isPending, isError } = useFactoryVerification(factory)
+export function FactoryVerificationBadge({
+  factory,
+  matchedByCode = false,
+}: {
+  factory: Address
+  /**
+   * Coffre déployé par l'organisateur : son code est comparé octet par octet
+   * à VaultFactory (hors `immutable`), Sourcify ne le connaît pas.
+   */
+  matchedByCode?: boolean
+}) {
+  const { data, isPending, isError } = useFactoryVerification(
+    matchedByCode ? undefined : factory
+  )
+
+  if (matchedByCode)
+    return (
+      <Badge
+        variant="success"
+        render={<a href={VAULT_SOURCE_URL} target="_blank" rel="noreferrer" />}
+        title="Code identique à la VaultFactory de Pwnpot, déployé par l'organisateur pour ce CTF. Lis la source sur GitHub."
+      >
+        <BadgeCheckIcon data-icon="inline-start" />
+        Code Pwnpot
+      </Badge>
+    )
+
   if (!canCheckVerification) return null
 
   const link = (hash = "") => (

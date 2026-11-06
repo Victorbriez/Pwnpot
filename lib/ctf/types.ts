@@ -17,8 +17,29 @@ export type CtfStatus =
 
 export type CtfLevel = "beginner" | "advanced"
 
+/** Identifiant des trois épreuves de lancement (lib/onchain/factories.ts). */
+export type KnownFactoryId = "vault" | "impostor" | "code-safe"
+
+/** Ce que le front sait d'une factory à partir de son adresse (et de son code). */
+export type FactoryInfo = {
+  id?: KnownFactoryId
+  name: string
+  vuln?: Vuln
+  /** Factory connue : adresse officielle, ou code identique à celui du repo. */
+  known: boolean
+  /**
+   * Reconnue à son code (Coffre déployé par l'organisateur), pas à son
+   * adresse : Sourcify ne la connaît pas, le badge le dit autrement.
+   */
+  matchedByCode?: boolean
+}
+
 /** Une épreuve telle qu'enregistrée par le contrat (`getLevels`). */
-export type CtfLevelInfo = { factory: Address; codehash: Hex }
+export type CtfLevelInfo = {
+  factory: Address
+  codehash: Hex
+  info: FactoryInfo
+}
 
 /** Données propres au contrat, absentes en démo. Temps en secondes Unix. */
 export type CtfChainInfo = {

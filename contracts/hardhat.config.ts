@@ -35,8 +35,18 @@ export default defineConfig({
       type: "edr-simulated",
       chainType: "op",
     },
-    // Local node started by `pnpm chain` (chain id 84532, like Base Sepolia,
-    // so the frontend works without changing its wagmi config).
+    // Simulated chain served by `pnpm chain` (`hardhat node --network chain`).
+    // Chain id 84532 like Base Sepolia, so the frontend works without changing
+    // its wagmi config. Base fee at 0: MetaMask knows chain 84532 and offers
+    // Base Sepolia gas prices (~0.01 gwei), below the 1 gwei a default node
+    // asks for, so every transaction from the wallet would be rejected.
+    chain: {
+      type: "edr-simulated",
+      chainType: "op",
+      chainId: 84532,
+      initialBaseFeePerGas: 0,
+    },
+    // Local node started by `pnpm chain`, seen from scripts (`--network localhost`).
     localhost: {
       type: "http",
       chainType: "op",

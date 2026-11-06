@@ -189,9 +189,9 @@ pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532 --netwo
 | Bloc de déploiement                                | `55200071`                                                                                                                           |
 | `MockArbitrator`                                   | [`0x8984F4ECaB146D3aD6e7975046Eaa76bF9Fca6F3`](https://sepolia.basescan.org/address/0x8984F4ECaB146D3aD6e7975046Eaa76bF9Fca6F3#code) |
 | `TestLevel` (factory de test, sans exploit)        | [`0x3C48F404e422fD4dE1ae1bd990D7C2095dD4156d`](https://sepolia.basescan.org/address/0x3C48F404e422fD4dE1ae1bd990D7C2095dD4156d#code) |
-| Factory « Coffre » (réentrance)                    | _à venir_                                                                                                                            |
-| Factory « Usurpateur » (`tx.origin`)               | _à venir_                                                                                                                            |
-| Factory « Coffre-fort à code » (storage `private`) | _à venir_                                                                                                                            |
+| Factory « Coffre » (réentrance)                    | une par CTF : déployée, alimentée et liée par l'organisateur depuis le formulaire de création                                        |
+| Factory « Usurpateur » (`tx.origin`)               | _à déployer (`pnpm contracts:deploy`)_                                                                                               |
+| Factory « Coffre-fort à code » (storage `private`) | _à déployer (`pnpm contracts:deploy`)_                                                                                               |
 
 ---
 

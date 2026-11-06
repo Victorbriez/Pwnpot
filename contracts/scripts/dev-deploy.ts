@@ -1,7 +1,8 @@
 // Déploiement de développement sur le nœud local (`pnpm chain`).
 //
-// Déploie CTFPlatform et TestLevel, crée deux CTF d'exemple, puis écrit
-// l'adresse du contrat et le RPC local dans `.env.local` à la racine du repo.
+// Déploie CTFPlatform, les factories des épreuves 2 et 3 et TestLevel, crée deux
+// CTF d'exemple (le premier avec les trois épreuves, dont un Coffre déployé et
+// lié pour lui), puis écrit les adresses et le RPC local dans `.env.local`.
 // Refuse de tourner sur un autre réseau que `localhost`.
 //
 //   pnpm chain          # terminal 1
@@ -68,6 +69,12 @@ const platform = await viem.deployContract("CTFPlatform", [
   periods.appeal,
   periods.arbitratorTimeout,
 ])
+const impostorFactory = await viem.deployContract("ImpostorFactory", [
+  platform.address,
+])
+const codeSafeFactory = await viem.deployContract("CodeSafeFactory", [
+  platform.address,
+])
 const testLevel = await viem.deployContract("TestLevel")
 
 // Deux CTF d'exemple : un qui démarre tout de suite, un à venir.
@@ -77,13 +84,32 @@ const ticketPrice = parseEther("0.01")
 const maxPlayers = 20n
 const organizerBond = cashPrize + maxPlayers * ticketPrice
 
+// Le Coffre (épreuve 1) se déploie pour un CTF : l'organisateur l'alimente
+// avec maxPlayers × SEED, puis le lie au CTF une fois celui-ci créé.
+const vaultFactory = await viem.deployContract(
+  "VaultFactory",
+  [platform.address],
+  { client: { wallet: organizer }, value: maxPlayers * parseEther("0.0001") }
+)
+
 const samples = [
   {
     title: "Démo locale : en cours",
     startTime: now + MINUTE,
     duration: 2n * HOUR,
+    // Ordre de docs/CHALLENGES.md : Coffre, Usurpateur, Coffre-fort à code.
+    factories: [
+      vaultFactory.address,
+      impostorFactory.address,
+      codeSafeFactory.address,
+    ],
   },
-  { title: "Démo locale : à venir", startTime: now + DAY, duration: DAY },
+  {
+    title: "Démo locale : à venir",
+    startTime: now + DAY,
+    duration: DAY,
+    factories: [testLevel.address],
+  },
 ]
 
 for (const s of samples) {
@@ -98,12 +124,17 @@ for (const s of samples) {
         cashPrize,
         organizerBond,
       },
-      [testLevel.address],
+      s.factories,
     ],
     { account: organizer.account, value: cashPrize + organizerBond }
   )
   await publicClient.waitForTransactionReceipt({ hash })
 }
+
+const bindHash = await vaultFactory.write.bind([0n], {
+  account: organizer.account,
+})
+await publicClient.waitForTransactionReceipt({ hash: bindHash })
 
 // bob prend un ticket dans le premier CTF, puis on passe son départ.
 const ticketHash = await platform.write.buyTicket([0n], {
@@ -119,6 +150,8 @@ const values: Record<string, string> = {
   NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL: LOCAL_RPC,
   NEXT_PUBLIC_CTF_PLATFORM_ADDRESS: platform.address,
   NEXT_PUBLIC_CTF_PLATFORM_DEPLOY_BLOCK: deployBlock.toString(),
+  NEXT_PUBLIC_IMPOSTOR_FACTORY_ADDRESS: impostorFactory.address,
+  NEXT_PUBLIC_CODE_SAFE_FACTORY_ADDRESS: codeSafeFactory.address,
   NEXT_PUBLIC_TEST_FACTORY_ADDRESS: testLevel.address,
 }
 let env = existsSync(envPath) ? readFileSync(envPath, "utf8") : ""
@@ -132,8 +165,11 @@ for (const [key, value] of Object.entries(values)) {
 writeFileSync(envPath, env)
 
 console.log(`
-CTFPlatform  ${platform.address}
-TestLevel    ${testLevel.address}  (factory de test, proposée dans le formulaire de création)
+CTFPlatform      ${platform.address}
+ImpostorFactory  ${impostorFactory.address}
+CodeSafeFactory  ${codeSafeFactory.address}
+VaultFactory     ${vaultFactory.address}  (Coffre du CTF 0, lié)
+TestLevel        ${testLevel.address}  (factory de test, proposée dans le formulaire de création)
 
 Comptes (clés privées affichées par \`pnpm chain\`) :
   #0 déployeur    ${deployer.account.address}
@@ -142,10 +178,11 @@ Comptes (clés privées affichées par \`pnpm chain\`) :
   #3 bob          ${bob.account.address}  (ticket dans le CTF 0)
   #9 arbitre      ${arbitrator.account.address}
 
-CTF 0 « ${samples[0].title} » : en cours, se termine dans 2 h.
-CTF 1 « ${samples[1].title} » : démarre dans 24 h.
+CTF 0 « ${samples[0].title} » : en cours, se termine dans 2 h. Épreuves : Coffre, Usurpateur, Coffre-fort à code.
+CTF 1 « ${samples[1].title} » : démarre dans 24 h. Épreuve : factory de test.
 Contestation : ${periods.contestation / MINUTE} min (au lieu de 48 h).
 
 .env.local mis à jour. Relancer \`pnpm dev\` pour qu'il soit pris en compte.
 Avancer le temps : ADVANCE=7200 pnpm chain:time
+Jouer l'exploit d'une épreuve : PLAYER=3 CTF=0 LEVEL=0 pnpm chain:solve
 `)

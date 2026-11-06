@@ -24,6 +24,8 @@ try {
 
 const platform = addresses["PwnpotModule#CTFPlatform"]
 const testLevel = addresses["PwnpotModule#TestLevel"]
+const impostor = addresses["PwnpotModule#ImpostorFactory"]
+const codeSafe = addresses["PwnpotModule#CodeSafeFactory"]
 if (!platform) throw new Error(`CTFPlatform absent du déploiement « ${id} ».`)
 
 // Bloc du déploiement de CTFPlatform : le front lit les events à partir de là.
@@ -40,5 +42,11 @@ const block = confirm?.receipt?.blockNumber
 if (block === undefined)
   throw new Error("Bloc de déploiement de CTFPlatform introuvable.")
 
-console.log(`NEXT_PUBLIC_CTF_PLATFORM_ADDRESS=${platform}
-NEXT_PUBLIC_CTF_PLATFORM_DEPLOY_BLOCK=${block}${testLevel ? `\nNEXT_PUBLIC_TEST_FACTORY_ADDRESS=${testLevel}` : ""}`)
+const lines = [
+  `NEXT_PUBLIC_CTF_PLATFORM_ADDRESS=${platform}`,
+  `NEXT_PUBLIC_CTF_PLATFORM_DEPLOY_BLOCK=${block}`,
+  impostor && `NEXT_PUBLIC_IMPOSTOR_FACTORY_ADDRESS=${impostor}`,
+  codeSafe && `NEXT_PUBLIC_CODE_SAFE_FACTORY_ADDRESS=${codeSafe}`,
+  testLevel && `NEXT_PUBLIC_TEST_FACTORY_ADDRESS=${testLevel}`,
+]
+console.log(lines.filter(Boolean).join("\n"))

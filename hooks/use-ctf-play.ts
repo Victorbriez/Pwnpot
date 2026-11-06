@@ -12,6 +12,7 @@ import { useMyCredits } from "@/hooks/use-my-credits"
 import { usePlatformEvents } from "@/hooks/use-platform-events"
 import { usePlatformTx, type PlatformTx } from "@/hooks/use-platform-tx"
 import { usePlayerState } from "@/hooks/use-player-state"
+import { useVaultStates, type VaultState } from "@/hooks/use-vault-factories"
 import { podiumShares } from "@/lib/ctf/gains"
 import { rankSolves, type LeaderboardEntry } from "@/lib/ctf/leaderboard"
 import {
@@ -24,11 +25,12 @@ import { ctfChallenges, leaderboard, withMyScore } from "@/lib/mock/ctf-detail"
 import { ctfs as demoCtfs } from "@/lib/mock/explore"
 import { myOrganized, myParticipations } from "@/lib/mock/my-ctfs"
 import { ctfPlatformAbi, ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
-import { describeFactory } from "@/lib/onchain/factories"
+import { knownFactoryById, VAULT_SEED } from "@/lib/onchain/factories"
 
 export type PlayAction =
   | { kind: "ticket" | "finalize" | "refund" }
   | { kind: "instance" | "submit"; level: number }
+  | { kind: "bind" | "recover"; factory: Address }
 
 export type PlayChallenge = {
   key: string
@@ -36,8 +38,23 @@ export type PlayChallenge = {
   vuln?: Vuln
   /** Adresse de la factory : en mode contrat seulement. */
   factory?: Address
+  /** Coffre reconnu à son code : Sourcify ne le connaît pas. */
+  matchedByCode?: boolean
+  /** Ce que le joueur doit obtenir, pour les épreuves connues. */
+  goal?: string
+  /** Pourquoi l'instance ne peut pas encore être créée (Coffre non lié). */
+  blocked?: string
   done: boolean
   instance?: Address
+}
+
+/** Un Coffre du CTF, vu par son organisateur. */
+export type OrganizerVault = VaultState & {
+  /** Assez de fonds pour `bind` : `maxPlayers × SEED`. */
+  funded: boolean
+  needed: bigint
+  canBind: boolean
+  canRecover: boolean
 }
 
 /** Tout ce que la page d'un CTF affiche, en démo comme avec le contrat. */
@@ -57,6 +74,8 @@ export type CtfPlayModel = {
   role?: { value: Role; set: (role: Role) => void }
   /** Litige simulé : démo seulement (le contrat ne gère pas encore les litiges). */
   dispute?: Dispute
+  /** Coffres du CTF, pour l'organisateur (mode contrat). */
+  vaults: OrganizerVault[]
   step: NextStep
   canBuy: boolean
   canFinalize: boolean
@@ -69,6 +88,8 @@ export type CtfPlayModel = {
   submit: (level: number) => void
   finalize: () => void
   claimRefund: () => void
+  bindVault: (factory: Address) => void
+  recoverVault: (factory: Address) => void
 }
 
 export type CtfPlayState =
@@ -137,6 +158,7 @@ function useDemoCtfPlay(ctfId: number): CtfPlayState {
         key: factory.id,
         name: factory.name,
         vuln: factory.vuln,
+        goal: factory.goal,
         done: solved.includes(level),
         instance: instances[level],
       })),
@@ -150,6 +172,7 @@ function useDemoCtfPlay(ctfId: number): CtfPlayState {
       isOrganizer,
       role: { value: role, set: setRole },
       dispute,
+      vaults: [],
       step,
       canBuy:
         !isOrganizer &&
@@ -208,6 +231,8 @@ function useDemoCtfPlay(ctfId: number): CtfPlayState {
       },
       finalize: () => {},
       claimRefund: () => {},
+      bindVault: () => {},
+      recoverVault: () => {},
     },
   }
 }
@@ -222,6 +247,10 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
   const now = useChainNow()
   const tx = usePlatformTx()
   const [action, setAction] = useState<PlayAction>()
+  const vaultFactories = (ctf?.chain?.levels ?? [])
+    .filter((level) => level.info.id === "vault")
+    .map((level) => level.factory)
+  const vaultStates = useVaultStates(vaultFactories)
 
   if (error) return { status: "error", error }
   if (isLoading) return { status: "loading" }
@@ -253,6 +282,30 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
       })
 
   const id = BigInt(ctfId)
+  const vaultOf = (factory: Address) =>
+    vaultStates.find((v) => v.factory.toLowerCase() === factory.toLowerCase())
+  // Phases où `recover` est permis une fois le Coffre lié (Vault.sol).
+  const over =
+    ctf.status === "contestation" ||
+    ctf.status === "finalized" ||
+    ctf.status === "cheated"
+  const needed = BigInt(ctf.maxPlayers) * VAULT_SEED
+  const vaults: OrganizerVault[] = isOrganizer
+    ? vaultStates.map((vault) => {
+        const funded = vault.balance >= needed
+        return {
+          ...vault,
+          funded,
+          needed,
+          canBind:
+            !vault.bound &&
+            funded &&
+            (ctf.status === "open" || ctf.status === "running"),
+          canRecover: vault.balance > BigInt(0) && (!vault.bound || over),
+        }
+      })
+    : []
+
   const run = (next: PlayAction, call: Parameters<PlatformTx["send"]>[0]) => {
     setAction(next)
     tx.send(call)
@@ -263,11 +316,19 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
     model: {
       ctf,
       challenges: ctf.chain.levels.map((level, index) => {
-        const info = describeFactory(level.factory)
+        const { info } = level
+        const vault = info.id === "vault" ? vaultOf(level.factory) : undefined
+        const linked =
+          vault && vault.bound && vault.ctfId === id ? true : !vault
         return {
           key: `${index}-${level.factory}`,
           name: info.name,
           vuln: info.vuln,
+          goal: info.id ? knownFactoryById(info.id).goal : undefined,
+          matchedByCode: info.matchedByCode,
+          blocked: linked
+            ? undefined
+            : "Ce Coffre n'est pas encore lié au CTF par l'organisateur : impossible de créer l'instance pour l'instant.",
           factory: level.factory,
           done: state.solved[index] ?? false,
           instance: state.instances[index],
@@ -281,6 +342,7 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
       solvedCount: state.score,
       hasTicket: state.hasTicket,
       isOrganizer,
+      vaults,
       step,
       canBuy:
         !isOrganizer &&
@@ -316,6 +378,16 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
         run({ kind: "finalize" }, { functionName: "finalize", args: [id] }),
       claimRefund: () =>
         run({ kind: "refund" }, { functionName: "claimRefund", args: [id] }),
+      bindVault: (factory) =>
+        run(
+          { kind: "bind", factory },
+          { to: factory, functionName: "bind", args: [id] }
+        ),
+      recoverVault: (factory) =>
+        run(
+          { kind: "recover", factory },
+          { to: factory, functionName: "recover" }
+        ),
     },
   }
 }
