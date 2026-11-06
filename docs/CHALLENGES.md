@@ -142,14 +142,14 @@ contract CodeSafe {
 
 **Ce que ça enseigne.** « Il n'y a pas de secret sur une chaîne. » C'est aussi pour ça que Pwnpot n'utilise pas de flag stocké on-chain.
 
-**Point de conception.** Le mot de passe est dérivé de l'adresse du joueur et d'une valeur pseudo-aléatoire, pour être différent dans chaque instance. Le copier d'une autre instance ne sert donc à rien.
+**Point de conception.** Le mot de passe est `keccak256(joueur, blockhash(block.number - 1), factory, compteur d'instances)` : il est différent dans chaque instance, et le copier d'une autre instance ne sert donc à rien. Il n'a pas besoin d'être imprévisible, puisqu'il est lisible de toute façon. Seule `CTFPlatform` (adresse fixée au déploiement de la factory) peut créer une instance, et `validateInstance` ne valide que l'instance créée pour ce joueur.
 
 ---
 
 ## Ajouter une épreuve
 
 1. Écrire le contrat vulnérable et sa factory dans `contracts/contracts/levels/`, en implémentant `ILevel`.
-2. `validateInstance` doit être **`view`** et rester **sous la limite de gaz** de la plateforme (300 000 *(proposé)*).
+2. `validateInstance` doit être **`view`** et rester **sous la limite de gaz** de la plateforme (`VALIDATION_GAS` = 300 000 dans `CTFPlatform`).
 3. Écrire un **test d'exploit** dans `contracts/test/` qui :
    - crée une instance ;
    - vérifie que `validateInstance` renvoie `false` ;
