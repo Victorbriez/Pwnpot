@@ -14,8 +14,11 @@ const DAY = 24n * HOUR
 // le même chain id que Base Sepolia, Ignition écraserait chain-84532. En local,
 // utiliser `pnpm chain:deploy`.
 //
-// - TestLevel : factory de test (épreuve sans exploit), en attendant les vraies
-//   épreuves (#7, #13, #14).
+// - ImpostorFactory et CodeSafeFactory : épreuves 2 et 3, partagées par tous les
+//   CTF (seule cette CTFPlatform peut créer leurs instances).
+// - VaultFactory (épreuve 1) n'est pas ici : chaque organisateur déploie la sienne,
+//   alimentée et liée à son CTF, depuis le formulaire de création du site.
+// - TestLevel : factory de test (épreuve sans exploit).
 export default buildModule("PwnpotModule", (m) => {
   const arbitrationFee = m.getParameter("arbitrationFee", 500_000_000_000_000n)
   const contestationPeriod = m.getParameter("contestationPeriod", 48n * HOUR)
@@ -34,7 +37,9 @@ export default buildModule("PwnpotModule", (m) => {
     appealPeriod,
     arbitratorTimeout,
   ])
+  const impostorFactory = m.contract("ImpostorFactory", [platform])
+  const codeSafeFactory = m.contract("CodeSafeFactory", [platform])
   const testLevel = m.contract("TestLevel")
 
-  return { arbitrator, platform, testLevel }
+  return { arbitrator, platform, impostorFactory, codeSafeFactory, testLevel }
 })

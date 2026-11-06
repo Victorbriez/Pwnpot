@@ -4,7 +4,15 @@ import { useState } from "react"
 import Link from "next/link"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { ChevronDownIcon, PlusIcon, RocketIcon, XIcon } from "lucide-react"
+import {
+  CircleCheckIcon,
+  CircleDashedIcon,
+  ChevronDownIcon,
+  CircleXIcon,
+  PlusIcon,
+  RocketIcon,
+  XIcon,
+} from "lucide-react"
 import { isAddress, type Address } from "viem"
 import { baseSepolia } from "viem/chains"
 import { useConnection, useSwitchChain } from "wagmi"
@@ -53,7 +61,13 @@ import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { DataList, DataRow } from "@/components/site/data-list"
-import { useCreateCtf } from "@/hooks/use-create-ctf"
+import {
+  createStepLabels,
+  useCreateCtf,
+  vaultFunding,
+  type CreateCtfState,
+  type FactorySlot,
+} from "@/hooks/use-create-ctf"
 import {
   DURATION_DAYS,
   MAX_PLAYERS,
@@ -67,30 +81,48 @@ import {
 } from "@/lib/ctf/params"
 import { formatEth } from "@/lib/format"
 import {
+  isFactoryAvailable,
   knownFactories,
   knownFactoryAddress,
   testFactoryAddress,
+  VAULT_SEED,
   type KnownFactory,
 } from "@/lib/onchain/factories"
 import { truncateAddress } from "@/lib/onchain/format"
 import { cn } from "@/lib/utils"
 
-type FactoryOption = Omit<KnownFactory, "vuln"> & {
-  vuln?: KnownFactory["vuln"]
-}
+type FactoryOption =
+  | { kind: "known"; id: string; name: string; factory: KnownFactory }
+  | { kind: "test"; id: string; name: string; address: Address }
 
 // La factory de test (`pnpm chain:deploy`) n'existe qu'en local.
-const factoryOptions: FactoryOption[] = testFactoryAddress
-  ? [
-      ...knownFactories,
-      { id: "test", name: "Factory de test", address: testFactoryAddress },
-    ]
-  : knownFactories
+const factoryOptions: FactoryOption[] = [
+  ...knownFactories.map((factory): FactoryOption => ({
+    kind: "known",
+    id: factory.id,
+    name: factory.name,
+    factory,
+  })),
+  ...(testFactoryAddress
+    ? [
+        {
+          kind: "test",
+          id: "test",
+          name: "Factory de test",
+          address: testFactoryAddress,
+        } as const,
+      ]
+    : []),
+]
 
-function optionAddress(option: FactoryOption) {
-  return option.vuln
-    ? knownFactoryAddress(option as KnownFactory)
-    : (option.address as Address)
+/**
+ * Ce qui part dans `createCTF`. Le Coffre n'a pas encore d'adresse : il est
+ * déployé juste avant (hooks/use-create-ctf.ts).
+ */
+function optionSlot(option: FactoryOption, isDemo: boolean): FactorySlot {
+  if (option.kind === "test") return option.address
+  if (option.factory.perCtf && !isDemo) return "vault"
+  return knownFactoryAddress(option.factory)
 }
 
 type Amounts = { cashPrize: string; ticketPrice: string; maxPlayers: string }
@@ -130,10 +162,18 @@ export function CreateCtfForm() {
   const [startError, setStartError] = useState<string>()
 
   // L'ordre des factories donne l'index des épreuves dans le CTF.
-  const factories: Address[] = [
-    ...factoryOptions.filter((f) => selected.includes(f.id)).map(optionAddress),
+  const slots: FactorySlot[] = [
+    ...factoryOptions
+      .filter((f) => selected.includes(f.id))
+      .map((f) => optionSlot(f, tx.isDemo)),
     ...custom,
   ]
+  // Pour la validation, le Coffre à déployer garde une adresse fictive.
+  const vaultPlaceholder = knownFactoryAddress(knownFactories[0])
+  const factories: Address[] = slots.map((slot) =>
+    slot === "vault" ? vaultPlaceholder : slot
+  )
+  const withVault = slots.includes("vault")
   const draft = {
     title,
     ...amounts,
@@ -146,11 +186,20 @@ export function CreateCtfForm() {
   // Récap : calculé dès que les montants sont valides, même sans date.
   const cashPrize = parseEth(amounts.cashPrize)
   const ticketPrice = parseEth(amounts.ticketPrice)
+  const maxPlayers = /^\d+$/.test(amounts.maxPlayers.trim())
+    ? BigInt(amounts.maxPlayers.trim())
+    : undefined
+  const funding =
+    withVault && maxPlayers !== undefined ? vaultFunding(maxPlayers) : undefined
   const total =
-    cashPrize !== null && bond !== undefined ? cashPrize + bond : undefined
+    cashPrize !== null && bond !== undefined && (!withVault || funding)
+      ? cashPrize + bond + (funding ?? BigInt(0))
+      : undefined
 
   const busy = tx.status === "signing" || tx.status === "confirming"
-  const locked = busy || tx.status === "success"
+  // Une fois une transaction confirmée, les paramètres ne bougent plus : une
+  // nouvelle tentative reprend là où la création s'est arrêtée.
+  const locked = busy || tx.status === "success" || tx.started
   const wrongChain = isConnected && chainId !== baseSepolia.id
   const needsWallet = !tx.isDemo && !isConnected
 
@@ -188,7 +237,7 @@ export function CreateCtfForm() {
     const checked = validateCtfDraft(draft, { now: nowSeconds() })
     setStartError(checked.errors.start)
     if (!checked.params || needsWallet || wrongChain) return
-    tx.submit(checked.params, checked.factories)
+    tx.submit(checked.params, slots)
   }
 
   const handleReset = () => {
@@ -247,7 +296,10 @@ export function CreateCtfForm() {
                 className="grid sm:grid-cols-3"
               >
                 {factoryOptions.map((factory) => {
-                  const unavailable = !factory.address && !tx.isDemo
+                  const unavailable =
+                    factory.kind === "known" &&
+                    !tx.isDemo &&
+                    !isFactoryAvailable(factory.factory)
                   const id = `factory-${factory.id}`
                   return (
                     <FieldLabel key={factory.id} htmlFor={id}>
@@ -257,8 +309,8 @@ export function CreateCtfForm() {
                       >
                         <FieldContent className="gap-2">
                           <FieldTitle>{factory.name}</FieldTitle>
-                          {factory.vuln ? (
-                            <VulnTag vuln={factory.vuln} />
+                          {factory.kind === "known" ? (
+                            <VulnTag vuln={factory.factory.vuln} />
                           ) : (
                             <Badge variant="muted" className="h-6 px-2.5">
                               Sans exploit
@@ -365,6 +417,15 @@ export function CreateCtfForm() {
                   )}
                 </CollapsibleContent>
               </Collapsible>
+              {selected.includes("vault") && (
+                <FieldDescription>
+                  Le Coffre est déployé pour ton CTF : tu y déposes{" "}
+                  {formatEth(VAULT_SEED)} par joueur, que chaque joueur peut
+                  vider. Trois transactions à signer : déployer le Coffre,
+                  publier le CTF, puis le lier au CTF. Après la fin, tu
+                  récupères ce qui reste depuis la page du CTF.
+                </FieldDescription>
+              )}
               <FieldError>{errorFor("factories")}</FieldError>
             </FieldSet>
 
@@ -490,6 +551,14 @@ export function CreateCtfForm() {
             >
               {bond !== undefined ? formatEth(bond) : "—"}
             </DataRow>
+            {withVault && (
+              <DataRow
+                label="Fonds du Coffre"
+                hint={`${amounts.maxPlayers} × ${formatEth(VAULT_SEED)}`}
+              >
+                {funding !== undefined ? formatEth(funding) : "—"}
+              </DataRow>
+            )}
           </DataList>
           <Separator />
           <p className="text-sm text-muted-foreground">
@@ -497,12 +566,22 @@ export function CreateCtfForm() {
             organisateur tricheur pourrait récupérer. Elle t&apos;est rendue à
             la fin, sauf si la triche est confirmée.
           </p>
+          {tx.steps.length > 1 && tx.status !== "idle" && (
+            <CreateSteps tx={tx} />
+          )}
           <TxStatusAlert
             status={tx.status}
             hash={tx.hash}
             error={tx.error}
             isDemo={tx.isDemo}
           />
+          {tx.vault && tx.status === "error" && (
+            <p className="text-sm text-muted-foreground">
+              Ton Coffre est déployé ({truncateAddress(tx.vault)}). Relance pour
+              reprendre à l&apos;étape qui a échoué ; ses fonds restent
+              récupérables tant qu&apos;il n&apos;est pas lié.
+            </p>
+          )}
         </CardContent>
         <CardFooter>
           {tx.status === "success" ? (
@@ -556,12 +635,45 @@ export function CreateCtfForm() {
               ) : (
                 <RocketIcon data-icon="inline-start" />
               )}
-              Publier le CTF
+              {tx.started ? "Reprendre la création" : "Publier le CTF"}
             </Button>
           )}
         </CardFooter>
       </Card>
     </form>
+  )
+}
+
+/** Avancement des transactions quand le CTF a un Coffre. */
+function CreateSteps({ tx }: { tx: CreateCtfState }) {
+  return (
+    <ol className="flex flex-col gap-2 text-sm">
+      {tx.steps.map((step, index) => {
+        const done = tx.done.includes(step)
+        const current = !done && tx.current === step
+        const failed = current && tx.status === "error"
+        return (
+          <li
+            key={step}
+            className={cn(
+              "flex items-center gap-2",
+              !done && !current && "text-muted-foreground"
+            )}
+          >
+            {done ? (
+              <CircleCheckIcon className="size-4 text-success-text" />
+            ) : failed ? (
+              <CircleXIcon className="size-4 text-destructive" />
+            ) : current ? (
+              <Spinner className="size-4" />
+            ) : (
+              <CircleDashedIcon className="size-4" />
+            )}
+            {index + 1}. {createStepLabels[step]}
+          </li>
+        )
+      })}
+    </ol>
   )
 }
 

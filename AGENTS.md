@@ -1,6 +1,6 @@
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
@@ -87,9 +87,9 @@ pnpm contracts:test       # tests Solidity + TypeScript
 pnpm contracts:typecheck  # compile puis tsc des tests/scripts Hardhat
 pnpm abi                  # recopie l'ABI de CTFPlatform dans lib/onchain/ (après un changement du contrat)
 pnpm chain                # nœud Hardhat local (chain id 84532, comme Base Sepolia)
-pnpm chain:deploy         # déploie CTFPlatform + TestLevel en local, 2 CTF d'exemple, écrit .env.local
+pnpm chain:deploy         # déploie CTFPlatform, les 3 épreuves et TestLevel en local, 2 CTF d'exemple, écrit .env.local
 ADVANCE=7200 pnpm chain:time  # avance l'horloge du nœud local (en secondes)
-PLAYER=2 CTF=0 LEVEL=0 pnpm chain:solve  # résout l'instance de test d'un joueur (« exploit » de TestLevel)
+PLAYER=3 CTF=0 LEVEL=0 pnpm chain:solve  # joue l'exploit de l'épreuve LEVEL pour un joueur (local seulement)
 ```
 
 Avant de considérer une tâche finie : `pnpm lint` et `pnpm typecheck` passent, plus `pnpm contracts:test` si un contrat a changé.

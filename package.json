@@ -21,8 +21,8 @@
     "contracts:deploy": "pnpm --filter @pwnpot/contracts exec hardhat ignition deploy ignition/modules/Pwnpot.ts --network baseSepolia --parameters ignition/parameters/demo.json --build-profile production --verify",
     "contracts:verify": "pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532",
     "contracts:env": "node contracts/scripts/deployment-env.ts",
-    "abi": "pnpm contracts:build && node contracts/scripts/export-abi.ts && prettier --write lib/onchain/ctf-platform-abi.ts",
-    "chain": "pnpm --filter @pwnpot/contracts exec hardhat node --chain-id 84532 --chain-type op",
+    "abi": "pnpm contracts:build && node contracts/scripts/export-abi.ts && prettier --write lib/onchain/ctf-platform-abi.ts lib/onchain/level-artifacts.ts",
+    "chain": "pnpm --filter @pwnpot/contracts exec hardhat node --network chain",
     "chain:deploy": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-deploy.ts --network localhost",
     "chain:time": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-time.ts --network localhost",
     "chain:solve": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-solve.ts --network localhost"
