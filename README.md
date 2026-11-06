@@ -201,5 +201,6 @@ pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532 --netwo
 | [docs/CHALLENGES.md](docs/CHALLENGES.md) | Interface d'une épreuve, les 3 épreuves (faille, condition de réussite, exploit), comment en ajouter une |
 | [docs/SECURITY.md](docs/SECURITY.md) | Modèle de menace : attaques possibles, parades, limites connues |
 | [docs/FAILURES.md](docs/FAILURES.md) | Catalogue des failles du Day 3 : non applicable, traitée ou acceptée, avec le test associé |
+| [docs/PLAN.md](docs/PLAN.md) | État d'avancement, ce qui reste jusqu'au code freeze, qui porte quoi, risques et plans B |
 | [contracts/README.md](contracts/README.md) | Travailler dans le workspace Hardhat |
 | [DEMO.md](DEMO.md) | Scénario de la soutenance, pas à pas |
