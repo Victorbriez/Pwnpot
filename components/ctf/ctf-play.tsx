@@ -446,13 +446,14 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
 
           {(hasTicket || isOrganizer) && (
             <div className="flex flex-col gap-3 rounded-lg bg-muted/50 p-3">
-              <div className="flex items-center justify-between gap-2">
+              {/* Le libellé de l'étape peut être long : il passe sous le titre. */}
+              <div className="flex flex-col items-start gap-1.5">
                 <span className="text-sm font-medium">
                   {isOrganizer ? "Ton CTF" : "Ta participation"}
                 </span>
                 <Badge
                   variant={toneVariant[step.tone]}
-                  className="h-auto py-0.5 text-right whitespace-normal"
+                  className="h-auto max-w-full shrink py-0.5 whitespace-normal"
                 >
                   {step.label}
                 </Badge>
