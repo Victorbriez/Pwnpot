@@ -44,15 +44,33 @@ export function usePlatformEvents<const N extends EventName>(
     ],
     enabled: active,
     refetchInterval: REFRESH_MS,
-    queryFn: () =>
-      client!.getContractEvents({
-        address: ctfPlatformAddress!,
-        abi: ctfPlatformAbi,
-        eventName,
-        args,
-        fromBlock: ctfPlatformDeployBlock,
-        toBlock: "latest",
-        strict: true,
-      } as GetContractEventsParameters<Abi, N, true>),
+    queryFn: async () => {
+      // Les RPC publics limitent la plage d'un eth_getLogs (50 000 blocs chez
+      // publicnode, 200 sur sepolia.base.org) : on lit par tranches.
+      const latest = await client!.getBlockNumber()
+      const pages = []
+      for (
+        let from = ctfPlatformDeployBlock;
+        from <= latest;
+        from += LOG_BLOCK_RANGE
+      ) {
+        const to = from + LOG_BLOCK_RANGE - BigInt(1)
+        pages.push(
+          client!.getContractEvents({
+            address: ctfPlatformAddress!,
+            abi: ctfPlatformAbi,
+            eventName,
+            args,
+            fromBlock: from,
+            toBlock: to < latest ? to : latest,
+            strict: true,
+          } as GetContractEventsParameters<Abi, N, true>)
+        )
+      }
+      return (await Promise.all(pages)).flat()
+    },
   })
 }
+
+/** Taille d'une tranche de lecture des events (limite de publicnode). */
+const LOG_BLOCK_RANGE = BigInt(50_000)
