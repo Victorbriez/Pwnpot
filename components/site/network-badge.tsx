@@ -29,7 +29,7 @@ export function NetworkBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex h-8 items-center gap-2 rounded-lg border bg-card px-3 text-[0.8rem] font-medium text-secondary-foreground",
+        "inline-flex h-8 items-center gap-2 rounded-lg border bg-card px-3 text-xs font-medium text-secondary-foreground",
         className
       )}
     >

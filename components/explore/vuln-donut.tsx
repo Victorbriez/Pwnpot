@@ -16,7 +16,8 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import { formatInt } from "@/lib/format"
-import { vulnBreakdown, vulnLabels } from "@/lib/mock/explore"
+import { vulnLabels } from "@/lib/ctf/types"
+import { vulnBreakdown } from "@/lib/mock/explore"
 
 const chartConfig = {
   solved: { label: "Résolues" },
@@ -35,7 +36,7 @@ export function VulnDonut() {
   return (
     <Card className="rounded-2xl py-6 [--card-spacing:--spacing(6)]">
       <CardHeader>
-        <CardTitle className="text-[1.0625rem] font-semibold">
+        <CardTitle className="text-lg font-semibold">
           Failles les plus jouées
         </CardTitle>
         <CardDescription>Répartition des épreuves résolues</CardDescription>

@@ -1,6 +1,7 @@
 "use client"
 
 import { SearchXIcon } from "lucide-react"
+import Link from "next/link"
 import * as React from "react"
 
 import { CtfCard } from "@/components/ctf/ctf-card"
@@ -14,7 +15,8 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { isClosed, type Ctf } from "@/lib/mock/explore"
+import { SectionHeading } from "@/components/site/page-header"
+import { isClosed, type Ctf } from "@/lib/ctf/types"
 
 const filters = {
   all: { label: "Tous", test: () => true },
@@ -31,13 +33,16 @@ type Filter = keyof typeof filters
 export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
   const [filter, setFilter] = React.useState<Filter>("all")
   const visible = ctfs.filter(filters[filter].test)
+  // Le niveau n'existe qu'en démo : le contrat ne le stocke pas.
+  const hasLevels = ctfs.some((ctf) => ctf.level !== undefined)
+  const shown = Object.entries(filters).filter(
+    ([key]) => hasLevels || (key !== "beginner" && key !== "advanced")
+  )
 
   return (
     <section aria-labelledby="live-ctfs" className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="live-ctfs" className="text-xl font-semibold tracking-tight">
-          Tous les CTF
-        </h2>
+        <SectionHeading id="live-ctfs">Tous les CTF</SectionHeading>
         <ToggleGroup
           variant="outline"
           size="sm"
@@ -50,7 +55,7 @@ export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
           aria-label="Filtrer les CTF"
           className="flex-wrap"
         >
-          {Object.entries(filters).map(([key, { label }]) => (
+          {shown.map(([key, { label }]) => (
             <ToggleGroupItem key={key} value={key}>
               {label}
             </ToggleGroupItem>
@@ -62,7 +67,13 @@ export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
         <ul className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((ctf) => (
             <li key={ctf.id} className="contents">
-              <CtfCard ctf={ctf} />
+              <Link
+                href={`/ctf/${ctf.id}`}
+                aria-label={ctf.title}
+                className="rounded-2xl transition-transform outline-none hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-ring/50 *:data-[slot=card]:h-full"
+              >
+                <CtfCard ctf={ctf} />
+              </Link>
             </li>
           ))}
         </ul>

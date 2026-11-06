@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge"
-import { vulnLabels, type Vuln } from "@/lib/mock/explore"
+import { vulnLabels, type Vuln } from "@/lib/ctf/types"
 
 const vulnVariant = {
   reentrancy: "brand",

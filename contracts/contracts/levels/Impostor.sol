@@ -1,35 +1,67 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
-import {Level} from "./Level.sol";
+import {ILevel} from "../interfaces/ILevel.sol";
 
-/// Épreuve 2, Usurpateur : le contrat authentifie avec `tx.origin`.
-/// VOLONTAIREMENT VULNÉRABLE. Ne pas réutiliser.
+/// Level 2, Impostor: checking `tx.origin` instead of `msg.sender` lets any
+/// intermediate contract through.
+/// INTENTIONALLY VULNERABLE. Do not reuse.
 contract Impostor {
+    /// Player this instance was created for. Only their transactions can take it over,
+    /// so rivals cannot overwrite the owner of someone else's instance.
+    address public immutable player;
     address public owner;
 
-    constructor(address initialOwner) {
+    constructor(address initialOwner, address player_) {
         owner = initialOwner;
+        player = player_;
     }
 
     function changeOwner(address newOwner) external {
-        // Vrai dès qu'un contrat sert d'intermédiaire.
-        if (tx.origin != msg.sender) {
+        // The flaw: `tx.origin != msg.sender` is true as soon as a contract sits
+        // between the player's wallet and this call.
+        if (tx.origin == player && tx.origin != msg.sender) {
             owner = newOwner;
         }
     }
 }
 
-/// Factory de l'Usurpateur. La factory est le propriétaire de départ : le joueur
-/// réussit quand il devient propriétaire de son instance.
-contract ImpostorFactory is Level {
-    constructor(address platform_) Level(platform_) {}
+/// Factory for the Impostor level. The factory is the initial owner of every
+/// instance: the player solves the level by becoming the owner of their own instance.
+contract ImpostorFactory is ILevel {
+    /// Only address allowed to create instances (CTFPlatform).
+    address public immutable platform;
 
-    function _deploy(address) internal override returns (address) {
-        return address(new Impostor(address(this)));
+    /// Instances deployed by this factory. The player is stored in the instance itself.
+    mapping(address instance => bool) public isInstance;
+
+    event InstanceCreated(address indexed player, address indexed instance);
+
+    error OnlyPlatform();
+    error ZeroAddress();
+
+    constructor(address platform_) {
+        if (platform_ == address(0)) revert ZeroAddress();
+        platform = platform_;
     }
 
-    function _isSolved(address instance, address player) internal view override returns (bool) {
-        return Impostor(instance).owner() == player;
+    function createInstance(address player) external returns (address instance) {
+        if (msg.sender != platform) revert OnlyPlatform();
+        if (player == address(0)) revert ZeroAddress();
+
+        // Only deploys code from this file; never calls back into the caller.
+        // The factory owns the instance and has no function to transfer it,
+        // so a fresh instance never validates.
+        instance = address(new Impostor(address(this), player));
+        isInstance[instance] = true;
+        emit InstanceCreated(player, instance);
+    }
+
+    function validateInstance(address instance, address player) external view returns (bool) {
+        // An address not deployed by this factory never validates, so its code is trusted below.
+        if (player == address(0) || !isInstance[instance]) return false;
+        Impostor impostor = Impostor(instance);
+        // Another player's instance never counts.
+        return impostor.player() == player && impostor.owner() == player;
     }
 }

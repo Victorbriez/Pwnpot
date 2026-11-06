@@ -2,7 +2,7 @@
 
 Une épreuve Pwnpot, c'est un contrat volontairement vulnérable, plus une **factory** qui en déploie une copie par joueur et qui sait dire si cette copie a été exploitée. Il n'y a pas de flag : la réussite se lit dans l'état de la chaîne. C'est le même principe qu'[Ethernaut](https://ethernaut.openzeppelin.com/).
 
-> Le code est dans [`contracts/contracts/levels/`](../contracts/contracts/levels/) (contrat vulnérable + factory, un fichier par épreuve), les contrats d'attaque dans [`contracts/contracts/exploits/`](../contracts/contracts/exploits/). Les extraits ci-dessous en sont tirés.
+> Les noms et le code ci-dessous sont des esquisses. Ils seront remplacés par le code réel de `contracts/contracts/levels/`.
 
 ## Sommaire
 
@@ -49,11 +49,6 @@ sequenceDiagram
 
 La plateforme enregistre l'instance de chaque joueur au moment de sa création. `submit` ne valide **que** l'instance de `msg.sender` : personne ne peut soumettre à la place d'un autre.
 
-Les 3 factories héritent de [`Level`](../contracts/contracts/levels/Level.sol), qui ajoute deux protections de son côté :
-
-- `createInstance` n'est appelable que par l'adresse `platform`, fixée au déploiement (erreur `OnlyPlatform`). En attendant `CTFPlatform`, c'est le compte qui déploie.
-- La factory retient pour qui chaque instance a été créée (`playerOf`). `validateInstance(instance, player)` renvoie `false` si l'instance n'appartient pas à `player`, même si elle a été exploitée.
-
 ---
 
 ## Pourquoi une instance par joueur
@@ -70,7 +65,11 @@ Les 3 factories héritent de [`Level`](../contracts/contracts/levels/Level.sol),
 
 ```solidity
 contract Vault {
-    mapping(address => uint256) public balances;
+    uint256 public immutable initialBalance;
+    mapping(address account => uint256 amount) public balances;
+    bool public drained;   // ne revient jamais à false
+
+    constructor() payable { initialBalance = msg.value; }   // alimenté par la factory
 
     function deposit() external payable { balances[msg.sender] += msg.value; }
 
@@ -78,25 +77,34 @@ contract Vault {
         uint256 amount = balances[msg.sender];
         (bool ok, ) = msg.sender.call{value: amount}("");   // interaction AVANT l'effet
         require(ok);
+        if (address(this).balance == 0) drained = true;     // résolu pour de bon
         balances[msg.sender] = 0;
     }
 }
 ```
 
-**Condition de réussite.** `initialBalance > 0 && address(instance).balance == 0`, où `initialBalance` est le solde enregistré par l'instance à sa création.
+**Condition de réussite.** `initialBalance > 0 && drained`, où `initialBalance` est le solde enregistré par l'instance à sa création et `drained` un drapeau définitif posé par `withdraw` quand il laisse le coffre vide. Inutile de relire le solde : l'ETH ne peut sortir du coffre que par `withdraw`, qui pose `drained` dès qu'il le vide. L'instance doit aussi avoir été créée par la factory pour ce joueur.
 
-**Exploit attendu.** Le joueur déploie un contrat d'attaque, fait un petit dépôt, puis appelle `withdraw`. Son `receive()` rappelle `withdraw` tant que le coffre n'est pas vide.
+**Exploit attendu.** Le joueur déploie un contrat d'attaque, fait un petit dépôt, puis appelle `withdraw`. Son `receive()` rappelle `withdraw` tant que le coffre n'est pas vide. Pour que le coffre finisse exactement à 0, le dépôt est égal au solde du coffre lu dans la même transaction : deux retraits le vident (exemple de test : `contracts/contracts/exploits/VaultAttack.sol`, qui accepte une marge et rend l'excédent).
 
 **Ce que ça enseigne.** Checks-effects-interactions, et pourquoi `CTFPlatform` remet les soldes à zéro avant de payer (voir [SECURITY.md](SECURITY.md)).
 
 **Point de conception.** Le solde des coffres est géré par la factory, pas par `CTFPlatform`, qui reste générique.
 
-- L'organisateur **alimente sa factory** avec `maxPlayers × 0.0001 ETH`. Chaque instance démarre avec `seed` wei (paramètre de déploiement, 0.0001 ETH par défaut).
-- `createInstance` **revert** (`InsufficientFunds`) si la factory ne peut plus alimenter une nouvelle instance.
-- La condition de réussite est « solde initial > 0 **et** solde actuel == 0 ». Sans ça, un coffre jamais alimenté serait « résolu » sans exploit. Dans le code, le solde initial est garanti par construction : la factory refuse `seed == 0` et finance chaque coffre à sa création.
-- Ce que le joueur vide, il le garde. Après le CTF, l'organisateur récupère le reste via une fonction de la factory _(pas encore implémentée dans `VaultFactory`)_.
+- L'organisateur déploie `VaultFactory` et **l'alimente** avec `maxPlayers × 0.0001 ETH` (`SEED`, constante). Chaque instance démarre avec 0.0001 ETH.
+- Après `createCTF`, l'organisateur appelle **`bind(ctfId)`** une seule fois : la factory vérifie sur `CTFPlatform` qu'il est bien l'organisateur de ce CTF, que celui-ci la liste **une seule fois** parmi ses épreuves, et qu'elle détient déjà `maxPlayers × SEED` (sinon `InsufficientFunds`).
+- `createInstance` n'accepte que `CTFPlatform`, et seulement pour un joueur qui a un ticket dans le CTF lié, pendant sa phase `Running`, **une instance par joueur**. Quelqu'un qui reprend la factory dans son propre CTF ne peut donc pas vider ses fonds : il y a au plus `maxPlayers` coffres.
+- `createInstance` **revert** (`InsufficientFunds`) si la factory ne peut plus alimenter une nouvelle instance. Grâce au contrôle de `bind` et au blocage de `recover()` pendant le CTF, ça ne devrait pas arriver.
+- L'instance **enregistre son solde initial**. La condition de réussite devient « solde initial > 0 **et** coffre vidé ». Sans ça, un coffre jamais alimenté serait « résolu » sans exploit.
+- Ce que le joueur vide, il le garde. Une fois le CTF terminé, dans les phases `Contestation`, `Finalized` ou `Cheated` uniquement (pas pendant un litige : `Voting`, `AppealWindow`, `Appealed`), l'organisateur, et lui seul, récupère le reste avec **`recover()`**. Avant `bind`, aucun coffre ne peut exister : `recover()` est alors possible à tout moment.
+- L'ETH resté dans un coffre jamais vidé y reste : l'organisateur ne peut pas le récupérer, seul quelqu'un qui exploite le coffre peut le prendre (au plus 0.0001 ETH par instance non résolue).
 
-**Exploit fourni.** [`VaultAttack`](../contracts/contracts/exploits/VaultAttack.sol) : `run()` avec une valeur égale au solde du coffre, le butin revient au joueur.
+**Limites connues.**
+
+- Si l'organisateur n'appelle pas `bind(ctfId)` avant le début du CTF, `createInstance` revert (`NotBound`) : l'épreuve est injouable tant que ce n'est pas fait.
+- Forcer l'envoi de quelques wei (`selfdestruct`) vers un coffre **déjà vidé** ne le rend plus « non résolu » : dès qu'un `withdraw` laisse le coffre à 0, il passe `drained = true`, et ce drapeau ne revient jamais à `false`. Avant le premier vidage, un rival peut encore envoyer quelques wei juste avant l'exploit ; un contrat d'attaque qui dépose le solde lu dans la même transaction (comme `VaultAttack`) vide quand même le coffre, alors qu'un dépôt calculé à l'avance peut laisser un reste ou échouer.
+- N'importe qui peut vider le coffre d'un autre joueur, et la réussite compte pour le **propriétaire** du coffre, pas pour celui qui l'a vidé. Un complice peut donc résoudre l'épreuve à la place d'un joueur. C'est équivalent à lui donner l'exploit, limite déjà assumée (exploits recopiables, voir [DESIGN.md](DESIGN.md#problématiques-et-réponses)).
+- La factory ne sait pas quel CTF l'appelle : elle tient **un coffre par joueur**, tous CTF confondus. Un joueur qui crée d'abord son coffre via un autre CTF listant la même factory ne peut plus en créer dans le CTF lié (`AlreadyHasInstance`). Seul ce joueur est pénalisé, et c'est cette limite qui garantit que le financement suffit.
 
 ---
 
@@ -106,25 +114,30 @@ contract Vault {
 
 ```solidity
 contract Impostor {
+    address public immutable player;   // joueur pour qui l'instance a été créée
     address public owner;
 
-    constructor(address initialOwner) { owner = initialOwner; }
+    constructor(address initialOwner, address player_) {
+        owner = initialOwner;
+        player = player_;
+    }
 
     function changeOwner(address newOwner) external {
-        if (tx.origin != msg.sender) {   // vrai dès qu'un contrat sert d'intermédiaire
+        // tx.origin != msg.sender : vrai dès qu'un contrat sert d'intermédiaire
+        if (tx.origin == player && tx.origin != msg.sender) {
             owner = newOwner;
         }
     }
 }
 ```
 
-**Condition de réussite.** `Impostor(instance).owner() == player`
+**Condition de réussite.** `Impostor(instance).owner() == player`, sur une instance créée par la factory pour ce joueur.
 
 **Exploit attendu.** Le joueur déploie un contrat qui appelle `changeOwner(joueur)`. Dans cet appel, `msg.sender` est le contrat et `tx.origin` est le joueur : la condition passe.
 
 **Ce que ça enseigne.** On authentifie toujours avec `msg.sender`, jamais avec `tx.origin`.
 
-**Exploit fourni.** [`ImpostorAttack`](../contracts/contracts/exploits/ImpostorAttack.sol) : `run(instance)` appelle `changeOwner(tx.origin)`. La factory est le propriétaire de départ.
+**Point de conception.** La factory est le propriétaire de départ de chaque instance : une instance neuve ne valide donc jamais. Chaque instance enregistre son joueur et `changeOwner` exige `tx.origin == player` : sans cette condition, un concurrent pourrait passer par son propre contrat d'attaque pour réécrire le propriétaire de l'instance d'un autre, entre son exploit et son `submit`, et l'empêcher de valider. La faille enseignée reste la même : depuis son wallet, l'appel échoue ; via un contrat, il passe.
 
 ---
 
@@ -151,15 +164,15 @@ contract CodeSafe {
 
 **Ce que ça enseigne.** « Il n'y a pas de secret sur une chaîne. » C'est aussi pour ça que Pwnpot n'utilise pas de flag stocké on-chain.
 
-**Point de conception.** Le mot de passe est `keccak256(player, block.prevrandao, block.timestamp, factory, compteur)` : il est différent dans chaque instance, et le copier d'une autre ne sert donc à rien. Il n'a pas besoin d'être imprévisible, puisqu'il est lisible de toute façon.
+**Point de conception.** Le mot de passe est `keccak256(joueur, blockhash(block.number - 1), factory, compteur d'instances)` : il est différent dans chaque instance, et le copier d'une autre instance ne sert donc à rien. Il n'a pas besoin d'être imprévisible, puisqu'il est lisible de toute façon. Seule `CTFPlatform` (adresse fixée au déploiement de la factory) peut créer une instance, et `validateInstance` ne valide que l'instance créée pour ce joueur.
 
 ---
 
 ## Ajouter une épreuve
 
-1. Écrire le contrat vulnérable et sa factory dans `contracts/contracts/levels/`, la factory héritant de `Level` (qui implémente `ILevel`) : il reste à écrire `_deploy` et `_isSolved`.
-2. `validateInstance` doit être **`view`** et rester **sous la limite de gaz** de la plateforme (300 000 _(proposé)_).
-3. Écrire un **test d'exploit** dans `contracts/test/levels/` (TypeScript, joué comme un joueur) et un test unitaire `levels/<Épreuve>.t.sol` (Solidity, avec fuzz et mesure du gaz), qui :
+1. Écrire le contrat vulnérable et sa factory dans `contracts/contracts/levels/`, en implémentant `ILevel`.
+2. `validateInstance` doit être **`view`** et rester **sous la limite de gaz** de la plateforme (`VALIDATION_GAS` = 300 000 dans `CTFPlatform`).
+3. Écrire un **test d'exploit** dans `contracts/test/` qui :
    - crée une instance ;
    - vérifie que `validateInstance` renvoie `false` ;
    - joue l'exploit ;

@@ -4,7 +4,6 @@ pragma solidity ^0.8.34;
 import {Test} from "forge-std/Test.sol";
 
 import {CodeSafe, CodeSafeFactory} from "./CodeSafe.sol";
-import {Level} from "./Level.sol";
 
 contract CodeSafeTest is Test {
     uint256 constant GAS_LIMIT = 300_000;
@@ -37,7 +36,7 @@ contract CodeSafeTest is Test {
 
     function test_StorageLayout_PasswordInSlotOne() public {
         CodeSafe safe = _create(player);
-        // Slot 0 : `locked`, slot 1 : `password`, comme l'annonce l'énoncé.
+        // Slot 0: `locked`, slot 1: `password`, as the level statement says.
         assertEq(vm.load(address(safe), bytes32(0)), bytes32(uint256(1)));
         assertNotEq(_password(safe), bytes32(0));
     }
@@ -88,13 +87,35 @@ contract CodeSafeTest is Test {
         assertFalse(factory.validateInstance(address(theirs), player));
     }
 
+    function test_UnknownInstanceDoesNotCount() public {
+        CodeSafe foreign = new CodeSafe(bytes32(0));
+        foreign.unlock(bytes32(0));
+
+        assertFalse(foreign.locked());
+        assertFalse(factory.validateInstance(address(foreign), address(this)));
+    }
+
     function test_RevertWhen_CallerIsNotPlatform() public {
-        vm.expectRevert(Level.OnlyPlatform.selector);
+        vm.expectRevert(CodeSafeFactory.OnlyPlatform.selector);
         factory.createInstance(player);
+    }
+
+    function test_RevertWhen_PlayerIsZero() public {
+        vm.prank(platform);
+        vm.expectRevert(CodeSafeFactory.ZeroAddress.selector);
+        factory.createInstance(address(0));
+    }
+
+    function test_RevertWhen_PlatformIsZero() public {
+        vm.expectRevert(CodeSafeFactory.ZeroAddress.selector);
+        new CodeSafeFactory(address(0));
     }
 
     function test_ValidateInstance_StaysUnderGasLimit() public {
         CodeSafe safe = _create(player);
+        vm.prank(player);
+        safe.unlock(_password(safe));
+
         uint256 before = gasleft();
         factory.validateInstance(address(safe), player);
         assertLt(before - gasleft(), GAS_LIMIT);

@@ -2,59 +2,10 @@
 // Elles seront remplacées par la lecture de l'état et des events du contrat.
 // Les valeurs suivent docs/DESIGN.md : maxPlayers ≤ 200 et
 // caution ≥ cashPrize + maxPlayers × ticketPrice.
-import { parseEther, type Address } from "viem"
+import { parseEther } from "viem"
 
-/** Les trois épreuves de lancement (docs/CHALLENGES.md). */
-export type Vuln = "reentrancy" | "tx-origin" | "storage"
-
-/** Phases du cycle de vie d'un CTF (docs/DESIGN.md). */
-export type CtfStatus =
-  | "open"
-  | "running"
-  | "contestation"
-  | "voting"
-  | "appeal"
-  | "finalized"
-  | "cheated"
-
-export type CtfLevel = "beginner" | "advanced"
-
-export type Ctf = {
-  id: number
-  title: string
-  organizer: Address
-  challenges: number
-  cashPrize: bigint
-  ticketPrice: bigint
-  /** Cagnotte : cash prize + tickets vendus. */
-  prizePool: bigint
-  bond: bigint
-  players: number
-  maxPlayers: number
-  status: CtfStatus
-  level: CtfLevel
-  vulns: Vuln[]
-  /** Secondes avant la fin de la phase en cours. */
-  remaining: number
-  /** Part de la phase déjà écoulée, entre 0 et 1. */
-  elapsed: number
-}
-
-export const vulnLabels: Record<Vuln, string> = {
-  reentrancy: "Réentrance",
-  "tx-origin": "tx.origin",
-  storage: "Storage privé",
-}
-
-/** Phases où le CTF est terminé et les fonds sont à retirer. */
-export function isClosed(status: CtfStatus) {
-  return status === "finalized" || status === "cheated"
-}
-
-/** Phases où un litige est en cours. */
-export function inDispute(status: CtfStatus) {
-  return status === "voting" || status === "appeal"
-}
+import { computeKpis } from "@/lib/ctf/kpis"
+import { type Ctf, type Vuln } from "@/lib/ctf/types"
 
 function ctf(
   data: Omit<Ctf, "prizePool" | "cashPrize" | "ticketPrice" | "bond"> & {
@@ -126,7 +77,7 @@ export const ctfs: Ctf[] = [
   ctf({
     id: 4,
     title: "Slot Machine",
-    organizer: "0x2a8e6c4b0d9f1e3a5c7b9d1f3e5a7c9b1d3f5c77",
+    organizer: "0x4ce2a9b7d3f1e5c8a6b4d2f0e8c6a4b2d0f8aa19",
     challenges: 1,
     cashPrize: "0.6",
     ticketPrice: "0.005",
@@ -173,18 +124,9 @@ export const ctfs: Ctf[] = [
   }),
 ]
 
-const active = ctfs.filter((item) => !isClosed(item.status))
-
+/** Chiffres clés de démo ; les tendances n'existent qu'ici (pas d'historique on-chain). */
 export const kpis = {
-  lockedPrizePools: active.reduce(
-    (sum, item) => sum + item.prizePool,
-    BigInt(0)
-  ),
-  activeCtfs: active.length,
-  activePlayers: active.reduce((sum, item) => sum + item.players, 0),
-  solved: 412,
-  bondsAtStake: active.reduce((sum, item) => sum + item.bond, BigInt(0)),
-  openDisputes: ctfs.filter((item) => inDispute(item.status)).length,
+  ...computeKpis(ctfs, 412),
   trends: { locked: 12.4, players: 8.1, solved: 21 },
 }
 

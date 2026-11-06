@@ -32,7 +32,7 @@ const lines: Line[] = [
   { code: "" },
   {
     code: "  function finalize(uint256 ctfId);",
-    note: "N'importe qui clôture après la deadline : si l'organisateur disparaît, le CTF se termine quand même.",
+    note: "N'importe qui clôture après la fenêtre de contestation : si l'organisateur disparaît, le CTF se termine quand même.",
   },
   {
     code: "  function withdraw();",

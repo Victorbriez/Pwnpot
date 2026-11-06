@@ -42,7 +42,11 @@ export function formatRemaining(seconds: number): string {
   const days = Math.floor(seconds / 86_400)
   const hours = Math.floor((seconds % 86_400) / 3_600)
   const minutes = Math.floor((seconds % 3_600) / 60)
-  if (days > 0) return `${days} j ${hours} h`
-  if (hours > 0) return `${hours} h ${String(minutes).padStart(2, "0")} min`
+  // Les unités à zéro sont omises : « 7 j » plutôt que « 7 j 0 h ».
+  if (days > 0) return hours > 0 ? `${days} j ${hours} h` : `${days} j`
+  if (hours > 0)
+    return minutes > 0
+      ? `${hours} h ${String(minutes).padStart(2, "0")} min`
+      : `${hours} h`
   return `${minutes} min`
 }
