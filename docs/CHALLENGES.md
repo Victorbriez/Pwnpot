@@ -99,23 +99,30 @@ contract Vault {
 
 ```solidity
 contract Impostor {
+    address public immutable player;   // joueur pour qui l'instance a été créée
     address public owner;
 
-    constructor(address initialOwner) { owner = initialOwner; }
+    constructor(address initialOwner, address player_) {
+        owner = initialOwner;
+        player = player_;
+    }
 
     function changeOwner(address newOwner) external {
-        if (tx.origin != msg.sender) {   // vrai dès qu'un contrat sert d'intermédiaire
+        // tx.origin != msg.sender : vrai dès qu'un contrat sert d'intermédiaire
+        if (tx.origin == player && tx.origin != msg.sender) {
             owner = newOwner;
         }
     }
 }
 ```
 
-**Condition de réussite.** `Impostor(instance).owner() == player`
+**Condition de réussite.** `Impostor(instance).owner() == player`, sur une instance créée par la factory pour ce joueur.
 
 **Exploit attendu.** Le joueur déploie un contrat qui appelle `changeOwner(joueur)`. Dans cet appel, `msg.sender` est le contrat et `tx.origin` est le joueur : la condition passe.
 
 **Ce que ça enseigne.** On authentifie toujours avec `msg.sender`, jamais avec `tx.origin`.
+
+**Point de conception.** La factory est le propriétaire de départ de chaque instance : une instance neuve ne valide donc jamais. Chaque instance enregistre son joueur et `changeOwner` exige `tx.origin == player` : sans cette condition, un concurrent pourrait passer par son propre contrat d'attaque pour réécrire le propriétaire de l'instance d'un autre, entre son exploit et son `submit`, et l'empêcher de valider. La faille enseignée reste la même : depuis son wallet, l'appel échoue ; via un contrat, il passe.
 
 ---
 
