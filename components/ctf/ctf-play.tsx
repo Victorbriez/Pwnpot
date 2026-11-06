@@ -14,6 +14,7 @@ import {
 import { baseSepolia } from "viem/chains"
 
 import { remainingLabel } from "@/components/ctf/ctf-card"
+import { FactoryVerificationBadge } from "@/components/ctf/factory-verification-badge"
 import { StatusPill } from "@/components/ctf/status-pill"
 import { VulnTag } from "@/components/ctf/vuln-tag"
 import { DisputeCard } from "@/components/dispute/dispute-card"
@@ -212,9 +213,14 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                         )}
                       </ItemMedia>
                       <ItemContent>
-                        <ItemTitle>
+                        <ItemTitle className="line-clamp-none flex-wrap">
                           {level + 1}. {challenge.name}
                           {challenge.vuln && <VulnTag vuln={challenge.vuln} />}
+                          {challenge.factory && (
+                            <FactoryVerificationBadge
+                              factory={challenge.factory}
+                            />
+                          )}
                         </ItemTitle>
                         <ItemDescription>
                           {done

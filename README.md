@@ -4,7 +4,7 @@
 
 N'importe qui peut publier un CTF. Chaque épreuve est un contrat volontairement vulnérable que le joueur doit exploiter : vider un coffre, devenir propriétaire, retrouver un mot de passe « caché ». Il n'y a pas de flag : c'est le contrat qui vérifie que l'exploit a réussi. La cagnotte, les tickets et les cautions sont détenus par le contrat `CTFPlatform`, qui n'a ni owner, ni proxy, ni fonction admin. Personne, ni la plateforme ni l'organisateur, ne peut les détourner.
 
-> Projet du module *Blockchain & Decentralised Applications* (Epitech, Lucas Santoni). **Testnet uniquement**, aucun fond réel.
+> Projet du module _Blockchain & Decentralised Applications_ (Epitech, Lucas Santoni). **Testnet uniquement**, aucun fond réel.
 
 ---
 
@@ -24,15 +24,15 @@ N'importe qui peut publier un CTF. Chaque épreuve est un contrat volontairement
 
 ## État d'avancement
 
-| Partie | État |
-| --- | --- |
-| Frontend Next.js 16 + wagmi 3 (Base Sepolia, connexion wallet) | ✅ en place |
-| Workspace Hardhat 3 (`contracts/`), keystore, réseau `baseSepolia` | ✅ en place |
-| `CTFPlatform` (CTF, tickets, cautions, scores, retraits) | ⏳ à faire |
-| Factories des 3 épreuves + tests d'exploit | ⏳ à faire |
-| Litiges : vote + appel ERC-792 (`MockArbitrator`) | ⏳ à faire |
-| Écrans du frontend (liste des CTF, jeu, litiges) | ⏳ à faire |
-| Déploiement vérifié sur Basescan | ⏳ à faire |
+| Partie                                                             | État                                                       |
+| ------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Frontend Next.js 16 + wagmi 3 (Base Sepolia, connexion wallet)     | ✅ en place                                                |
+| Workspace Hardhat 3 (`contracts/`), keystore, réseau `baseSepolia` | ✅ en place                                                |
+| `CTFPlatform` (CTF, tickets, cautions, scores, retraits)           | ⏳ à faire                                                 |
+| Factories des 3 épreuves + tests d'exploit                         | ⏳ à faire                                                 |
+| Litiges : vote + appel ERC-792 (`MockArbitrator`)                  | ⏳ à faire                                                 |
+| Écrans du frontend (liste des CTF, jeu, litiges)                   | ⏳ à faire                                                 |
+| Déploiement vérifié sur Basescan                                   | ✅ en place (durées de démo : contestation et vote 10 min) |
 
 > Le design ci-dessous est la cible. Les choix de l'équipe sont résumés dans [docs/DESIGN.md § Décisions actées](docs/DESIGN.md#décisions-actées).
 
@@ -60,7 +60,7 @@ flowchart LR
 2. **Inscription** : le joueur paie son ticket, un seul par adresse. Le montant s'ajoute à la cagnotte.
 3. **Jeu** : pour chaque épreuve, le joueur demande **sa propre instance** du contrat vulnérable, puis l'exploite depuis son wallet ou avec son propre contrat d'attaque.
 4. **Validation** : le joueur soumet. La plateforme demande à la factory si l'instance est résolue (`validateInstance`, appelé en `staticcall` avec une limite de gaz). Si oui, la réussite et son horodatage sont enregistrés on-chain.
-5. **Fin** : après la deadline et une fenêtre de contestation de 48 h, cash prize et tickets sont crédités au podium (60 / 30 / 10 %). Chacun appelle `withdraw()` (*pull payment*).
+5. **Fin** : après la deadline et une fenêtre de contestation de 48 h, cash prize et tickets sont crédités au podium (60 / 30 / 10 %). Chacun appelle `withdraw()` (_pull payment_).
 6. **Personne n'a réussi** : les tickets sont remboursés. L'organisateur récupère son cash prize et sa caution, mais ne gagne rien.
 7. **Litige** : si un joueur soupçonne une triche de l'organisateur (solution fuitée à un complice, épreuve truquée), il ouvre un litige en déposant une caution de contestation. Les joueurs votent (1 adresse = 1 voix), puis le camp perdant peut faire appel à un arbitre ERC-792. Si la triche est confirmée, la caution de l'organisateur est brûlée, son cash prize lui est rendu et les tickets sont remboursés.
 
@@ -87,34 +87,34 @@ Les quatre points ci-dessous suivent la structure du test de décentralisation d
 
 ## Rôles et confiance
 
-| Rôle | Ce qu'il peut faire | S'il agit de mauvaise foi | S'il disparaît |
-| --- | --- | --- | --- |
-| **Organisateur** | Publier un CTF, choisir ses factories, déposer cash prize + caution | Fuiter une solution, publier une épreuve impossible ou truquée. **Limite :** il ne peut pas toucher aux fonds. Une épreuve impossible ne lui rapporte rien (tickets remboursés). Une triche prouvée par litige lui coûte sa caution, qui est brûlée (son cash prize lui est rendu). | Rien n'est bloqué : le CTF va jusqu'à sa deadline, puis les fonds sont distribués selon les règles. |
-| **Joueur** | Payer un ticket, créer ses instances, soumettre, contester, voter | Contester à tort : il perd sa caution de contestation, versée à l'organisateur. Multiplier les adresses pour peser dans un vote : un ticket par adresse, donc coûteux, et corrigé par l'appel. | Aucun impact sur les autres. |
-| **Votants** (détenteurs de tickets, 1 adresse = 1 voix) | Trancher un litige en première instance | Voter par intérêt plutôt que sur les faits. Corrigé par l'appel. | Quorum (max(3 votants, 20 % des tickets)) non atteint : résultat « pas de triche », le contestataire peut faire appel. |
-| **Arbitre** (ERC-792, `immutable`) | Trancher un litige **en appel uniquement** | Orienter les fonds **du litige** dans un sens ou dans l'autre. Il ne peut jamais toucher les fonds hors litige ni les autres CTF. | Après un timeout, la décision du vote s'applique. |
-| **Factory d'épreuve** (code tiers) | Déployer une instance, répondre à `validateInstance` | Refuser la validation, consommer tout le gaz, tenter une réentrance. Mitigé par `staticcall` + limite de gaz + `nonReentrant`, le reste relève du litige. | Une factory qui revert bloque seulement son épreuve, jamais les fonds. |
-| **Déployeur** | Déployer `CTFPlatform` et choisir l'arbitre | **Aucun pouvoir après le déploiement** : pas d'owner, pas de proxy, pas de pause. Son seul choix structurant est l'arbitre, visible par tous. | Aucun impact. |
+| Rôle                                                    | Ce qu'il peut faire                                                 | S'il agit de mauvaise foi                                                                                                                                                                                                                                                           | S'il disparaît                                                                                                         |
+| ------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **Organisateur**                                        | Publier un CTF, choisir ses factories, déposer cash prize + caution | Fuiter une solution, publier une épreuve impossible ou truquée. **Limite :** il ne peut pas toucher aux fonds. Une épreuve impossible ne lui rapporte rien (tickets remboursés). Une triche prouvée par litige lui coûte sa caution, qui est brûlée (son cash prize lui est rendu). | Rien n'est bloqué : le CTF va jusqu'à sa deadline, puis les fonds sont distribués selon les règles.                    |
+| **Joueur**                                              | Payer un ticket, créer ses instances, soumettre, contester, voter   | Contester à tort : il perd sa caution de contestation, versée à l'organisateur. Multiplier les adresses pour peser dans un vote : un ticket par adresse, donc coûteux, et corrigé par l'appel.                                                                                      | Aucun impact sur les autres.                                                                                           |
+| **Votants** (détenteurs de tickets, 1 adresse = 1 voix) | Trancher un litige en première instance                             | Voter par intérêt plutôt que sur les faits. Corrigé par l'appel.                                                                                                                                                                                                                    | Quorum (max(3 votants, 20 % des tickets)) non atteint : résultat « pas de triche », le contestataire peut faire appel. |
+| **Arbitre** (ERC-792, `immutable`)                      | Trancher un litige **en appel uniquement**                          | Orienter les fonds **du litige** dans un sens ou dans l'autre. Il ne peut jamais toucher les fonds hors litige ni les autres CTF.                                                                                                                                                   | Après un timeout, la décision du vote s'applique.                                                                      |
+| **Factory d'épreuve** (code tiers)                      | Déployer une instance, répondre à `validateInstance`                | Refuser la validation, consommer tout le gaz, tenter une réentrance. Mitigé par `staticcall` + limite de gaz + `nonReentrant`, le reste relève du litige.                                                                                                                           | Une factory qui revert bloque seulement son épreuve, jamais les fonds.                                                 |
+| **Déployeur**                                           | Déployer `CTFPlatform` et choisir l'arbitre                         | **Aucun pouvoir après le déploiement** : pas d'owner, pas de proxy, pas de pause. Son seul choix structurant est l'arbitre, visible par tous.                                                                                                                                       | Aucun impact.                                                                                                          |
 
 ---
 
 ## Architecture : on-chain / off-chain
 
-| Où | Quoi | Pourquoi là |
-| --- | --- | --- |
-| **On-chain** (`CTFPlatform`) | Fonds (cash prize, tickets, cautions), inscriptions, instances par joueur, réussites horodatées, litiges, votes, crédits de retrait | C'est ce qui doit être impossible à modifier ou à détourner |
-| **On-chain** (factories + instances) | Le code des épreuves et leur condition de réussite | La réussite doit être vérifiable par n'importe qui |
-| **On-chain** (`MockArbitrator` / arbitre ERC-792) | Décisions d'appel | Interface standard, remplaçable par Kleros |
-| **Off-chain** (frontend Next.js) | Affichage, construction des transactions, lecture des events | Ne détient **aucun état** : tout est relu depuis la chaîne |
-| **Off-chain** (wallet du joueur) | Signature des transactions | Le frontend ne voit jamais une clé privée |
+| Où                                                | Quoi                                                                                                                                | Pourquoi là                                                 |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **On-chain** (`CTFPlatform`)                      | Fonds (cash prize, tickets, cautions), inscriptions, instances par joueur, réussites horodatées, litiges, votes, crédits de retrait | C'est ce qui doit être impossible à modifier ou à détourner |
+| **On-chain** (factories + instances)              | Le code des épreuves et leur condition de réussite                                                                                  | La réussite doit être vérifiable par n'importe qui          |
+| **On-chain** (`MockArbitrator` / arbitre ERC-792) | Décisions d'appel                                                                                                                   | Interface standard, remplaçable par Kleros                  |
+| **Off-chain** (frontend Next.js)                  | Affichage, construction des transactions, lecture des events                                                                        | Ne détient **aucun état** : tout est relu depuis la chaîne  |
+| **Off-chain** (wallet du joueur)                  | Signature des transactions                                                                                                          | Le frontend ne voit jamais une clé privée                   |
 
-Il n'y a **aucun backend**. Si le frontend disparaît, tout reste utilisable depuis Basescan (*Write Contract*) ou un script viem.
+Il n'y a **aucun backend**. Si le frontend disparaît, tout reste utilisable depuis Basescan (_Write Contract_) ou un script viem.
 
 **Stack**
 
 - **Contrats** : Solidity 0.8.34, Hardhat 3 (toolbox viem, tests Solidity + `node:test`), OpenZeppelin 5.
 - **Frontend** : Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui (primitives Base UI).
-- **Web3** : wagmi 3 + viem 2, connecteurs *injected* et Base Account.
+- **Web3** : wagmi 3 + viem 2, connecteurs _injected_ et Base Account.
 - **Réseau** : Base Sepolia (chain id 84532) uniquement.
 - **Paquets** : pnpm, en workspace (frontend à la racine, contrats dans `contracts/`).
 
@@ -141,21 +141,21 @@ pnpm install
 cp .env.example .env.local      # puis renseigner l'adresse de CTFPlatform
 ```
 
-| Commande | Effet |
-| --- | --- |
-| `pnpm dev` | Lance le frontend sur http://localhost:3000 |
-| `pnpm build` | Build de production |
-| `pnpm lint` / `pnpm typecheck` | ESLint / `tsc --noEmit` du frontend |
-| `pnpm contracts:build` | Compile les contrats |
-| `pnpm contracts:test` | Tests Solidity + TypeScript des contrats |
-| `pnpm contracts:typecheck` | Compile puis vérifie les types des tests et scripts |
+| Commande                       | Effet                                               |
+| ------------------------------ | --------------------------------------------------- |
+| `pnpm dev`                     | Lance le frontend sur http://localhost:3000         |
+| `pnpm build`                   | Build de production                                 |
+| `pnpm lint` / `pnpm typecheck` | ESLint / `tsc --noEmit` du frontend                 |
+| `pnpm contracts:build`         | Compile les contrats                                |
+| `pnpm contracts:test`          | Tests Solidity + TypeScript des contrats            |
+| `pnpm contracts:typecheck`     | Compile puis vérifie les types des tests et scripts |
 
 Variables du frontend (`.env.local`, aucune n'est secrète) :
 
-| Variable | Rôle |
-| --- | --- |
+| Variable                           | Rôle                                |
+| ---------------------------------- | ----------------------------------- |
 | `NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL` | RPC Base Sepolia. Vide = RPC public |
-| `NEXT_PUBLIC_CTF_PLATFORM_ADDRESS` | Adresse de `CTFPlatform` déployé |
+| `NEXT_PUBLIC_CTF_PLATFORM_ADDRESS` | Adresse de `CTFPlatform` déployé    |
 
 ---
 
@@ -183,23 +183,25 @@ pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532 --netwo
 
 ## Adresses déployées
 
-| Contrat | Adresse (Base Sepolia) |
-| --- | --- |
-| `CTFPlatform` | *à venir* |
-| `MockArbitrator` | *à venir* |
-| Factory « Coffre » (réentrance) | *à venir* |
-| Factory « Usurpateur » (`tx.origin`) | *à venir* |
-| Factory « Coffre-fort à code » (storage `private`) | *à venir* |
+| Contrat                                            | Adresse (Base Sepolia)                                                                                                               |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `CTFPlatform`                                      | [`0x3F9745Fd1d01c6FAf91f4B5FE96241712788A2b1`](https://sepolia.basescan.org/address/0x3F9745Fd1d01c6FAf91f4B5FE96241712788A2b1#code) |
+| Bloc de déploiement                                | `55200071`                                                                                                                           |
+| `MockArbitrator`                                   | [`0x8984F4ECaB146D3aD6e7975046Eaa76bF9Fca6F3`](https://sepolia.basescan.org/address/0x8984F4ECaB146D3aD6e7975046Eaa76bF9Fca6F3#code) |
+| `TestLevel` (factory de test, sans exploit)        | [`0x3C48F404e422fD4dE1ae1bd990D7C2095dD4156d`](https://sepolia.basescan.org/address/0x3C48F404e422fD4dE1ae1bd990D7C2095dD4156d#code) |
+| Factory « Coffre » (réentrance)                    | _à venir_                                                                                                                            |
+| Factory « Usurpateur » (`tx.origin`)               | _à venir_                                                                                                                            |
+| Factory « Coffre-fort à code » (storage `private`) | _à venir_                                                                                                                            |
 
 ---
 
 ## Documentation détaillée
 
-| Document | Contenu |
-| --- | --- |
-| [docs/DESIGN.md](docs/DESIGN.md) | Cycle de vie d'un CTF, flux d'argent, litiges et appel, réponse à chaque problématique, paramètres, décisions actées |
-| [docs/CHALLENGES.md](docs/CHALLENGES.md) | Interface d'une épreuve, les 3 épreuves (faille, condition de réussite, exploit), comment en ajouter une |
-| [docs/SECURITY.md](docs/SECURITY.md) | Modèle de menace : attaques possibles, parades, limites connues |
-| [docs/FAILURES.md](docs/FAILURES.md) | Catalogue des failles du Day 3 : non applicable, traitée ou acceptée, avec le test associé |
-| [contracts/README.md](contracts/README.md) | Travailler dans le workspace Hardhat |
-| [DEMO.md](DEMO.md) | Scénario de la soutenance, pas à pas |
+| Document                                   | Contenu                                                                                                              |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| [docs/DESIGN.md](docs/DESIGN.md)           | Cycle de vie d'un CTF, flux d'argent, litiges et appel, réponse à chaque problématique, paramètres, décisions actées |
+| [docs/CHALLENGES.md](docs/CHALLENGES.md)   | Interface d'une épreuve, les 3 épreuves (faille, condition de réussite, exploit), comment en ajouter une             |
+| [docs/SECURITY.md](docs/SECURITY.md)       | Modèle de menace : attaques possibles, parades, limites connues                                                      |
+| [docs/FAILURES.md](docs/FAILURES.md)       | Catalogue des failles du Day 3 : non applicable, traitée ou acceptée, avec le test associé                           |
+| [contracts/README.md](contracts/README.md) | Travailler dans le workspace Hardhat                                                                                 |
+| [DEMO.md](DEMO.md)                         | Scénario de la soutenance, pas à pas                                                                                 |

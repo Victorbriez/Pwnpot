@@ -1,0 +1,8 @@
+{
+  "PwnpotModule": {
+    "contestationPeriod": 600,
+    "votingPeriod": 600,
+    "appealPeriod": 300,
+    "arbitratorTimeout": 900
+  }
+}

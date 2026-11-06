@@ -19,6 +19,13 @@ export default defineConfig({
       },
     },
   },
+  // Vérification du code sur Basescan (API Etherscan v2), Blockscout et Sourcify.
+  // Clé lue dans le keystore : pnpm hardhat keystore set ETHERSCAN_API_KEY
+  verify: {
+    etherscan: {
+      apiKey: configVariable("ETHERSCAN_API_KEY"),
+    },
+  },
   networks: {
     hardhatMainnet: {
       type: "edr-simulated",

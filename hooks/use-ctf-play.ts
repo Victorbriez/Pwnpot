@@ -34,6 +34,8 @@ export type PlayChallenge = {
   key: string
   name: string
   vuln?: Vuln
+  /** Adresse de la factory : en mode contrat seulement. */
+  factory?: Address
   done: boolean
   instance?: Address
 }
@@ -266,6 +268,7 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
           key: `${index}-${level.factory}`,
           name: info.name,
           vuln: info.vuln,
+          factory: level.factory,
           done: state.solved[index] ?? false,
           instance: state.instances[index],
         }
