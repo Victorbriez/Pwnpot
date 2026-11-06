@@ -59,6 +59,14 @@ import {
 } from "@/components/ui/input-group"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { DataList, DataRow } from "@/components/site/data-list"
 import {
@@ -69,7 +77,8 @@ import {
   type FactorySlot,
 } from "@/hooks/use-create-ctf"
 import {
-  DURATION_DAYS,
+  DURATION_PRESETS,
+  DURATION_UNITS,
   MAX_PLAYERS,
   MAX_TITLE_BYTES,
   MIN_PLAYERS,
@@ -77,7 +86,7 @@ import {
   parseEth,
   validateCtfDraft,
   type CtfField,
-  type DurationDays,
+  type DurationUnit,
 } from "@/lib/ctf/params"
 import { formatEth } from "@/lib/format"
 import {
@@ -134,10 +143,18 @@ const defaultAmounts: Amounts = {
   maxPlayers: "20",
 }
 const DEFAULT_TIME = "18:00"
-const DEFAULT_DURATION: DurationDays = 7
+/** Durée choisie : un préréglage (en secondes) ou `custom` pour la saisir. */
+type DurationChoice = number | "custom"
+const DEFAULT_DURATION: DurationChoice = 7 * DURATION_UNITS.days
+
+const unitLabels: Record<DurationUnit, string> = {
+  minutes: "minutes",
+  hours: "heures",
+  days: "jours",
+}
 
 function combine(day: Date | undefined, time: string): Date | undefined {
-  if (!day) return undefined
+  if (!day || !/^\d{2}:\d{2}/.test(time)) return undefined
   const [hours = 0, minutes = 0] = time.split(":").map(Number)
   const start = new Date(day)
   start.setHours(hours, minutes, 0, 0)
@@ -156,7 +173,9 @@ export function CreateCtfForm() {
   const [customInput, setCustomInput] = useState("")
   const [day, setDay] = useState<Date>()
   const [time, setTime] = useState(DEFAULT_TIME)
-  const [duration, setDuration] = useState<DurationDays>(DEFAULT_DURATION)
+  const [duration, setDuration] = useState<DurationChoice>(DEFAULT_DURATION)
+  const [customAmount, setCustomAmount] = useState("2")
+  const [customUnit, setCustomUnit] = useState<DurationUnit>("hours")
   const [touched, setTouched] = useState<Partial<Record<CtfField, boolean>>>({})
   const [submitted, setSubmitted] = useState(false)
   const [startError, setStartError] = useState<string>()
@@ -179,7 +198,12 @@ export function CreateCtfForm() {
     ...amounts,
     factories,
     start: combine(day, time),
-    durationDays: duration,
+    durationSeconds:
+      duration !== "custom"
+        ? duration
+        : /^\d+$/.test(customAmount.trim())
+          ? Number(customAmount.trim()) * DURATION_UNITS[customUnit]
+          : undefined,
   }
   const { errors, bond, end } = validateCtfDraft(draft)
 
@@ -249,6 +273,8 @@ export function CreateCtfForm() {
     setDay(undefined)
     setTime(DEFAULT_TIME)
     setDuration(DEFAULT_DURATION)
+    setCustomAmount("2")
+    setCustomUnit("hours")
     setTouched({})
     setSubmitted(false)
   }
@@ -477,7 +503,7 @@ export function CreateCtfForm() {
 
             <FieldSet disabled={locked}>
               <FieldLegend>4. Dates</FieldLegend>
-              <FieldGroup className="grid md:grid-cols-[minmax(0,1fr)_auto]">
+              <FieldGroup>
                 <Field data-invalid={!!errorFor("start") || undefined}>
                   <FieldLabel htmlFor="start-date">Début</FieldLabel>
                   <StartDatePicker
@@ -498,31 +524,87 @@ export function CreateCtfForm() {
                   />
                   <FieldError>{errorFor("start")}</FieldError>
                 </Field>
-                <Field>
+                <Field data-invalid={!!errorFor("duration") || undefined}>
                   <FieldLabel id="duration-label">Durée</FieldLabel>
-                  <ToggleGroup
-                    aria-labelledby="duration-label"
-                    variant="outline"
-                    spacing={0}
-                    disabled={locked}
-                    value={[String(duration)]}
-                    onValueChange={(value) => {
-                      const next = Number(value[0]) as DurationDays
-                      if (next) setDuration(next)
-                    }}
-                  >
-                    {DURATION_DAYS.map((days) => (
-                      <ToggleGroupItem key={days} value={String(days)}>
-                        {days} j
-                      </ToggleGroupItem>
-                    ))}
-                  </ToggleGroup>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                    <ToggleGroup
+                      aria-labelledby="duration-label"
+                      variant="outline"
+                      spacing={0}
+                      disabled={locked}
+                      className="flex-wrap"
+                      value={[String(duration)]}
+                      onValueChange={(value) => {
+                        const next = value[0]
+                        if (!next) return
+                        setDuration(next === "custom" ? "custom" : Number(next))
+                        touch("duration")
+                      }}
+                    >
+                      {DURATION_PRESETS.map((preset) => (
+                        <ToggleGroupItem
+                          key={preset.seconds}
+                          value={String(preset.seconds)}
+                        >
+                          {preset.label}
+                        </ToggleGroupItem>
+                      ))}
+                      <ToggleGroupItem value="custom">Autre</ToggleGroupItem>
+                    </ToggleGroup>
+                    {duration === "custom" && (
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          step={1}
+                          aria-label="Durée personnalisée"
+                          aria-invalid={!!errorFor("duration") || undefined}
+                          disabled={locked}
+                          value={customAmount}
+                          onChange={(event) =>
+                            setCustomAmount(event.target.value)
+                          }
+                          onBlur={() => touch("duration")}
+                          className="w-24 tabular-nums"
+                        />
+                        <Select
+                          value={customUnit}
+                          disabled={locked}
+                          onValueChange={(value) => {
+                            if (value) setCustomUnit(value as DurationUnit)
+                          }}
+                        >
+                          <SelectTrigger
+                            aria-label="Unité de la durée"
+                            className="w-32"
+                          >
+                            <SelectValue>
+                              {(value: DurationUnit) => unitLabels[value]}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {(
+                                Object.keys(unitLabels) as DurationUnit[]
+                              ).map((unit) => (
+                                <SelectItem key={unit} value={unit}>
+                                  {unitLabels[unit]}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                  <FieldError>{errorFor("duration")}</FieldError>
                 </Field>
               </FieldGroup>
               <FieldDescription>
                 {end
                   ? `Fin le ${format(end, "EEEE d MMMM 'à' HH:mm", { locale: fr })}, puis 48 h pour contester un résultat.`
-                  : "Après la fin, 48 h sont réservées pour contester un résultat."}
+                  : "De 1 h à 30 jours. Après la fin, 48 h sont réservées pour contester un résultat."}
               </FieldDescription>
             </FieldSet>
           </FieldGroup>

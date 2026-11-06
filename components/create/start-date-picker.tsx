@@ -3,32 +3,19 @@
 import { useState } from "react"
 import { format, startOfToday } from "date-fns"
 import { fr as frFormat } from "date-fns/locale"
-import { CalendarIcon, Clock3Icon } from "lucide-react"
+import { CalendarIcon } from "lucide-react"
 import { fr } from "react-day-picker/locale"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-/** Heures au choix, toutes les 30 min, toujours en 24 h. */
-const TIMES = Array.from({ length: 48 }, (_, i) => {
-  const hours = String(Math.floor(i / 2)).padStart(2, "0")
-  return `${hours}:${i % 2 === 0 ? "00" : "30"}`
-})
-
-/** Jour + heure de début, en heure locale. */
+/** Jour + heure de début (à la minute), en heure locale. */
 export function StartDatePicker({
   id,
   day,
@@ -94,31 +81,18 @@ export function StartDatePicker({
           />
         </PopoverContent>
       </Popover>
-      <Select
-        value={time}
+      {/* Heure à la minute près, format 24 h selon la langue du navigateur. */}
+      <Input
+        type="time"
+        step={60}
+        required
+        aria-label="Heure de début"
+        aria-invalid={invalid || undefined}
         disabled={disabled}
-        onValueChange={(value) => {
-          if (typeof value === "string") onTimeChange(value)
-        }}
-      >
-        <SelectTrigger
-          aria-label="Heure de début"
-          aria-invalid={invalid || undefined}
-          className="w-full sm:w-28"
-        >
-          <Clock3Icon className="text-muted-foreground" />
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {TIMES.map((value) => (
-              <SelectItem key={value} value={value}>
-                {value}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+        value={time}
+        onChange={(event) => onTimeChange(event.target.value)}
+        className="w-full tabular-nums sm:w-32 dark:scheme-dark"
+      />
     </div>
   )
 }
