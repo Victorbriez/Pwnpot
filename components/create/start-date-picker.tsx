@@ -8,7 +8,7 @@ import { fr } from "react-day-picker/locale"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
-import { Input } from "@/components/ui/input"
+import { TimeCombobox } from "@/components/create/time-combobox"
 import {
   Popover,
   PopoverContent,
@@ -81,17 +81,11 @@ export function StartDatePicker({
           />
         </PopoverContent>
       </Popover>
-      {/* Heure à la minute près, format 24 h selon la langue du navigateur. */}
-      <Input
-        type="time"
-        step={60}
-        required
-        aria-label="Heure de début"
-        aria-invalid={invalid || undefined}
-        disabled={disabled}
+      <TimeCombobox
         value={time}
-        onChange={(event) => onTimeChange(event.target.value)}
-        className="w-full tabular-nums sm:w-32 dark:scheme-dark"
+        invalid={invalid}
+        disabled={disabled}
+        onChange={onTimeChange}
       />
     </div>
   )
