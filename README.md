@@ -152,10 +152,10 @@ cp .env.example .env.local      # puis renseigner l'adresse de CTFPlatform
 
 Variables du frontend (`.env.local`, aucune n'est secrète) :
 
-| Variable                           | Rôle                                |
-| ---------------------------------- | ----------------------------------- |
-| `NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL` | RPC Base Sepolia. Vide = RPC public |
-| `NEXT_PUBLIC_CTF_PLATFORM_ADDRESS` | Adresse de `CTFPlatform` déployé    |
+| Variable                           | Rôle                                                                          |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL` | RPC Base Sepolia. Vide = publicnode (events lus par tranches de 50 000 blocs) |
+| `NEXT_PUBLIC_CTF_PLATFORM_ADDRESS` | Adresse de `CTFPlatform` déployé                                              |
 
 ---
 
