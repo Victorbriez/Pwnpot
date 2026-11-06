@@ -1,10 +1,12 @@
 "use client"
 
-import { SearchXIcon } from "lucide-react"
+import { ChevronRightIcon, SearchXIcon } from "lucide-react"
 import Link from "next/link"
 import * as React from "react"
 
-import { CtfCard } from "@/components/ctf/ctf-card"
+import { remainingLabel } from "@/components/ctf/ctf-card"
+import { StatusPill } from "@/components/ctf/status-pill"
+import { VulnTag } from "@/components/ctf/vuln-tag"
 import { Button } from "@/components/ui/button"
 import {
   Empty,
@@ -16,7 +18,10 @@ import {
 } from "@/components/ui/empty"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { SectionHeading } from "@/components/site/page-header"
-import { isClosed, type Ctf } from "@/lib/ctf/types"
+import { cn } from "@/lib/utils"
+import { formatEth, formatInt } from "@/lib/format"
+import { isClosed, type Ctf, type CtfStatus } from "@/lib/ctf/types"
+import { truncateAddress } from "@/lib/onchain/format"
 
 const filters = {
   all: { label: "Tous", test: () => true },
@@ -30,9 +35,30 @@ const filters = {
 } as const
 type Filter = keyof typeof filters
 
+/** Ordre de la liste : ce qu'on peut jouer d'abord, puis ce qui se termine. */
+const phaseOrder: Record<CtfStatus, number> = {
+  running: 0,
+  open: 1,
+  contestation: 2,
+  voting: 2,
+  appeal: 2,
+  finalized: 3,
+  cheated: 3,
+}
+
+function byRelevance(a: Ctf, b: Ctf) {
+  const phase = phaseOrder[a.status] - phaseOrder[b.status]
+  if (phase !== 0) return phase
+  // Dans une même phase, la fin la plus proche d'abord (le plus récent si clos).
+  return isClosed(a.status) ? b.id - a.id : a.remaining - b.remaining
+}
+
+const columns =
+  "md:grid-cols-[9.5rem_minmax(0,1fr)_7.5rem_6.5rem_7rem_1rem] md:gap-6"
+
 export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
   const [filter, setFilter] = React.useState<Filter>("all")
-  const visible = ctfs.filter(filters[filter].test)
+  const visible = ctfs.filter(filters[filter].test).sort(byRelevance)
   // Le niveau n'existe qu'en démo : le contrat ne le stocke pas.
   const hasLevels = ctfs.some((ctf) => ctf.level !== undefined)
   const shown = Object.entries(filters).filter(
@@ -64,19 +90,29 @@ export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
       </div>
 
       {visible.length > 0 ? (
-        <ul className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {visible.map((ctf) => (
-            <li key={ctf.id} className="contents">
-              <Link
-                href={`/ctf/${ctf.id}`}
-                aria-label={ctf.title}
-                className="rounded-2xl transition-transform outline-none hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-ring/50 *:data-[slot=card]:h-full"
-              >
-                <CtfCard ctf={ctf} />
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="overflow-hidden rounded-xl border bg-card">
+          <div
+            aria-hidden
+            className={cn(
+              "hidden border-b px-5 py-2.5 text-xs text-muted-foreground md:grid",
+              columns
+            )}
+          >
+            <span>Phase</span>
+            <span>CTF</span>
+            <span className="text-right">Cagnotte</span>
+            <span className="text-right">Ticket</span>
+            <span>Joueurs</span>
+            <span />
+          </div>
+          <ul className="divide-y">
+            {visible.map((ctf) => (
+              <li key={ctf.id}>
+                <CtfRow ctf={ctf} />
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : (
         <Empty className="rounded-2xl border border-dashed">
           <EmptyHeader>
@@ -100,5 +136,84 @@ export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
         </Empty>
       )}
     </section>
+  )
+}
+
+function CtfRow({ ctf }: { ctf: Ctf }) {
+  const full = ctf.players >= ctf.maxPlayers
+  return (
+    <Link
+      href={`/ctf/${ctf.id}`}
+      className={cn(
+        "group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 px-4 py-4 transition-colors outline-none hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset sm:px-5",
+        columns
+      )}
+    >
+      <div className="col-span-2 flex items-center gap-2.5 md:col-span-1 md:flex-col md:items-start md:gap-1.5">
+        <StatusPill status={ctf.status} />
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {remainingLabel(ctf)}
+        </span>
+      </div>
+
+      <div className="col-span-2 flex min-w-0 flex-col gap-1.5 md:col-span-1">
+        <span className="truncate font-medium group-hover:text-primary-text">
+          {ctf.title}
+        </span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground">
+          <span>
+            {ctf.challenges} épreuve{ctf.challenges > 1 ? "s" : ""} · par{" "}
+            <span className="font-mono">
+              {truncateAddress(ctf.organizer, 3)}
+            </span>
+          </span>
+          {ctf.vulns.map((vuln) => (
+            <VulnTag key={vuln} vuln={vuln} />
+          ))}
+        </div>
+      </div>
+
+      <dl className="col-span-2 grid grid-cols-3 gap-4 md:contents">
+        <div className="flex flex-col gap-0.5 md:items-end">
+          <dt className="text-xs text-muted-foreground md:sr-only">Cagnotte</dt>
+          <dd className="text-base font-semibold tabular-nums md:text-right">
+            {formatEth(ctf.prizePool)}
+          </dd>
+        </div>
+        <div className="flex flex-col gap-0.5 md:items-end">
+          <dt className="text-xs text-muted-foreground md:sr-only">Ticket</dt>
+          <dd className="text-sm tabular-nums md:text-right">
+            {formatEth(ctf.ticketPrice)}
+          </dd>
+        </div>
+        <div className="flex flex-col gap-1">
+          <dt className="text-xs text-muted-foreground md:sr-only">Joueurs</dt>
+          <dd className="flex flex-col gap-1.5">
+            <span className="text-sm tabular-nums">
+              {formatInt(ctf.players)} / {formatInt(ctf.maxPlayers)}
+              {full && (
+                <span className="text-muted-foreground"> · complet</span>
+              )}
+            </span>
+            <span
+              aria-hidden
+              className="h-1 w-full overflow-hidden rounded-full bg-muted"
+            >
+              <span
+                className="block h-full rounded-full bg-primary"
+                style={{
+                  width: `${Math.min((ctf.players / ctf.maxPlayers) * 100, 100)}%`,
+                }}
+              />
+            </span>
+          </dd>
+        </div>
+      </dl>
+
+      <ChevronRightIcon
+        aria-hidden
+        className="hidden size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 md:block"
+      />
+    </Link>
   )
 }

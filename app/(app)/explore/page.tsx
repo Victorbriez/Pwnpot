@@ -9,6 +9,8 @@ import { buttonVariants } from "@/components/ui/button"
 
 export const metadata: Metadata = {
   title: "Explorer",
+  description:
+    "Tous les CTF smart contracts publiés sur Pwnpot : cagnottes, tickets et phases, lus directement dans le contrat.",
 }
 
 export default function ExplorePage() {
@@ -21,8 +23,8 @@ export default function ExplorePage() {
             Testnet Base Sepolia
           </Badge>
         }
-        title="CTF smart contracts, cagnottes garanties on-chain"
-        description="Exploite des contrats vulnérables. La cagnotte est détenue par le contrat : personne ne peut la retirer en dehors des règles."
+        title="Explorer les CTF"
+        description="Choisis un CTF, achète ton ticket et exploite tes instances. Chaque cagnotte est détenue par le contrat : personne ne peut la retirer en dehors des règles."
         actions={
           <>
             <Link
