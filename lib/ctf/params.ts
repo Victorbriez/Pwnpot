@@ -9,9 +9,30 @@ export const MAX_PLAYERS = 200
 /** Longueur maximale du titre, en octets (UTF-8), comme `MAX_TITLE_LENGTH`. */
 export const MAX_TITLE_BYTES = 100
 
-/** Durées proposées, toutes dans les bornes du contrat (1 h à 30 jours). */
-export const DURATION_DAYS = [1, 3, 7, 14, 30] as const
-export type DurationDays = (typeof DURATION_DAYS)[number]
+const HOUR = 3_600
+const DAY = 86_400
+
+/** Bornes de la durée d'un CTF, comme `MIN_DURATION` / `MAX_DURATION`. */
+export const MIN_DURATION = HOUR
+export const MAX_DURATION = 30 * DAY
+
+/** Durées proposées en un clic, en secondes. Toute autre durée se saisit à la main. */
+export const DURATION_PRESETS = [
+  { label: "1 h", seconds: HOUR },
+  { label: "6 h", seconds: 6 * HOUR },
+  { label: "1 j", seconds: DAY },
+  { label: "3 j", seconds: 3 * DAY },
+  { label: "7 j", seconds: 7 * DAY },
+  { label: "30 j", seconds: 30 * DAY },
+] as const
+
+/** Unités de la durée personnalisée, en secondes. */
+export const DURATION_UNITS = {
+  minutes: 60,
+  hours: HOUR,
+  days: DAY,
+} as const
+export type DurationUnit = keyof typeof DURATION_UNITS
 
 /**
  * Paramètres envoyés à `createCTF`, en wei et en secondes. Même forme que le
@@ -36,11 +57,18 @@ export type CtfDraft = {
   maxPlayers: string
   /** Date et heure de début, en heure locale. */
   start: Date | undefined
-  durationDays: DurationDays
+  /** Durée en secondes ; `undefined` si la saisie n'est pas un nombre. */
+  durationSeconds: number | undefined
 }
 
 export type CtfField =
-  "title" | "factories" | "cashPrize" | "ticketPrice" | "maxPlayers" | "start"
+  | "title"
+  | "factories"
+  | "cashPrize"
+  | "ticketPrice"
+  | "maxPlayers"
+  | "start"
+  | "duration"
 
 export type CtfValidation = {
   params?: CtfParams
@@ -147,9 +175,15 @@ export function validateCtfDraft(
   const start = draft.start
     ? Math.floor(draft.start.getTime() / 1000)
     : undefined
+  const duration = draft.durationSeconds
+  const durationOk =
+    duration !== undefined &&
+    duration >= MIN_DURATION &&
+    duration <= MAX_DURATION
+  if (!durationOk) errors.duration = "Entre 1 h et 30 jours."
   const end =
-    start !== undefined ? start + draft.durationDays * 86_400 : undefined
-  if (start === undefined) errors.start = "Choisis une date de début."
+    start !== undefined && durationOk ? start + duration : undefined
+  if (start === undefined) errors.start = "Choisis une date et une heure."
   else if (now !== undefined && start < now)
     errors.start = "Le début est déjà passé."
 

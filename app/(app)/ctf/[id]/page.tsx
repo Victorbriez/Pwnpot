@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 
 import { CtfPlay } from "@/components/ctf/ctf-play"
 import { CtfTitle } from "@/components/ctf/ctf-title"
-import { PageHeader, PageShell } from "@/components/site/page-header"
+import { PageShell } from "@/components/site/page-header"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -53,27 +53,23 @@ export default async function CtfPage({ params }: PageProps<"/ctf/[id]">) {
   if (id === undefined || (isDemo && !findDemoCtf(raw))) notFound()
 
   return (
-    <PageShell>
-      <PageHeader
-        breadcrumb={
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink render={<Link href="/explore" />}>
-                  Explorer
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>
-                  <CtfTitle id={id} />
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        }
-        title={<CtfTitle id={id} />}
-      />
+    <PageShell className="gap-6">
+      {/* Le titre et l'état du CTF sont lus dans la chaîne : CtfPlay les affiche. */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink render={<Link href="/explore" />}>
+              Explorer
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>
+              <CtfTitle id={id} />
+            </BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       <CtfPlay ctfId={id} />
     </PageShell>
   )

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import {
   BadgeCheckIcon,
   CircleHelpIcon,
@@ -15,8 +16,8 @@ import { useFactoryVerification } from "@/hooks/use-factory-verification"
 import { canCheckVerification } from "@/lib/onchain/sourcify"
 
 const explorer = baseSepolia.blockExplorers.default.url
-const VAULT_SOURCE_URL =
-  "https://github.com/Victorbriez/Pwnpot/blob/master/contracts/contracts/levels/Vault.sol"
+/** Code du Coffre, affiché sur le site (app/(app)/code/vault). */
+const VAULT_SOURCE_PATH = "/code/vault"
 
 /**
  * Badge « code vérifié » d'une factory, avec un lien vers son code sur Basescan.
@@ -42,8 +43,8 @@ export function FactoryVerificationBadge({
     return (
       <Badge
         variant="success"
-        render={<a href={VAULT_SOURCE_URL} target="_blank" rel="noreferrer" />}
-        title="Code identique à la VaultFactory de Pwnpot, déployé par l'organisateur pour ce CTF. Lis la source sur GitHub."
+        render={<Link href={VAULT_SOURCE_PATH} />}
+        title="Code identique à la VaultFactory de Pwnpot, déployé par l'organisateur pour ce CTF. Lis la source sur le site."
       >
         <BadgeCheckIcon data-icon="inline-start" />
         Code Pwnpot
