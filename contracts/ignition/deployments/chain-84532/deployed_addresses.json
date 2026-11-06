@@ -1,5 +1,7 @@
 {
   "PwnpotModule#MockArbitrator": "0x8984F4ECaB146D3aD6e7975046Eaa76bF9Fca6F3",
   "PwnpotModule#TestLevel": "0x3C48F404e422fD4dE1ae1bd990D7C2095dD4156d",
-  "PwnpotModule#CTFPlatform": "0x3F9745Fd1d01c6FAf91f4B5FE96241712788A2b1"
+  "PwnpotModule#CTFPlatform": "0x3F9745Fd1d01c6FAf91f4B5FE96241712788A2b1",
+  "PwnpotModule#CodeSafeFactory": "0x9F806248ff6654ced3a5C7447E437d77B659AE2F",
+  "PwnpotModule#ImpostorFactory": "0xc6E72cD2db9202cC7F4631663dE86D247b979A3E"
 }

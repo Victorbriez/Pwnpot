@@ -1,0 +1,52 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_34-1ded14303474f309f437e4e886d72bb1319761c3",
+  "solcVersion": "0.8.34",
+  "solcLongVersion": "0.8.34+commit.80d5c536",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.21.2"
+  },
+  "userSourceNameMap": {
+    "contracts/levels/CodeSafe.sol": "project/contracts/levels/CodeSafe.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "osaka",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/interfaces/ILevel.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.34;\n\n/// Interface d'une épreuve Pwnpot (docs/CHALLENGES.md).\ninterface ILevel {\n    /// Déploie une instance vulnérable pour `player`. Appelée par CTFPlatform uniquement.\n    function createInstance(address player) external returns (address instance);\n\n    /// Vrai si `instance` a été exploitée. Doit être `view` :\n    /// CTFPlatform l'appelle en staticcall avec une limite de gaz.\n    function validateInstance(address instance, address player) external view returns (bool);\n}\n"
+      },
+      "project/contracts/levels/CodeSafe.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.34;\n\nimport {ILevel} from \"../interfaces/ILevel.sol\";\n\n/// Level 3, Code Safe: `private` does not hide storage from anyone querying a node.\n/// INTENTIONALLY VULNERABLE. Do not reuse.\ncontract CodeSafe {\n    bool public locked = true; // slot 0\n    bytes32 private password; // slot 1: readable with eth_getStorageAt\n\n    constructor(bytes32 password_) {\n        password = password_;\n    }\n\n    function unlock(bytes32 attempt) external {\n        if (attempt == password) locked = false;\n    }\n}\n\n/// Factory for the Code Safe level. Each instance gets its own password,\n/// so copying the password of another instance is useless.\ncontract CodeSafeFactory is ILevel {\n    /// Only address allowed to create instances (CTFPlatform).\n    address public immutable platform;\n\n    /// Player each instance was created for.\n    mapping(address instance => address player) public playerOf;\n\n    /// Instance counter, mixed into the password so two instances never share one.\n    uint256 private _nonce;\n\n    event InstanceCreated(address indexed player, address indexed instance);\n\n    error OnlyPlatform();\n    error ZeroAddress();\n\n    constructor(address platform_) {\n        if (platform_ == address(0)) revert ZeroAddress();\n        platform = platform_;\n    }\n\n    function createInstance(address player) external returns (address instance) {\n        if (msg.sender != platform) revert OnlyPlatform();\n        if (player == address(0)) revert ZeroAddress();\n\n        // Pseudo-random is enough: the secret does not need to be unpredictable,\n        // it is readable from storage anyway. That is the vulnerability.\n        bytes32 password = keccak256(\n            abi.encode(player, blockhash(block.number - 1), address(this), _nonce++)\n        );\n\n        // Only deploys code from this file; never calls back into the caller.\n        instance = address(new CodeSafe(password));\n        playerOf[instance] = player;\n        emit InstanceCreated(player, instance);\n    }\n\n    function validateInstance(address instance, address player) external view returns (bool) {\n        // Another player's instance, or an unknown address, never validates.\n        if (player == address(0) || playerOf[instance] != player) return false;\n        return !CodeSafe(instance).locked();\n    }\n}\n"
+      }
+    }
+  }
+}

@@ -190,8 +190,8 @@ pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532 --netwo
 | `MockArbitrator`                                   | [`0x8984F4ECaB146D3aD6e7975046Eaa76bF9Fca6F3`](https://sepolia.basescan.org/address/0x8984F4ECaB146D3aD6e7975046Eaa76bF9Fca6F3#code) |
 | `TestLevel` (factory de test, sans exploit)        | [`0x3C48F404e422fD4dE1ae1bd990D7C2095dD4156d`](https://sepolia.basescan.org/address/0x3C48F404e422fD4dE1ae1bd990D7C2095dD4156d#code) |
 | Factory « Coffre » (réentrance)                    | une par CTF : déployée, alimentée et liée par l'organisateur depuis le formulaire de création                                        |
-| Factory « Usurpateur » (`tx.origin`)               | _à déployer (`pnpm contracts:deploy`)_                                                                                               |
-| Factory « Coffre-fort à code » (storage `private`) | _à déployer (`pnpm contracts:deploy`)_                                                                                               |
+| Factory « Usurpateur » (`tx.origin`)               | [`0xc6E72cD2db9202cC7F4631663dE86D247b979A3E`](https://sepolia.basescan.org/address/0xc6E72cD2db9202cC7F4631663dE86D247b979A3E#code) |
+| Factory « Coffre-fort à code » (storage `private`) | [`0x9F806248ff6654ced3a5C7447E437d77B659AE2F`](https://sepolia.basescan.org/address/0x9F806248ff6654ced3a5C7447E437d77B659AE2F#code) |
 
 ---
 
