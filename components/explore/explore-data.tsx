@@ -1,7 +1,7 @@
 "use client"
 
 import { CtfList } from "@/components/explore/ctf-list"
-import { KpiCard } from "@/components/explore/kpi-card"
+import { StatStrip } from "@/components/explore/stat-strip"
 import { TvlChart } from "@/components/explore/tvl-chart"
 import { VulnDonut } from "@/components/explore/vuln-donut"
 import { ChainError, ChainLoading } from "@/components/onchain/chain-state"
@@ -28,34 +28,35 @@ export function ExploreData() {
 
   return (
     <>
-      <section
-        aria-label="Chiffres clés"
-        className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        <KpiCard
-          label="Cagnottes bloquées"
-          value={formatEth(kpis.lockedPrizePools)}
-          caption={`sur ${kpis.activeCtfs} CTF actif${kpis.activeCtfs > 1 ? "s" : ""}`}
-          trend={trends && formatTrend(trends.locked)}
-        />
-        <KpiCard
-          label="Joueurs actifs"
-          value={formatInt(kpis.activePlayers)}
-          caption="tickets achetés sur les CTF actifs"
-          trend={trends && formatTrend(trends.players)}
-        />
-        <KpiCard
-          label="Épreuves résolues"
-          value={kpis.solved !== undefined ? formatInt(kpis.solved) : "—"}
-          caption="vérifiées par validateInstance"
-          trend={trends && formatTrend(trends.solved)}
-        />
-        <KpiCard
-          label="Cautions en jeu"
-          value={formatEth(kpis.bondsAtStake)}
-          caption="déposées par les organisateurs, brûlées en cas de triche"
-          trend={isDemo ? disputes : undefined}
-          trendVariant="warning"
+      <section aria-label="Chiffres clés">
+        <StatStrip
+          stats={[
+            {
+              label: "Cagnottes bloquées",
+              value: formatEth(kpis.lockedPrizePools),
+              caption: `sur ${kpis.activeCtfs} CTF actif${kpis.activeCtfs > 1 ? "s" : ""}`,
+              trend: trends && formatTrend(trends.locked),
+            },
+            {
+              label: "Joueurs actifs",
+              value: formatInt(kpis.activePlayers),
+              caption: "tickets sur les CTF actifs",
+              trend: trends && formatTrend(trends.players),
+            },
+            {
+              label: "Épreuves résolues",
+              value: kpis.solved !== undefined ? formatInt(kpis.solved) : "—",
+              caption: "vérifiées on-chain",
+              trend: trends && formatTrend(trends.solved),
+            },
+            {
+              label: "Cautions en jeu",
+              value: formatEth(kpis.bondsAtStake),
+              caption: "brûlées en cas de triche",
+              trend: isDemo ? disputes : undefined,
+              trendTone: "warning",
+            },
+          ]}
         />
       </section>
 
