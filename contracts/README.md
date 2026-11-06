@@ -16,8 +16,6 @@ ignition/modules/          modules de déploiement
 ignition/deployments/      trace des déploiements (chain-84532 committé)
 ```
 
-`Counter.sol` et ses tests viennent du template Hardhat. Ils seront supprimés quand `CTFPlatform` arrivera.
-
 ## Commandes
 
 Depuis la racine du repo :
