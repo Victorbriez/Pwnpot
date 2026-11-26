@@ -182,7 +182,7 @@ function PotRow({
 }) {
   return (
     <li className="grid gap-x-6 gap-y-2 py-4 sm:grid-cols-[13rem_minmax(0,1fr)]">
-      <div className={cn("flex flex-col", !routes && "opacity-50")}>
+      <div className={cn("flex flex-col", !routes && "text-muted-foreground")}>
         <span className="flex items-baseline justify-between gap-3 sm:justify-start">
           <span className="font-medium">{pot.label}</span>
           <span className="font-mono text-sm whitespace-nowrap tabular-nums">

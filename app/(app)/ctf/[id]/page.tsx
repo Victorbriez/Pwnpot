@@ -37,6 +37,8 @@ export async function generateMetadata({
   params,
 }: PageProps<"/ctf/[id]">): Promise<Metadata> {
   const { id } = await params
+  const notFoundTitle = { title: "Page introuvable" }
+  if (parseId(id) === undefined) return notFoundTitle
   if (!isDemo) return { title: `CTF n° ${id}` }
   const ctf = findDemoCtf(id)
   return ctf
@@ -44,7 +46,7 @@ export async function generateMetadata({
         title: ctf.title,
         description: `${ctf.challenges} épreuve${ctf.challenges > 1 ? "s" : ""} de sécurité smart contract, cagnotte garantie par le contrat.`,
       }
-    : {}
+    : notFoundTitle
 }
 
 export default async function CtfPage({ params }: PageProps<"/ctf/[id]">) {

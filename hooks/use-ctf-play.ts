@@ -72,6 +72,8 @@ export type CtfPlayModel = {
   pool: bigint
   /** Parts du podium selon le nombre de gagnants actuel (3 si aucun). */
   shares: bigint[]
+  /** Gagnants au podium (0 à 3), `undefined` tant que le podium se charge. */
+  winners?: number
   board: LeaderboardEntry[]
   myRank: number | null
   solvedCount: number
@@ -172,6 +174,7 @@ function useDemoCtfPlay(ctfId: number): CtfPlayState {
       players,
       pool,
       shares: podiumShares(pool, winners || 3),
+      winners,
       board,
       myRank,
       solvedCount: solved.length,
@@ -307,15 +310,31 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
   const vaults: OrganizerVault[] = isOrganizer
     ? vaultStates.map((vault) => {
         const funded = vault.balance >= needed
+        // Mêmes conditions que Vault.sol : seul l'organisateur du Coffre agit,
+        // `bind` exige que ce CTF liste le Coffre une seule fois, et `recover`
+        // suit la phase du CTF auquel le Coffre est lié.
+        const mine =
+          !!address && vault.organizer.toLowerCase() === address.toLowerCase()
+        const listedOnce =
+          (ctf.chain?.levels ?? []).filter(
+            (level) =>
+              level.factory.toLowerCase() === vault.factory.toLowerCase()
+          ).length === 1
+        const boundHere = vault.bound && vault.ctfId === BigInt(id)
         return {
           ...vault,
           funded,
           needed,
           canBind:
+            mine &&
             !vault.bound &&
+            listedOnce &&
             funded &&
             (ctf.status === "open" || ctf.status === "running"),
-          canRecover: vault.balance > BigInt(0) && (!vault.bound || over),
+          canRecover:
+            mine &&
+            vault.balance > BigInt(0) &&
+            (!vault.bound || (boundHere && over)),
         }
       })
     : []
@@ -352,6 +371,7 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
       players: ctf.players,
       pool: ctf.prizePool,
       shares: podiumShares(ctf.prizePool, winners || 3),
+      winners: state.isLoading ? undefined : winners,
       board: ranking.slice(0, 10),
       myRank,
       solvedCount: state.score,
@@ -368,7 +388,10 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
       canFinalize:
         ctf.status === "contestation" && now >= ctf.chain.contestationEnd,
       // Remboursement : aucun gagnant, ou triche confirmée par l'arbitre.
+      // Pas avant d'avoir lu le podium : vide pendant le chargement, il ferait
+      // croire à un CTF sans gagnant (et `claimRefund` revert).
       canRefund:
+        !state.isLoading &&
         (ctf.status === "cheated" ||
           (ctf.status === "finalized" && winners === 0)) &&
         state.hasTicket &&

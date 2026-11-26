@@ -15,6 +15,8 @@ const DAY = 86_400
 /** Bornes de la durée d'un CTF, comme `MIN_DURATION` / `MAX_DURATION`. */
 export const MIN_DURATION = HOUR
 export const MAX_DURATION = 30 * DAY
+/** `MAX_LEVELS` de CTFPlatform : au-delà, `createCTF` revert `TooManyLevels`. */
+export const MAX_LEVELS = 10
 
 /** Durées proposées en un clic, en secondes. Toute autre durée se saisit à la main. */
 export const DURATION_PRESETS = [
@@ -130,7 +132,18 @@ export function nowSeconds(): number {
  */
 export function validateCtfDraft(
   draft: CtfDraft,
-  { now }: { now?: number } = {}
+  {
+    now,
+    minStart,
+  }: {
+    now?: number
+    /**
+     * Début au plus tôt (secondes Unix), pour laisser le temps de signer les
+     * transactions : si le début passe avant `createCTF`, le contrat refuse
+     * (`StartInPast`).
+     */
+    minStart?: number
+  } = {}
 ): CtfValidation {
   const errors: CtfValidation["errors"] = {}
 
@@ -142,6 +155,8 @@ export function validateCtfDraft(
   const factories = draft.factories
   if (factories.length === 0) {
     errors.factories = "Choisis au moins une épreuve."
+  } else if (factories.length > MAX_LEVELS) {
+    errors.factories = `${MAX_LEVELS} épreuves au plus.`
   } else if (
     new Set(factories.map((f) => f.toLowerCase())).size !== factories.length
   ) {
@@ -185,6 +200,8 @@ export function validateCtfDraft(
   if (start === undefined) errors.start = "Choisis une date et une heure."
   else if (now !== undefined && start < now)
     errors.start = "Le début est déjà passé."
+  else if (minStart !== undefined && now !== undefined && start < minStart)
+    errors.start = `Laisse le temps de signer les transactions : début dans ${Math.ceil((minStart - now) / 60)} min au moins.`
 
   const valid =
     Object.keys(errors).length === 0 &&
