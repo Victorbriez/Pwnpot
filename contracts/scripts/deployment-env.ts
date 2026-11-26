@@ -1,12 +1,12 @@
 // Affiche les variables d'environnement du front pour un déploiement Ignition,
 // à coller dans Vercel (Settings → Environment Variables) ou dans .env.local.
 //
-//   pnpm contracts:env                          # déploiement chain-84532
-//   DEPLOYMENT=local-check pnpm contracts:env   # un autre déploiement
+//   pnpm contracts:env                               # déploiement de démo, celui du site
+//   DEPLOYMENT=pwnpot-disputes pnpm contracts:env    # déploiement réel (48 h)
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 
-const id = process.env.DEPLOYMENT ?? "chain-84532"
+const id = process.env.DEPLOYMENT ?? "pwnpot-disputes-demo"
 const dir = fileURLToPath(
   new URL(`../ignition/deployments/${id}/`, import.meta.url)
 )
