@@ -45,6 +45,17 @@ export function formatRemaining(seconds: number): string {
   return `${minutes} min`
 }
 
+/**
+ * Durée fixe d'une règle vers « 48 h », « 7 j » ou « 10 min » : en heures
+ * jusqu'à 2 jours (comme la doc), en jours au-delà.
+ */
+export function formatPeriod(seconds: number): string {
+  if (seconds > 2 * 86_400 && seconds % 86_400 === 0)
+    return `${seconds / 86_400} j`
+  if (seconds >= 3_600 && seconds % 3_600 === 0) return `${seconds / 3_600} h`
+  return formatRemaining(seconds)
+}
+
 /** Compte à rebours d'un badge : « reste 2 j 14 h », puis « terminé » à zéro. */
 export function formatTimeLeft(seconds: number): string {
   return seconds > 0 ? `reste ${formatRemaining(seconds)}` : "terminé"

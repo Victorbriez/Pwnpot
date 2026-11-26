@@ -1,0 +1,55 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_34-8767e6d304e6f855ef6feb4690103c24cf03e92a",
+  "solcVersion": "0.8.34",
+  "solcLongVersion": "0.8.34+commit.80d5c536",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.21.2"
+  },
+  "userSourceNameMap": {
+    "contracts/mocks/MockArbitrator.sol": "project/contracts/mocks/MockArbitrator.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "osaka",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/interfaces/IArbitrable.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.34;\n\nimport {IArbitrator} from \"./IArbitrator.sol\";\n\n/// Contrat arbitrable ERC-792 (https://github.com/ethereum/EIPs/issues/792).\n/// Déclaré seulement : `CTFPlatform` l'implémente pour recevoir la décision d'appel.\ninterface IArbitrable {\n    /// La décision `_ruling` a été rendue par `_arbitrator` pour le litige `_disputeID`.\n    event Ruling(IArbitrator indexed _arbitrator, uint256 indexed _disputeID, uint256 _ruling);\n\n    /// Appelée par l'arbitre uniquement, pour rendre sa décision.\n    function rule(uint256 _disputeID, uint256 _ruling) external;\n}\n"
+      },
+      "project/contracts/interfaces/IArbitrator.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.34;\n\nimport {IArbitrable} from \"./IArbitrable.sol\";\n\n/// Arbitre ERC-792 (https://github.com/ethereum/EIPs/issues/792), tel que\n/// défini par Kleros. Déclaré seulement : `MockArbitrator` l'implémentera.\ninterface IArbitrator {\n    enum DisputeStatus {\n        Waiting,\n        Appealable,\n        Solved\n    }\n\n    /// Un litige a été créé par `_arbitrable`.\n    event DisputeCreation(uint256 indexed _disputeID, IArbitrable indexed _arbitrable);\n\n    /// La décision du litige `_disputeID` peut faire l'objet d'un appel.\n    event AppealPossible(uint256 indexed _disputeID, IArbitrable indexed _arbitrable);\n\n    /// Un appel a été formé sur le litige `_disputeID`.\n    event AppealDecision(uint256 indexed _disputeID, IArbitrable indexed _arbitrable);\n\n    /// Crée un litige à `_choices` options. Le coût est payé en `msg.value`.\n    function createDispute(uint256 _choices, bytes calldata _extraData) external payable returns (uint256 disputeID);\n\n    /// Coût de création d'un litige.\n    function arbitrationCost(bytes calldata _extraData) external view returns (uint256 cost);\n\n    /// Fait appel de la décision du litige `_disputeID`.\n    function appeal(uint256 _disputeID, bytes calldata _extraData) external payable;\n\n    /// Coût d'un appel sur le litige `_disputeID`.\n    function appealCost(uint256 _disputeID, bytes calldata _extraData) external view returns (uint256 cost);\n\n    /// Fenêtre pendant laquelle un appel est possible.\n    function appealPeriod(uint256 _disputeID) external view returns (uint256 start, uint256 end);\n\n    /// État du litige `_disputeID`.\n    function disputeStatus(uint256 _disputeID) external view returns (DisputeStatus status);\n\n    /// Décision actuelle (0 = refus de trancher).\n    function currentRuling(uint256 _disputeID) external view returns (uint256 ruling);\n}\n"
+      },
+      "project/contracts/mocks/MockArbitrator.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.34;\n\nimport {IArbitrable} from \"../interfaces/IArbitrable.sol\";\nimport {IArbitrator} from \"../interfaces/IArbitrator.sol\";\n\n/// Arbitre ERC-792 minimal pour les tests et la démo (docs/DESIGN.md § Paramètres).\n///\n/// - Frais fixes (`fee`), inférieurs à 0.001 ETH, le minimum de la caution de contestation.\n/// - Une seule adresse (`ruler`, fixée au déploiement) rend les décisions : c'est le\n///   point de confiance assumé de la démo (« MockArbitrator contrôlé par l'équipe »).\n/// - Pas d'appel de second niveau : `appeal` revert, `appealCost` est maximal.\n///\n/// La version complète (#16) pourra ajouter un délai, l'appel, etc.\ncontract MockArbitrator is IArbitrator {\n    struct DisputeData {\n        IArbitrable arbitrable;\n        uint256 choices;\n        uint256 ruling;\n        DisputeStatus status;\n    }\n\n    uint256 public immutable fee;\n    address public immutable ruler;\n\n    DisputeData[] public disputes;\n\n    error FeeTooHigh();\n    error ZeroRuler();\n    error WrongFee(uint256 expected, uint256 provided);\n    error NotRuler();\n    error UnknownDispute(uint256 disputeID);\n    error AlreadySolved(uint256 disputeID);\n    error InvalidRuling(uint256 ruling, uint256 choices);\n    error NotAppealable();\n    error NothingToWithdraw();\n    error TransferFailed();\n\n    event RulingGiven(uint256 indexed disputeID, uint256 ruling);\n\n    constructor(uint256 fee_, address ruler_) {\n        if (fee_ >= 0.001 ether) revert FeeTooHigh();\n        if (ruler_ == address(0)) revert ZeroRuler();\n        fee = fee_;\n        ruler = ruler_;\n    }\n\n    /// Appelée par le contrat arbitrable (CTFPlatform) au moment de l'appel.\n    function createDispute(uint256 choices, bytes calldata) external payable returns (uint256 disputeID) {\n        if (msg.value != fee) revert WrongFee(fee, msg.value);\n        disputeID = disputes.length;\n        disputes.push(\n            DisputeData({\n                arbitrable: IArbitrable(msg.sender),\n                choices: choices,\n                ruling: 0,\n                status: DisputeStatus.Waiting\n            })\n        );\n        emit DisputeCreation(disputeID, IArbitrable(msg.sender));\n    }\n\n    /// Rend la décision et la transmet au contrat arbitrable (`rule`).\n    /// `ruling` vaut 0 (refus de trancher) ou une option entre 1 et `choices`.\n    function giveRuling(uint256 disputeID, uint256 ruling) external {\n        if (msg.sender != ruler) revert NotRuler();\n        DisputeData storage dispute = _dispute(disputeID);\n        if (dispute.status == DisputeStatus.Solved) revert AlreadySolved(disputeID);\n        if (ruling > dispute.choices) revert InvalidRuling(ruling, dispute.choices);\n\n        // Effets avant l'appel externe.\n        dispute.ruling = ruling;\n        dispute.status = DisputeStatus.Solved;\n        emit RulingGiven(disputeID, ruling);\n\n        dispute.arbitrable.rule(disputeID, ruling);\n    }\n\n    /// Les frais encaissés reviennent au `ruler`.\n    function withdrawFees() external {\n        if (msg.sender != ruler) revert NotRuler();\n        uint256 amount = address(this).balance;\n        if (amount == 0) revert NothingToWithdraw();\n        (bool ok, ) = ruler.call{value: amount}(\"\");\n        if (!ok) revert TransferFailed();\n    }\n\n    function arbitrationCost(bytes calldata) external view returns (uint256) {\n        return fee;\n    }\n\n    function appeal(uint256, bytes calldata) external payable {\n        revert NotAppealable();\n    }\n\n    function appealCost(uint256, bytes calldata) external pure returns (uint256) {\n        return type(uint256).max;\n    }\n\n    function appealPeriod(uint256) external pure returns (uint256 start, uint256 end) {\n        return (0, 0);\n    }\n\n    function disputeStatus(uint256 disputeID) external view returns (DisputeStatus) {\n        return _dispute(disputeID).status;\n    }\n\n    function currentRuling(uint256 disputeID) external view returns (uint256) {\n        return _dispute(disputeID).ruling;\n    }\n\n    function disputeCount() external view returns (uint256) {\n        return disputes.length;\n    }\n\n    function _dispute(uint256 disputeID) private view returns (DisputeData storage) {\n        if (disputeID >= disputes.length) revert UnknownDispute(disputeID);\n        return disputes[disputeID];\n    }\n}\n"
+      }
+    }
+  }
+}

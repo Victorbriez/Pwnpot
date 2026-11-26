@@ -22,6 +22,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { ChainError, ChainLoading } from "@/components/onchain/chain-state"
+import { DisputePeriod } from "@/components/dispute/dispute-period"
 import { useCtfs } from "@/hooks/use-ctfs"
 import { contestBond } from "@/lib/ctf/dispute"
 import type { Ctf } from "@/lib/ctf/types"
@@ -130,7 +131,8 @@ function Section({
             </EmptyMedia>
             <EmptyTitle>{empty}</EmptyTitle>
             <EmptyDescription>
-              Les CTF terminés apparaissent ici pendant 48 h.
+              Les CTF terminés apparaissent ici pendant{" "}
+              <DisputePeriod of="contestation" />.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
