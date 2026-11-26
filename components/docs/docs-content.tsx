@@ -545,11 +545,11 @@ export function DocsContent() {
         </DocText>
         <DocSubheading>Pourquoi la caution est brûlée</DocSubheading>
         <DocText>
-          Si elle était partagée entre les votants, voter « triche » deviendrait
-          rentable pour tous les perdants. Brûlée, elle punit
-          l&apos;organisateur sans pousser à mal voter. Son cash prize lui est
-          rendu : la caution suffit comme punition, et la perte reste limitée si
-          l&apos;arbitre se trompe.
+          Si elle était donnée à quelqu&apos;un, cette personne aurait intérêt à
+          crier à la triche (dans le design complet, tous les perdants d&apos;un
+          vote). Brûlée, elle punit l&apos;organisateur sans pousser personne à
+          mal juger. Son cash prize lui est rendu : la caution suffit comme
+          punition, et la perte reste limitée si l&apos;arbitre se trompe.
         </DocText>
         <DocText>Le gas n&apos;est jamais remboursé.</DocText>
       </DocSection>
