@@ -72,7 +72,7 @@ export type CtfPlayModel = {
   isOrganizer: boolean
   /** Sélecteur joueur / organisateur : démo seulement. */
   role?: { value: Role; set: (role: Role) => void }
-  /** Litige simulé : démo seulement (le contrat ne gère pas encore les litiges). */
+  /** Litige du CTF, une fois la partie terminée (simulé en démo). */
   dispute?: Dispute
   /** Coffres du CTF, pour l'organisateur (mode contrat). */
   vaults: OrganizerVault[]
@@ -120,7 +120,7 @@ function useDemoCtfPlay(ctfId: number): CtfPlayState {
   const isOrganizer = role === "organizer"
   const playerHas = !isOrganizer && hasTicket
 
-  const dispute = useDispute(ctf ?? demoCtfs[0], tx, {
+  const dispute = useDispute(ctf, tx, {
     hasTicket: playerHas,
     isOrganizer,
   })
@@ -146,7 +146,7 @@ function useDemoCtfPlay(ctfId: number): CtfPlayState {
         ctf: live,
         solved: solved.length,
         rank: myRank,
-        voted: dispute?.state.myVote !== undefined,
+        voted: false,
         owed: participation?.owed ?? BigInt(0),
       })
 
@@ -251,6 +251,13 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
     .filter((level) => level.info.id === "vault")
     .map((level) => level.factory)
   const vaultStates = useVaultStates(vaultFactories)
+  const dispute = useDispute(ctf, tx, {
+    hasTicket: state.hasTicket,
+    isOrganizer:
+      !!address &&
+      !!ctf &&
+      address.toLowerCase() === ctf.organizer.toLowerCase(),
+  })
 
   if (error) return { status: "error", error }
   if (isLoading) return { status: "loading" }
@@ -342,6 +349,7 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
       solvedCount: state.score,
       hasTicket: state.hasTicket,
       isOrganizer,
+      dispute,
       vaults,
       step,
       canBuy:
@@ -351,9 +359,10 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
         ctf.players < ctf.maxPlayers,
       canFinalize:
         ctf.status === "contestation" && now >= ctf.chain.contestationEnd,
+      // Remboursement : aucun gagnant, ou triche confirmée par l'arbitre.
       canRefund:
-        ctf.status === "finalized" &&
-        winners === 0 &&
+        (ctf.status === "cheated" ||
+          (ctf.status === "finalized" && winners === 0)) &&
         state.hasTicket &&
         !state.refunded,
       needsWallet: !address,

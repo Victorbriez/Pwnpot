@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { ScaleIcon } from "lucide-react"
 
@@ -19,62 +21,49 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import { contestBond, voteOutcome } from "@/lib/ctf/dispute"
-import { formatEth, formatInt, formatRemaining } from "@/lib/format"
-import {
-  disputeRows,
-  isDisputeInProgress,
-  type DisputeRow,
-} from "@/lib/mock/disputes"
-import { ctfs } from "@/lib/mock/explore"
-import { ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
+import { ChainError, ChainLoading } from "@/components/onchain/chain-state"
+import { DisputePeriod } from "@/components/dispute/dispute-period"
+import { useCtfs } from "@/hooks/use-ctfs"
+import { contestBond } from "@/lib/ctf/dispute"
+import type { Ctf } from "@/lib/ctf/types"
+import { formatEth, formatRemaining, formatTimeLeft } from "@/lib/format"
+import { truncateAddress } from "@/lib/onchain/format"
 
-// Le contrat ne gère pas encore les litiges (#15) : rien à lister hors démo.
-const isDemo = ctfPlatformAddress === undefined
-const rows = isDemo ? disputeRows(ctfs) : []
-type Row = DisputeRow
+type Row = Ctf
 
-const inProgress = rows.filter(isDisputeInProgress)
-const contestable = rows.filter((r) => r.dispute.phase === "contestation")
-
+/** Litiges chez l'arbitre et CTF encore contestables, lus avec `useCtfs`. */
 export function DisputeList() {
+  const { ctfs, isLoading, error } = useCtfs()
+  if (error) return <ChainError error={error} />
+  if (isLoading) return <ChainLoading />
+
+  const inProgress = ctfs.filter((ctf) => ctf.status === "appeal")
+  // Fenêtre encore ouverte : passé ce délai, on ne peut plus que finaliser.
+  const contestable = ctfs.filter(
+    (ctf) => ctf.status === "contestation" && ctf.remaining > 0
+  )
+
   return (
     <div className="flex flex-col gap-10">
-      {!isDemo && (
-        <Empty className="border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <ScaleIcon />
-            </EmptyMedia>
-            <EmptyTitle>Les litiges arrivent bientôt</EmptyTitle>
-            <EmptyDescription>
-              Le contrat déployé ne gère pas encore l&apos;ouverture d&apos;un
-              litige ni le vote : les CTF se terminent sans contestation.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      )}
       <Section
-        title="Litiges en cours"
+        title="Litiges chez l'arbitre"
         empty="Aucun litige en cours."
         rows={inProgress}
-        describe={({ ctf, dispute }) => {
-          const outcome = voteOutcome(dispute, ctf.players)
+        describe={(ctf) => {
+          const contester = ctf.chain?.dispute?.contester
           return (
             <>
               <ItemDescription className="tabular-nums">
-                {formatInt(dispute.cheatVotes)} « triche » ·{" "}
-                {formatInt(dispute.fairVotes)} « pas de triche » · quorum{" "}
-                {formatInt(outcome.quorum)}
+                {contester
+                  ? `Contesté par ${truncateAddress(contester)}`
+                  : "Contesté par un joueur"}{" "}
+                · l&apos;arbitre tranche
               </ItemDescription>
               <ItemActions>
-                <Badge variant={outcome.quorumReached ? "success" : "warning"}>
-                  {outcome.quorumReached
-                    ? "Quorum atteint"
-                    : "Quorum pas atteint"}
-                </Badge>
                 <Badge variant="muted">
-                  reste {formatRemaining(dispute.remaining)}
+                  {ctf.remaining > 0
+                    ? `timeout dans ${formatRemaining(ctf.remaining)}`
+                    : "timeout atteint"}
                 </Badge>
               </ItemActions>
             </>
@@ -85,15 +74,14 @@ export function DisputeList() {
         title="Encore contestables"
         empty="Aucun CTF dans sa fenêtre de contestation."
         rows={contestable}
-        describe={({ ctf, dispute }) => (
+        describe={(ctf) => (
           <>
             <ItemDescription className="tabular-nums">
-              Caution de contestation {formatEth(contestBond(ctf.ticketPrice))}
+              Caution de contestation {formatEth(contestBond(ctf.ticketPrice))}{" "}
+              + frais de l&apos;arbitre
             </ItemDescription>
             <ItemActions>
-              <Badge variant="muted">
-                reste {formatRemaining(dispute.remaining)}
-              </Badge>
+              <Badge variant="muted">{formatTimeLeft(ctf.remaining)}</Badge>
             </ItemActions>
           </>
         )}
@@ -120,15 +108,15 @@ function Section({
         <ItemGroup className="gap-3">
           {rows.map((row) => (
             <Item
-              key={row.ctf.id}
+              key={row.id}
               variant="outline"
               className="gap-x-6 gap-y-3 rounded-xl p-4"
-              render={<Link href={`/ctf/${row.ctf.id}`} />}
+              render={<Link href={`/ctf/${row.id}`} />}
             >
               <ItemContent className="min-w-48">
-                <ItemTitle className="text-base">{row.ctf.title}</ItemTitle>
+                <ItemTitle className="text-base">{row.title}</ItemTitle>
                 <ItemDescription>
-                  <StatusPill status={row.ctf.status} />
+                  <StatusPill status={row.status} />
                 </ItemDescription>
               </ItemContent>
               {describe(row)}
@@ -143,7 +131,8 @@ function Section({
             </EmptyMedia>
             <EmptyTitle>{empty}</EmptyTitle>
             <EmptyDescription>
-              Les CTF terminés apparaissent ici pendant 48 h.
+              Les CTF terminés apparaissent ici pendant{" "}
+              <DisputePeriod of="contestation" />.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

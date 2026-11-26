@@ -40,6 +40,9 @@ if (chainId !== BASE_SEPOLIA_ID) {
 const [deployer, organizer, alice, bob, , , , , , arbitrator] =
   await viem.getWalletClients()
 
+// Frais du MockArbitrator, comme sur Base Sepolia (0.0005 ETH).
+const ARBITRATION_FEE = 500_000_000_000_000n
+
 // Durées courtes en local pour tester la finalisation sans attendre 48 h.
 // En vrai (docs/DESIGN.md § Paramètres) : 48 h, 48 h, 24 h, 7 j.
 const periods = {
@@ -62,8 +65,13 @@ await networkHelpers.setCode(MULTICALL3, multicallCode)
 const deployBlock = await publicClient.getBlockNumber()
 
 // Le premier compte (deployer) déploie par défaut.
-const platform = await viem.deployContract("CTFPlatform", [
+// Arbitre ERC-792 de démo : le compte #9 rend les décisions (`giveRuling`).
+const mockArbitrator = await viem.deployContract("MockArbitrator", [
+  ARBITRATION_FEE,
   arbitrator.account.address,
+])
+const platform = await viem.deployContract("CTFPlatform", [
+  mockArbitrator.address,
   periods.contestation,
   periods.voting,
   periods.appeal,
@@ -176,7 +184,7 @@ Comptes (clés privées affichées par \`pnpm chain\`) :
   #1 organisateur ${organizer.account.address}  (a créé les CTF 0 et 1)
   #2 alice        ${alice.account.address}  (aucun ticket : pour tester l'achat)
   #3 bob          ${bob.account.address}  (ticket dans le CTF 0)
-  #9 arbitre      ${arbitrator.account.address}
+  #9 arbitre      ${arbitrator.account.address}  (décide via MockArbitrator ${mockArbitrator.address})
 
 CTF 0 « ${samples[0].title} » : en cours, se termine dans 2 h. Épreuves : Coffre, Usurpateur, Coffre-fort à code.
 CTF 1 « ${samples[1].title} » : démarre dans 24 h. Épreuve : factory de test.

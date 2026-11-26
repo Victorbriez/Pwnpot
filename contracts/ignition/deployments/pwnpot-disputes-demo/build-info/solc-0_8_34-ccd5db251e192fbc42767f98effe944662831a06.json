@@ -1,0 +1,52 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_34-ccd5db251e192fbc42767f98effe944662831a06",
+  "solcVersion": "0.8.34",
+  "solcLongVersion": "0.8.34+commit.80d5c536",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.21.2"
+  },
+  "userSourceNameMap": {
+    "contracts/levels/Impostor.sol": "project/contracts/levels/Impostor.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "osaka",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/interfaces/ILevel.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.34;\n\n/// Interface d'une épreuve Pwnpot (docs/CHALLENGES.md).\ninterface ILevel {\n    /// Déploie une instance vulnérable pour `player`. Appelée par CTFPlatform uniquement.\n    function createInstance(address player) external returns (address instance);\n\n    /// Vrai si `instance` a été exploitée. Doit être `view` :\n    /// CTFPlatform l'appelle en staticcall avec une limite de gaz.\n    function validateInstance(address instance, address player) external view returns (bool);\n}\n"
+      },
+      "project/contracts/levels/Impostor.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.34;\n\nimport {ILevel} from \"../interfaces/ILevel.sol\";\n\n/// Level 2, Impostor: checking `tx.origin` instead of `msg.sender` lets any\n/// intermediate contract through.\n/// INTENTIONALLY VULNERABLE. Do not reuse.\ncontract Impostor {\n    /// Player this instance was created for. Only their transactions can take it over,\n    /// so rivals cannot overwrite the owner of someone else's instance.\n    address public immutable player;\n    address public owner;\n\n    constructor(address initialOwner, address player_) {\n        owner = initialOwner;\n        player = player_;\n    }\n\n    function changeOwner(address newOwner) external {\n        // The flaw: `tx.origin != msg.sender` is true as soon as a contract sits\n        // between the player's wallet and this call.\n        if (tx.origin == player && tx.origin != msg.sender) {\n            owner = newOwner;\n        }\n    }\n}\n\n/// Factory for the Impostor level. The factory is the initial owner of every\n/// instance: the player solves the level by becoming the owner of their own instance.\ncontract ImpostorFactory is ILevel {\n    /// Only address allowed to create instances (CTFPlatform).\n    address public immutable platform;\n\n    /// Instances deployed by this factory. The player is stored in the instance itself.\n    mapping(address instance => bool) public isInstance;\n\n    event InstanceCreated(address indexed player, address indexed instance);\n\n    error OnlyPlatform();\n    error ZeroAddress();\n\n    constructor(address platform_) {\n        if (platform_ == address(0)) revert ZeroAddress();\n        platform = platform_;\n    }\n\n    function createInstance(address player) external returns (address instance) {\n        if (msg.sender != platform) revert OnlyPlatform();\n        if (player == address(0)) revert ZeroAddress();\n\n        // Only deploys code from this file; never calls back into the caller.\n        // The factory owns the instance and has no function to transfer it,\n        // so a fresh instance never validates.\n        instance = address(new Impostor(address(this), player));\n        isInstance[instance] = true;\n        emit InstanceCreated(player, instance);\n    }\n\n    function validateInstance(address instance, address player) external view returns (bool) {\n        // An address not deployed by this factory never validates, so its code is trusted below.\n        if (player == address(0) || !isInstance[instance]) return false;\n        Impostor impostor = Impostor(instance);\n        // Another player's instance never counts.\n        return impostor.player() == player && impostor.owner() == player;\n    }\n}\n"
+      }
+    }
+  }
+}

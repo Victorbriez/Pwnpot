@@ -24,20 +24,22 @@ N'importe qui peut publier un CTF. Chaque épreuve est un contrat volontairement
 
 ## État d'avancement
 
-| Partie                                                                                     | État                                                                                                                                                                              |
-| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frontend Next.js 16 + wagmi 3, en ligne sur [pwnpot.vercel.app](https://pwnpot.vercel.app) | ✅ en place : lit et écrit dans `CTFPlatform` sur Base Sepolia                                                                                                                    |
-| Workspace Hardhat 3 (`contracts/`), keystore, réseau `baseSepolia`                         | ✅ en place                                                                                                                                                                       |
-| `CTFPlatform` (CTF, tickets, instances, scores, finalisation, remboursements, retraits)    | ✅ déployé et vérifié                                                                                                                                                             |
-| Factories des 3 épreuves + tests d'exploit                                                 | ✅ en place : Usurpateur et Coffre-fort à code partagées, Coffre déployé par chaque organisateur                                                                                  |
-| Écrans du frontend (explorer, création, jeu, classement, gains)                            | ✅ en place                                                                                                                                                                       |
-| Tests d'attaque (factory malveillante, réentrance au retrait, bombe à gaz)                 | ⏳ à faire ([#8](https://github.com/Victorbriez/Pwnpot/issues/8))                                                                                                                 |
-| Litiges : ouverture, vote, appel ERC-792                                                   | ⏳ à faire : `openDispute`, `vote`, `appeal` et `rule` existent mais revert avec `NotImplemented`. `MockArbitrator` est déployé. Les écrans de litige ne tournent qu'en mode démo |
-| Déploiement vérifié (Basescan, Blockscout, Sourcify)                                       | ✅ en place (durées de démo : contestation et vote 10 min)                                                                                                                        |
+| Partie                                                                                     | État                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend Next.js 16 + wagmi 3, en ligne sur [pwnpot.vercel.app](https://pwnpot.vercel.app) | ✅ en place : lit et écrit dans `CTFPlatform` sur Base Sepolia                                                                                                                                                    |
+| Workspace Hardhat 3 (`contracts/`), keystore, réseau `baseSepolia`                         | ✅ en place                                                                                                                                                                                                       |
+| `CTFPlatform` (CTF, tickets, instances, scores, finalisation, remboursements, retraits)    | ✅ déployé et vérifié                                                                                                                                                                                             |
+| Factories des 3 épreuves + tests d'exploit                                                 | ✅ en place : Usurpateur et Coffre-fort à code partagées, Coffre déployé par chaque organisateur                                                                                                                  |
+| Écrans du frontend (explorer, création, jeu, classement, gains)                            | ✅ en place                                                                                                                                                                                                       |
+| Tests d'attaque (factory malveillante, réentrance au retrait, bombe à gaz)                 | ✅ en place : `CTFPlatformAttacks.t.sol` ([#8](https://github.com/Victorbriez/Pwnpot/issues/8))                                                                                                                   |
+| Litiges : contestation et arbitre ERC-792                                                  | ✅ version simplifiée : `openDispute` saisit directement l'arbitre, `rule` tranche, timeout de 7 j (15 min sur le déploiement de démo). Le vote des joueurs et l'appel ne sont pas implémentés (`NotImplemented`) |
+| Déploiement sur Base Sepolia                                                               | ✅ deux déploiements du même code, réel (48 h) et démo (10 min, utilisé par le site), vérifiés sur Basescan et Sourcify ([adresses](#adresses-déployées))                                                         |
+| Passe de sécurité (Slither, points d'entrée, couverture)                                   | ✅ faite avant le déploiement : [docs/SECURITY.md](docs/SECURITY.md#passe-de-sécurité-avant-déploiement) ([#22](https://github.com/Victorbriez/Pwnpot/issues/22))                                                 |
+| Tests sur le bytecode déployé (profil production)                                          | ✅ dans la CI ([#21](https://github.com/Victorbriez/Pwnpot/issues/21))                                                                                                                                            |
 
 Le plan jusqu'au code freeze, la répartition et les risques sont dans [docs/PLAN.md](docs/PLAN.md).
 
-> Le design ci-dessous est la cible. Tout est déployé **sauf les litiges** (étape 7, votants et arbitre) : ils arrivent avant le code freeze. Les choix de l'équipe sont résumés dans [docs/DESIGN.md § Décisions actées](docs/DESIGN.md#décisions-actées).
+> Le design ci-dessous est la cible. Tout est déployé, avec des **litiges simplifiés** : la contestation part directement à l'arbitre, sans vote des joueurs ni appel (voir [docs/DESIGN.md § Litiges et appel](docs/DESIGN.md#litiges-et-appel)). Les choix de l'équipe sont résumés dans [docs/DESIGN.md § Décisions actées](docs/DESIGN.md#décisions-actées).
 
 ---
 
@@ -65,7 +67,7 @@ flowchart LR
 4. **Validation** : le joueur soumet. La plateforme demande à la factory si l'instance est résolue (`validateInstance`, appelé en `staticcall` avec une limite de gaz). Si oui, la réussite et son horodatage sont enregistrés on-chain.
 5. **Fin** : après la deadline et une fenêtre de contestation de 48 h, cash prize et tickets sont crédités au podium (60 / 30 / 10 %). Chacun appelle `withdraw()` (_pull payment_).
 6. **Personne n'a réussi** : les tickets sont remboursés. L'organisateur récupère son cash prize et sa caution, mais ne gagne rien.
-7. **Litige** _(pas encore dans le contrat déployé)_ : si un joueur soupçonne une triche de l'organisateur (solution fuitée à un complice, épreuve truquée), il ouvre un litige en déposant une caution de contestation. Les joueurs votent (1 adresse = 1 voix), puis le camp perdant peut faire appel à un arbitre ERC-792. Si la triche est confirmée, la caution de l'organisateur est brûlée, son cash prize lui est rendu et les tickets sont remboursés.
+7. **Litige** : si un joueur soupçonne une triche de l'organisateur (solution fuitée à un complice, épreuve truquée), il ouvre un litige pendant la contestation en déposant une caution et les frais d'arbitrage. Dans la version déployée, le litige part **directement à un arbitre ERC-792** (le design complet prévoit d'abord un vote des joueurs, puis un appel). Si la triche est confirmée, la caution de l'organisateur est brûlée, son cash prize lui est rendu et les tickets sont remboursés. Sans décision sous 7 jours, le litige est rejeté.
 
 Le détail des phases, des flux d'argent et des règles est dans [docs/DESIGN.md](docs/DESIGN.md).
 
@@ -79,10 +81,10 @@ Les quatre points ci-dessous suivent la structure du test de décentralisation d
 2. **La version centralisée.** Une plateforme avec une base de données et un administrateur pourrait encaisser les tickets et ne jamais payer. Elle pourrait aussi déclarer un faux gagnant, annuler un CTF après coup, geler un compte ou disparaître avec la cagnotte. Ici, aucune de ces actions n'existe dans le contrat.
 3. **Qui est protégé.** Le joueur qui paie un ticket à un organisateur qu'il ne connaît pas. Il peut lire le code des épreuves et les règles de paiement **avant** de payer, et il sait que personne ne peut les changer ensuite.
 4. **Ce qui reste trusted.**
-   - **L'organisateur connaît les solutions** et peut les fuiter à un complice. Ce n'est pas prouvable on-chain. C'est dissuadé économiquement par sa caution, et contestable par un litige (à venir : tant que les litiges ne sont pas déployés, la caution est toujours rendue).
+   - **L'organisateur connaît les solutions** et peut les fuiter à un complice. Ce n'est pas prouvable on-chain. C'est dissuadé économiquement par sa caution, et contestable par un litige.
    - **Une factory est écrite par l'organisateur** : elle peut être truquée (validation qui refuse certains joueurs, porte dérobée). Les joueurs doivent lire le code vérifié avant de payer. Le litige couvre ce cas.
-   - **Le vote des joueurs est intéressé** : les perdants ont intérêt à voter « triche », et l'organisateur peut inscrire des complices (un ticket payant par adresse) pour peser dans le vote. L'appel à l'arbitre corrige ces deux biais.
-   - **L'arbitre**, fixé au déploiement, est trusted en appel, et seulement sur les fonds du litige.
+   - **L'arbitre**, fixé au déploiement, est trusted, et seulement sur les fonds du litige. Dans la version déployée, il tranche seul chaque litige ; en démo, c'est `MockArbitrator`, contrôlé par l'équipe.
+   - _(Design complet)_ **Le vote des joueurs serait intéressé** : les perdants ont intérêt à voter « triche », et l'organisateur peut inscrire des complices (un ticket payant par adresse). L'appel à l'arbitre corrige ces deux biais.
 
 > Pwnpot n'est pas « fully decentralised » : il réduit la confiance au minimum, rend sa trahison coûteuse, et l'écrit noir sur blanc.
 
@@ -90,7 +92,7 @@ Les quatre points ci-dessous suivent la structure du test de décentralisation d
 
 ## Rôles et confiance
 
-> Les litiges ne sont pas encore dans le contrat déployé : les lignes **Votants** et **Arbitre**, et « contester, voter » pour le joueur, décrivent la cible.
+> Litiges simplifiés dans le contrat déployé : la ligne **Votants** et « voter » pour le joueur décrivent la cible. Aujourd'hui, l'**arbitre** tranche directement chaque litige, et son timeout rejette le litige.
 
 | Rôle                                                    | Ce qu'il peut faire                                                 | S'il agit de mauvaise foi                                                                                                                                                                                                                                                           | S'il disparaît                                                                                                         |
 | ------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -105,13 +107,13 @@ Les quatre points ci-dessous suivent la structure du test de décentralisation d
 
 ## Architecture : on-chain / off-chain
 
-| Où                                                | Quoi                                                                                                                                | Pourquoi là                                                 |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| **On-chain** (`CTFPlatform`)                      | Fonds (cash prize, tickets, cautions), inscriptions, instances par joueur, réussites horodatées, litiges, votes, crédits de retrait | C'est ce qui doit être impossible à modifier ou à détourner |
-| **On-chain** (factories + instances)              | Le code des épreuves et leur condition de réussite                                                                                  | La réussite doit être vérifiable par n'importe qui          |
-| **On-chain** (`MockArbitrator` / arbitre ERC-792) | Décisions d'appel                                                                                                                   | Interface standard, remplaçable par Kleros                  |
-| **Off-chain** (frontend Next.js)                  | Affichage, construction des transactions, lecture des events                                                                        | Ne détient **aucun état** : tout est relu depuis la chaîne  |
-| **Off-chain** (wallet du joueur)                  | Signature des transactions                                                                                                          | Le frontend ne voit jamais une clé privée                   |
+| Où                                                | Quoi                                                                                                                         | Pourquoi là                                                 |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **On-chain** (`CTFPlatform`)                      | Fonds (cash prize, tickets, cautions), inscriptions, instances par joueur, réussites horodatées, litiges, crédits de retrait | C'est ce qui doit être impossible à modifier ou à détourner |
+| **On-chain** (factories + instances)              | Le code des épreuves et leur condition de réussite                                                                           | La réussite doit être vérifiable par n'importe qui          |
+| **On-chain** (`MockArbitrator` / arbitre ERC-792) | Décisions sur les litiges                                                                                                    | Interface standard, remplaçable par Kleros                  |
+| **Off-chain** (frontend Next.js)                  | Affichage, construction des transactions, lecture des events                                                                 | Ne détient **aucun état** : tout est relu depuis la chaîne  |
+| **Off-chain** (wallet du joueur)                  | Signature des transactions                                                                                                   | Le frontend ne voit jamais une clé privée                   |
 
 Il n'y a **aucun backend**. Si le frontend disparaît, tout reste utilisable depuis Basescan (_Write Contract_) ou un script viem.
 
@@ -179,26 +181,30 @@ pnpm --filter @pwnpot/contracts exec hardhat ignition deploy ignition/modules/<M
 # vérification sur Basescan, Blockscout et Sourcify. `verify` ne recompile pas :
 # il compare avec les artefacts présents, qui doivent venir du profil production.
 pnpm --filter @pwnpot/contracts exec hardhat build --build-profile production
-pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532 --network baseSepolia --build-profile production
+pnpm --filter @pwnpot/contracts exec hardhat ignition verify <deployment-id> --network baseSepolia --build-profile production
 ```
 
 - La clé de déploiement est celle d'un compte **dédié au testnet**, sans fonds réels.
-- Le dossier `contracts/ignition/deployments/chain-84532/` est **committé** : c'est la trace de ce qui a été déployé, et où.
-- Avant le code freeze, lancer `pnpm --filter @pwnpot/contracts exec hardhat test --build-profile production`, pour que les tests passent sur le bytecode réellement déployé.
+- Les dossiers `contracts/ignition/deployments/` sont **committés** : c'est la trace de ce qui a été déployé, et où (`pwnpot-disputes`, `pwnpot-disputes-demo`, et `chain-84532` pour le déploiement d'octobre). Pour un nouveau déploiement, passer un nouveau `--deployment-id` : Ignition refuse de redéployer un module dont le code a changé sous le même identifiant.
+- Les tests tournent aussi sur le bytecode réellement déployé (optimiseur activé) : `pnpm --filter @pwnpot/contracts exec hardhat test --build-profile production`. La CI lance cette commande sur chaque PR.
 
 ---
 
 ## Adresses déployées
 
-| Contrat                                            | Adresse (Base Sepolia)                                                                                                               |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `CTFPlatform`                                      | [`0x3F9745Fd1d01c6FAf91f4B5FE96241712788A2b1`](https://sepolia.basescan.org/address/0x3F9745Fd1d01c6FAf91f4B5FE96241712788A2b1#code) |
-| Bloc de déploiement                                | `55200071`                                                                                                                           |
-| `MockArbitrator`                                   | [`0x8984F4ECaB146D3aD6e7975046Eaa76bF9Fca6F3`](https://sepolia.basescan.org/address/0x8984F4ECaB146D3aD6e7975046Eaa76bF9Fca6F3#code) |
-| `TestLevel` (factory de test, sans exploit)        | [`0x3C48F404e422fD4dE1ae1bd990D7C2095dD4156d`](https://sepolia.basescan.org/address/0x3C48F404e422fD4dE1ae1bd990D7C2095dD4156d#code) |
-| Factory « Coffre » (réentrance)                    | une par CTF : déployée, alimentée et liée par l'organisateur depuis le formulaire de création                                        |
-| Factory « Usurpateur » (`tx.origin`)               | [`0xc6E72cD2db9202cC7F4631663dE86D247b979A3E`](https://sepolia.basescan.org/address/0xc6E72cD2db9202cC7F4631663dE86D247b979A3E#code) |
-| Factory « Coffre-fort à code » (storage `private`) | [`0x9F806248ff6654ced3a5C7447E437d77B659AE2F`](https://sepolia.basescan.org/address/0x9F806248ff6654ced3a5C7447E437d77B659AE2F#code) |
+Deux déploiements du même code (litiges simplifiés), le 26 nov 2026. Seules les durées du litige changent (`immutable`, fixées au constructeur).
+
+| Contrat                                            | Réel : 48 h de contestation, 7 j d'arbitre (`pwnpot-disputes`)                                                                       | Démo : 10 min de contestation, 15 min d'arbitre (`pwnpot-disputes-demo`)                                                             |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `CTFPlatform`                                      | [`0x339a160071730DfbfB50EFC95b546Ca86e50bb22`](https://sepolia.basescan.org/address/0x339a160071730DfbfB50EFC95b546Ca86e50bb22#code) | [`0xb701e1c29F0cA0F237414a4F395Ed1f04e9fbf60`](https://sepolia.basescan.org/address/0xb701e1c29F0cA0F237414a4F395Ed1f04e9fbf60#code) |
+| Bloc de déploiement                                | `63929184`                                                                                                                           | `63922316`                                                                                                                           |
+| `MockArbitrator`                                   | [`0xD12289EFA71C4342815C72afCDb90F7Ba625C63c`](https://sepolia.basescan.org/address/0xD12289EFA71C4342815C72afCDb90F7Ba625C63c#code) | [`0x424daD72E083dD0011DC7F098A18b27692E9870D`](https://sepolia.basescan.org/address/0x424daD72E083dD0011DC7F098A18b27692E9870D#code) |
+| `TestLevel` (factory de test, sans exploit)        | [`0x2A18C875a347fbA2F82F4a4eCB7E1925a378280f`](https://sepolia.basescan.org/address/0x2A18C875a347fbA2F82F4a4eCB7E1925a378280f#code) | [`0x06fc0de322568B78650b40364Abb15936bBd1254`](https://sepolia.basescan.org/address/0x06fc0de322568B78650b40364Abb15936bBd1254#code) |
+| Factory « Coffre » (réentrance)                    | une par CTF : déployée, alimentée et liée par l'organisateur depuis le formulaire de création                                        | idem                                                                                                                                 |
+| Factory « Usurpateur » (`tx.origin`)               | [`0x08d999619d1f19F24bad5fd3ca65D0265258ECD9`](https://sepolia.basescan.org/address/0x08d999619d1f19F24bad5fd3ca65D0265258ECD9#code) | [`0x75561314e7A13132C2181de3A9Af063e5a57440e`](https://sepolia.basescan.org/address/0x75561314e7A13132C2181de3A9Af063e5a57440e#code) |
+| Factory « Coffre-fort à code » (storage `private`) | [`0x24ee1Dd643d60D98b45373c159713f84a333DbAc`](https://sepolia.basescan.org/address/0x24ee1Dd643d60D98b45373c159713f84a333DbAc#code) | [`0x029824C81B59de62D874d89dfDBFD8517708c7f0`](https://sepolia.basescan.org/address/0x029824C81B59de62D874d89dfDBFD8517708c7f0#code) |
+
+Le `ruler` des deux `MockArbitrator` (le compte qui rend les décisions) est le compte de déploiement `0xA469B2A79DD89792D71921F987Dfdc0b189466ad`. Le premier déploiement, d'octobre, sans litiges (`CTFPlatform` `0x3F9745Fd1d01c6FAf91f4B5FE96241712788A2b1`), reste dans `contracts/ignition/deployments/chain-84532/` pour mémoire.
 
 ---
 

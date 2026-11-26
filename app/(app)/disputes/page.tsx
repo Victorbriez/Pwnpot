@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
 
 import { DisputeList } from "@/components/dispute/dispute-list"
+import { DisputePeriod } from "@/components/dispute/dispute-period"
 import { PageHeader, PageShell } from "@/components/site/page-header"
 
 export const metadata: Metadata = {
   title: "Litiges",
-  description:
-    "Les litiges en cours et les CTF encore contestables : vote des joueurs, appel et arbitre.",
+  description: "Les litiges chez l'arbitre et les CTF encore contestables.",
 }
 
 export default function DisputesPage() {
@@ -14,7 +14,15 @@ export default function DisputesPage() {
     <PageShell>
       <PageHeader
         title="Litiges"
-        description="Après la fin d'un CTF, un détenteur de ticket a 48 h pour contester. Les joueurs votent pendant 48 h (1 adresse = 1 voix), puis le camp perdant a 24 h pour faire appel à l'arbitre."
+        description={
+          <>
+            Après la fin d&apos;un CTF, un détenteur de ticket a{" "}
+            <DisputePeriod of="contestation" /> pour contester. Le litige part
+            directement à l&apos;arbitre (ERC-792), dont la décision est
+            définitive ; sans réponse sous <DisputePeriod of="arbitrator" />, il
+            est rejeté.
+          </>
+        }
       />
       <DisputeList />
     </PageShell>

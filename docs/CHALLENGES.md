@@ -2,7 +2,7 @@
 
 Une épreuve Pwnpot, c'est un contrat volontairement vulnérable, plus une **factory** qui en déploie une copie par joueur et qui sait dire si cette copie a été exploitée. Il n'y a pas de flag : la réussite se lit dans l'état de la chaîne. C'est le même principe qu'[Ethernaut](https://ethernaut.openzeppelin.com/).
 
-> Les noms et le code ci-dessous sont des esquisses. Ils seront remplacés par le code réel de `contracts/contracts/levels/`.
+> Le code des instances ci-dessous est celui de `contracts/contracts/levels/` (`Vault.sol`, `Impostor.sol`, `CodeSafe.sol`), commentaires traduits. Chaque fichier contient aussi la factory de l'épreuve (`VaultFactory`, `ImpostorFactory`, `CodeSafeFactory`), qui implémente `ILevel`.
 
 ## Sommaire
 

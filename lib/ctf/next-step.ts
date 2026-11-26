@@ -37,7 +37,12 @@ export function playerNextStep(p: MyParticipation): NextStep {
         ? { label: "Tu as voté", tone: "neutral" }
         : { label: `Vote avant ${left}`, tone: "warning" }
     case "appeal":
-      return { label: `Appel en cours · ${left}`, tone: "warning" }
+      return ctf.remaining > 0
+        ? { label: `Litige chez l'arbitre · ${left}`, tone: "warning" }
+        : {
+            label: "L'arbitre n'a pas répondu, le litige peut être clos",
+            tone: "action",
+          }
     case "finalized":
     case "cheated":
       return p.owed > BigInt(0)

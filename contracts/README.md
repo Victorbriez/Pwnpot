@@ -6,14 +6,14 @@ Contrats de Pwnpot : Solidity 0.8.34, Hardhat 3 (toolbox viem), OpenZeppelin 5. 
 
 ```
 contracts/
-  CTFPlatform.sol          cagnotte, tickets, cautions, scores, litiges, retraits   (à venir)
-  interfaces/              ILevel, IArbitrator / IArbitrable (ERC-792)             (à venir)
-  levels/                  factories + contrats vulnérables des épreuves            (à venir)
-  mocks/MockArbitrator.sol arbitre de test et de démo                               (à venir)
+  CTFPlatform.sol          cagnotte, tickets, cautions, scores, litiges, retraits
+  interfaces/              ILevel, IArbitrator / IArbitrable (ERC-792), ICTFPlatform
+  levels/                  factories + contrats vulnérables des épreuves
+  mocks/MockArbitrator.sol arbitre de test et de démo
   *.t.sol                  tests unitaires Solidity (forge-std)
 test/                      tests d'intégration TypeScript (node:test + viem)
 ignition/modules/          modules de déploiement
-ignition/deployments/      trace des déploiements (chain-84532 committé)
+ignition/deployments/      trace des déploiements, committée (pwnpot-disputes, pwnpot-disputes-demo)
 ```
 
 ## Commandes
@@ -50,13 +50,16 @@ pnpm exec hardhat keystore set BASE_SEPOLIA_RPC_URL
 pnpm exec hardhat keystore set BASE_SEPOLIA_PRIVATE_KEY
 pnpm exec hardhat keystore set ETHERSCAN_API_KEY
 
-pnpm exec hardhat ignition deploy ignition/modules/<Module>.ts --network baseSepolia
-pnpm exec hardhat ignition verify chain-84532 --network baseSepolia
+pnpm exec hardhat ignition deploy ignition/modules/Pwnpot.ts --network baseSepolia \
+  --build-profile production --deployment-id <id> [--parameters ignition/parameters/demo.json] --verify
+pnpm exec hardhat ignition verify <id> --network baseSepolia --build-profile production
 ```
 
 - Le keystore est chiffré et propre à chaque utilisateur de la machine. Son mot de passe ne se récupère pas.
 - Pour que `ignition verify` fonctionne, ajouter le bloc `verify: { etherscan: { apiKey: configVariable("ETHERSCAN_API_KEY") } }` dans `hardhat.config.ts`.
-- Committer `ignition/deployments/chain-84532/` après chaque déploiement, puis reporter les adresses dans le [README racine](../README.md#adresses-déployées).
+- Un nouveau `--deployment-id` à chaque nouveau code : Ignition refuse de redéployer un module modifié sous le même identifiant.
+- Committer `ignition/deployments/<id>/` après chaque déploiement, reporter les adresses dans le [README racine](../README.md#adresses-déployées), puis `DEPLOYMENT=<id> pnpm contracts:env` donne les variables à mettre sur Vercel.
+- Si Blockscout répond 429 (trop de requêtes) pendant `--verify`, relancer `ignition verify <id>` un peu plus tard : ce qui est déjà vérifié est ignoré.
 
 ## Règles de code
 

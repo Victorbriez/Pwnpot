@@ -1,0 +1,52 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_34-e251d0dcc50e241d73f335bab4d0c995ac2f7aa7",
+  "solcVersion": "0.8.34",
+  "solcLongVersion": "0.8.34+commit.80d5c536",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.21.2"
+  },
+  "userSourceNameMap": {
+    "contracts/mocks/TestLevel.sol": "project/contracts/mocks/TestLevel.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "osaka",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/interfaces/ILevel.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.34;\n\n/// Interface d'une épreuve Pwnpot (docs/CHALLENGES.md).\ninterface ILevel {\n    /// Déploie une instance vulnérable pour `player`. Appelée par CTFPlatform uniquement.\n    function createInstance(address player) external returns (address instance);\n\n    /// Vrai si `instance` a été exploitée. Doit être `view` :\n    /// CTFPlatform l'appelle en staticcall avec une limite de gaz.\n    function validateInstance(address instance, address player) external view returns (bool);\n}\n"
+      },
+      "project/contracts/mocks/TestLevel.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.34;\n\nimport {ILevel} from \"../interfaces/ILevel.sol\";\n\n/// Instance minimale pour les tests : le joueur la « résout » en appelant `solve`.\n/// TEST UNIQUEMENT, ne pas déployer.\ncontract TestInstance {\n    address public immutable player;\n    bool public solved;\n\n    constructor(address player_) {\n        player = player_;\n    }\n\n    function solve() external {\n        if (msg.sender != player) revert();\n        solved = true;\n    }\n}\n\n/// Factory minimale pour tester CTFPlatform sans dépendre des vraies épreuves (#7).\n/// TEST UNIQUEMENT, ne pas déployer.\ncontract TestLevel is ILevel {\n    function createInstance(address player) external returns (address) {\n        return address(new TestInstance(player));\n    }\n\n    function validateInstance(address instance, address player) external view returns (bool) {\n        TestInstance inst = TestInstance(instance);\n        return inst.player() == player && inst.solved();\n    }\n}\n"
+      }
+    }
+  }
+}
