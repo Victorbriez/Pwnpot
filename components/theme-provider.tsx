@@ -3,6 +3,16 @@
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 
+// next-themes injecte un <script> qui applique le thème avant l'affichage. Il
+// ne sert qu'au HTML du serveur : quand le composant est rendu de nouveau côté
+// client (une 404 levée dans une page, par exemple), React 19 avertit qu'un
+// script ne s'exécute pas. Côté client, on le marque donc non exécutable ; le
+// thème est déjà appliqué par le provider.
+const scriptProps = {
+  type: typeof window === "undefined" ? undefined : "application/json",
+  suppressHydrationWarning: true,
+} as const
+
 function ThemeProvider({
   children,
   ...props
@@ -13,6 +23,7 @@ function ThemeProvider({
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange
+      scriptProps={scriptProps}
       {...props}
     >
       <ThemeHotkey />

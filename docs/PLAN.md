@@ -28,8 +28,8 @@ La doc finale ([#29](https://github.com/Victorbriez/Pwnpot/issues/29)) et la dé
 | **7 → 13 nov**  | Tests d'attaque (#8) et `MockArbitrator` complet (#16)                             | Yann                                                   |
 |                 | Ouverture d'un litige et vote (#15)                                                | Baptiste                                               |
 |                 | Profil production dans la CI (#21), vérification des Coffres sur Sourcify (#52)    | Victor                                                 |
-| **14 → 20 nov** | Appel ERC-792 et timeout de l'arbitre (#17), écran d'appel                         | Yann                                                   |
-|                 | Issues avec litige (#18), leurs tests (#19), écran de vote                         | Baptiste                                               |
+| **14 → 20 nov** | Appel ERC-792 et timeout de l'arbitre (#17), écran d'appel (remplacés par le plan B)                         | Yann                                                   |
+|                 | Issues avec litige (#18), leurs tests (#19), écran de vote (plan B : sans vote)                         | Baptiste                                               |
 |                 | Confiance dans les factories (#25), intégration des écrans de litige (#26)         | Victor                                                 |
 | **21 → 24 nov** | Factories malveillantes restantes (#20)                                            | Yann                                                   |
 |                 | Slither et revue des points d'entrée (#22), corrections                            | Victor, avec le responsable de chaque fonction touchée |
