@@ -1,6 +1,6 @@
 // Types d'un CTF tel que le front l'affiche, qu'il vienne du contrat
 // (lib/onchain/mappers.ts) ou des données de démo (lib/mock/).
-import type { Address, Hex } from "viem"
+import type { Address, Hash, Hex } from "viem"
 
 /** Les trois épreuves de lancement (docs/CHALLENGES.md). */
 export type Vuln = "reentrancy" | "tx-origin" | "storage"
@@ -129,4 +129,12 @@ export type MyOrganized = {
   owed: bigint
   /** CTF finalisé sans aucune épreuve réussie : cash prize rendu. */
   noWinner?: boolean
+}
+
+/** Un retrait (`withdraw`, event `Withdrawn`), dans l'historique de Mes gains. */
+export type Withdrawal = {
+  amount: bigint
+  /** Date ISO du bloc. */
+  date: string
+  hash: Hash
 }

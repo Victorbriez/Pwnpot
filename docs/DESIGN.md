@@ -110,13 +110,15 @@ L'argent ne sort **jamais** par un transfert automatique : chaque issue **crédi
 | Issue | Gagnants | Joueurs | Organisateur | Contestataire |
 | --- | --- | --- | --- | --- |
 | **Fin normale, au moins une réussite** | Cash prize + tickets, répartis sur le podium | — | Récupère sa caution | — |
-| **Personne n'a réussi** | — | Ticket remboursé | Récupère cash prize + caution | — |
-| **Litige rejeté** | Comme une fin normale | — | Sa caution + la caution du contestataire | Perd sa caution |
-| **Triche confirmée** | — | Ticket remboursé | **Perd sa caution** (brûlée) ; son **cash prize lui est rendu** | Caution rendue |
+| **Personne n'a réussi** | — | Ticket remboursé (à réclamer avec `claimRefund`) | Récupère cash prize + caution | — |
+| **Litige rejeté** | Comme une fin normale | — | Sa caution + la caution du contestataire | Perd sa caution et les frais d'arbitrage |
+| **Triche confirmée** | — | Ticket remboursé (à réclamer avec `claimRefund`) | **Perd sa caution** (brûlée, moins les frais d'arbitrage rendus au contestataire) ; son **cash prize lui est rendu** | Caution et frais d'arbitrage rendus |
 
-**Frais d'arbitrage (appel).** Celui qui fait appel avance les frais de l'arbitre. S'il gagne l'appel, ces frais lui sont **remboursés**, pris sur la caution du camp perdant : la caution de contestation si l'organisateur gagne, la caution de l'organisateur (avant le burn) si la triche est confirmée. Le remboursement est **plafonné** au montant de cette caution. S'il perd l'appel, ses frais sont perdus. C'est le modèle de Kleros.
+**Frais d'arbitrage, version déployée.** Le contestataire avance les frais de l'arbitre en ouvrant le litige. Triche confirmée : ils lui sont rendus, pris sur la caution de l'organisateur (plafonnés à celle-ci). Litige rejeté : ils sont perdus.
 
-Pourquoi la caution est **brûlée** plutôt que distribuée aux joueurs en cas de triche : si elle était partagée entre les votants, voter « triche » deviendrait rentable pour tous les perdants. Brûlée, elle punit l'organisateur sans créer d'incitation à mal voter.
+**Frais d'arbitrage, design complet (appel).** Celui qui fait appel avance les frais de l'arbitre. S'il gagne l'appel, ces frais lui sont **remboursés**, pris sur la caution du camp perdant : la caution de contestation si l'organisateur gagne, la caution de l'organisateur (avant le burn) si la triche est confirmée. Le remboursement est **plafonné** au montant de cette caution. S'il perd l'appel, ses frais sont perdus. C'est le modèle de Kleros.
+
+Pourquoi la caution est **brûlée** plutôt que distribuée aux joueurs en cas de triche : si elle était donnée à quelqu'un (les votants, dans le design complet), cette personne aurait intérêt à crier à la triche. Brûlée, elle punit l'organisateur sans créer d'incitation à mal juger.
 
 Pourquoi le **cash prize est rendu** à l'organisateur en cas de triche : la caution brûlée suffit comme punition, puisqu'elle dépasse déjà ce qu'un tricheur peut gagner. Et si l'arbitre condamne à tort un organisateur honnête, la perte reste limitée à sa caution.
 

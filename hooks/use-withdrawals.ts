@@ -6,10 +6,8 @@ import { baseSepolia } from "viem/chains"
 import { useConnection, usePublicClient } from "wagmi"
 
 import { usePlatformEvents } from "@/hooks/use-platform-events"
-import {
-  withdrawals as demoWithdrawals,
-  type Withdrawal,
-} from "@/lib/mock/gains"
+import type { Withdrawal } from "@/lib/ctf/types"
+import { withdrawals as demoWithdrawals } from "@/lib/mock/gains"
 import { ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
 
 /** Retraits de l'adresse connectée (events `Withdrawn`), du plus récent au plus ancien. */

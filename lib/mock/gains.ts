@@ -1,12 +1,7 @@
 // Historique fictif des retraits du joueur de démo (event `Withdrawn`).
-import { parseEther, type Hash } from "viem"
+import { parseEther } from "viem"
 
-export type Withdrawal = {
-  amount: bigint
-  /** Date ISO du bloc. */
-  date: string
-  hash: Hash
-}
+import type { Withdrawal } from "@/lib/ctf/types"
 
 export const withdrawals: Withdrawal[] = [
   {

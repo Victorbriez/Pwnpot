@@ -1,5 +1,6 @@
 // Affiche les variables d'environnement du front pour un déploiement Ignition,
 // à coller dans Vercel (Settings → Environment Variables) ou dans .env.local.
+// NEXT_PUBLIC_TEST_FACTORY_ADDRESS va en Preview seulement, jamais en Production.
 //
 //   pnpm contracts:env                               # déploiement de démo, celui du site
 //   DEPLOYMENT=pwnpot-disputes pnpm contracts:env    # déploiement réel (48 h)
@@ -47,6 +48,8 @@ const lines = [
   `NEXT_PUBLIC_CTF_PLATFORM_DEPLOY_BLOCK=${block}`,
   impostor && `NEXT_PUBLIC_IMPOSTOR_FACTORY_ADDRESS=${impostor}`,
   codeSafe && `NEXT_PUBLIC_CODE_SAFE_FACTORY_ADDRESS=${codeSafe}`,
+  testLevel &&
+    "# Factory de test (se valide sans exploit) : Preview seulement, JAMAIS en Production.",
   testLevel && `NEXT_PUBLIC_TEST_FACTORY_ADDRESS=${testLevel}`,
 ]
 console.log(lines.filter(Boolean).join("\n"))

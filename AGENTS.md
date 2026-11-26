@@ -85,7 +85,7 @@ pnpm format               # Prettier
 pnpm contracts:build      # compile les contrats
 pnpm contracts:test       # tests Solidity + TypeScript
 pnpm contracts:typecheck  # compile puis tsc des tests/scripts Hardhat
-pnpm contracts:test:production  # tests sur le bytecode optimisé (celui qui est déployé)
+pnpm contracts:test:production  # tests sur le bytecode optimisé (CTFPlatform et factories partagées déployées ; le Coffre est déployé par le site en profil par défaut)
 pnpm contracts:invariants # tests d'invariants, 10 000 suites (~7 min), avant chaque déploiement
 pnpm contracts:env        # variables NEXT_PUBLIC_* du déploiement démo (DEPLOYMENT=<id> pour un autre)
 pnpm contracts:deploy     # déploie le module sur Base Sepolia (id pwnpot-disputes-demo, durées de démo)
