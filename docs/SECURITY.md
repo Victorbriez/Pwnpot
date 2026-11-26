@@ -104,7 +104,7 @@ Bugs injectés pour vérifier que les invariants les détectent : un `withdraw` 
 
 - **La fuite de solution n'est pas prouvable.** Un organisateur qui donne la solution à un complice avant le CTF ne laisse aucune trace on-chain. Le design la rend **coûteuse** (caution) et **contestable** (litige), mais pas impossible.
 - **Litiges simplifiés.** Le contrat déployé n'a ni vote des joueurs ni appel : la contestation part directement à l'arbitre (`vote` et `appeal` revert `NotImplemented`). C'est le plan B de [PLAN.md](PLAN.md#risques-et-plans-b), assumé faute de temps. L'interface (`Dispute`, events, phases) prévoit déjà la version complète.
-- **L'arbitre est trusted.** Il est choisi au déploiement : c'est le seul choix du déployeur qui pèse sur les litiges. Dans la version déployée, il tranche seul chaque litige. En démo, `MockArbitrator` est contrôlé par l'équipe (le compte qui déploie rend les décisions). Il faut le dire explicitement au jury. Kleros se brancherait sans changer `CTFPlatform`.
+- **L'arbitre est trusted.** Il est choisi au déploiement : c'est le seul choix du déployeur qui pèse sur les litiges. Dans la version déployée, il tranche seul chaque litige. En démo, `MockArbitrator` est contrôlé par l'équipe (le compte qui déploie rend les décisions). Il faut le dire explicitement au jury. Un vrai arbitre décentralisé (Kleros) n'existe pas sur Base Sepolia : voir [Brancher un vrai arbitre](#brancher-un-vrai-arbitre-kleros).
 - **Un litige retarde les gains.** N'importe quel détenteur de ticket peut bloquer `finalize` jusqu'à 7 jours en contestant. S'il a tort, il perd sa caution (versée à l'organisateur) et les frais d'arbitrage. Exception : un complice de l'organisateur ne perd que les frais, puisque sa caution revient à l'organisateur (voir [Organisateur malveillant](#organisateur-malveillant)).
 - **Un seul litige par CTF, sans preuve on-chain.** Le premier contestataire prend la place. `openDispute` ne transmet aucun élément à l'arbitre (pas d'ERC-1497) : en démo, l'équipe qui tient `MockArbitrator` est informée hors chaîne.
 - _(Design complet)_ **Le vote des joueurs ne serait pas neutre.** Les perdants ont intérêt à voter « triche ». L'appel corrige ce biais : un organisateur honnête avance les frais d'arbitrage, qui lui sont remboursés s'il gagne.
@@ -112,6 +112,23 @@ Bugs injectés pour vérifier que les invariants les détectent : un `withdraw` 
 - **Un exploit est copiable** une fois publié sur la chaîne. Le classement au temps limite l'intérêt de copier.
 - **Le podium réduit l'intérêt de copier, mais ne le supprime pas.** Un copieur rapide peut finir 2e ou 3e et toucher une part de la cagnotte.
 - **Le gas n'est pas remboursé** en cas de triche confirmée. Les joueurs récupèrent leur ticket, pas le gas dépensé.
+
+### Brancher un vrai arbitre (Kleros)
+
+Vérification faite le 26 nov 2026 pour [#32](https://github.com/Victorbriez/Pwnpot/issues/32) : **Kleros n'est pas déployé sur Base Sepolia, ni sur Base.**
+
+- Les déploiements de Kleros v2 (`KlerosCore`, le tribunal) sont listés dans le [dépôt officiel](https://github.com/kleros/kleros-v2/tree/dev/contracts/deployments) : Arbitrum et Arbitrum Sepolia pour le tribunal, plus des contrats annexes sur Ethereum, Gnosis et leurs testnets (Sepolia, Chiado). Aucun dossier pour Base ou Base Sepolia. Le tribunal de test est sur Arbitrum Sepolia, à l'adresse `0xE8442307d36e9bf6aB27F1A009F95CE8E11C3479` ([fichier de déploiement](https://github.com/kleros/kleros-v2/blob/dev/contracts/deployments/arbitrumSepolia/KlerosCore.json)).
+
+On ne peut donc pas montrer un litige tranché par de vrais jurés sur Base Sepolia. L'arbitre de démo, `MockArbitrator`, reste la seule option sur ce réseau.
+
+**Ce qu'il faudrait pour brancher Kleros**, sur un réseau où il existe (Arbitrum Sepolia pour un test, Arbitrum en production) :
+
+- **Les appels sont compatibles.** `CTFPlatform` n'utilise que `createDispute(uint256, bytes)`, `arbitrationCost(bytes)` et `rule(uint256, uint256)`, avec les mêmes signatures que l'interface `IArbitratorV2` / `IArbitrableV2` de Kleros v2 ([IArbitratorV2.sol](https://github.com/kleros/kleros-v2/blob/dev/contracts/src/arbitration/interfaces/IArbitratorV2.sol), [IArbitrableV2.sol](https://github.com/kleros/kleros-v2/blob/dev/contracts/src/arbitration/interfaces/IArbitrableV2.sol)). Les décisions concordent : 1 = triche, 2 = pas de triche, 0 (refus de trancher) traité comme « pas de triche ». L'arbitre étant `immutable`, il suffit de déployer `CTFPlatform` avec l'adresse de `KlerosCore`.
+- **Trois adaptations seraient quand même nécessaires**, donc un nouveau déploiement de code :
+  1. `openDispute` passe un `_extraData` vide, alors que Kleros s'en sert pour choisir le tribunal et le nombre de jurés.
+  2. Kleros v2 attend que le contrat arbitrable émette `DisputeRequest` avec un modèle de litige (`templateId`), pour que les jurés voient de quoi il s'agit. `CTFPlatform` ne le fait pas, et ne transmet aucune preuve (voir la limite « sans preuve on-chain » ci-dessus).
+  3. Un litige Kleros passe par plusieurs périodes (preuves, vote, appel), réglées par tribunal. Le timeout de 7 jours (`arbitratorTimeout`) serait à allonger : sinon, n'importe qui pourrait clore le litige comme « pas de triche » avant que les jurés aient tranché.
+- **Pwnpot devrait alors quitter Base**, ce qui sort du sujet du module. Le choix assumé reste donc : Base Sepolia avec `MockArbitrator`, arbitre de confiance tenu par l'équipe, et la porte ouverte vers Kleros sans toucher au reste de la logique.
 
 ---
 
