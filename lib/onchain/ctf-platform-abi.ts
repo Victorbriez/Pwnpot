@@ -91,6 +91,17 @@ export const ctfPlatformAbi = [
     type: "error",
   },
   {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "endedAt",
+        type: "uint256",
+      },
+    ],
+    name: "ContestationOver",
+    type: "error",
+  },
+  {
     inputs: [],
     name: "DisputeAlreadyOpened",
     type: "error",
@@ -657,6 +668,19 @@ export const ctfPlatformAbi = [
   },
   {
     inputs: [],
+    name: "MIN_DISPUTE_BOND",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "MIN_DURATION",
     outputs: [
       {
@@ -671,6 +695,45 @@ export const ctfPlatformAbi = [
   {
     inputs: [],
     name: "MIN_TICKET_PRICE",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "RULING_CHEATED",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "RULING_NOT_CHEATED",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "RULING_OPTIONS",
     outputs: [
       {
         internalType: "uint256",
@@ -724,13 +787,13 @@ export const ctfPlatformAbi = [
     inputs: [
       {
         internalType: "uint256",
-        name: "",
+        name: "ctfId",
         type: "uint256",
       },
     ],
     name: "applyVoteAfterTimeout",
     outputs: [],
-    stateMutability: "pure",
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -749,6 +812,19 @@ export const ctfPlatformAbi = [
   {
     inputs: [],
     name: "arbitratorTimeout",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "burned",
     outputs: [
       {
         internalType: "uint256",
@@ -890,6 +966,30 @@ export const ctfPlatformAbi = [
       {
         internalType: "uint256",
         name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "ctfId",
+        type: "uint256",
+      },
+    ],
+    name: "disputeCost",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "bond",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "fee",
         type: "uint256",
       },
     ],
@@ -1219,7 +1319,7 @@ export const ctfPlatformAbi = [
     inputs: [
       {
         internalType: "uint256",
-        name: "",
+        name: "ctfId",
         type: "uint256",
       },
     ],
@@ -1270,18 +1370,18 @@ export const ctfPlatformAbi = [
     inputs: [
       {
         internalType: "uint256",
-        name: "",
+        name: "disputeID",
         type: "uint256",
       },
       {
         internalType: "uint256",
-        name: "",
+        name: "ruling",
         type: "uint256",
       },
     ],
     name: "rule",
     outputs: [],
-    stateMutability: "view",
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
