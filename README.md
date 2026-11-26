@@ -184,7 +184,7 @@ pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532 --netwo
 
 - La clé de déploiement est celle d'un compte **dédié au testnet**, sans fonds réels.
 - Le dossier `contracts/ignition/deployments/chain-84532/` est **committé** : c'est la trace de ce qui a été déployé, et où.
-- Avant le code freeze, lancer `pnpm --filter @pwnpot/contracts exec hardhat test --build-profile production`, pour que les tests passent sur le bytecode réellement déployé.
+- Les tests tournent aussi sur le bytecode réellement déployé (optimiseur activé) : `pnpm --filter @pwnpot/contracts exec hardhat test --build-profile production`. La CI lance cette commande sur chaque PR.
 
 ---
 
