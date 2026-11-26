@@ -76,6 +76,7 @@ import {
   type CreateCtfState,
   type FactorySlot,
 } from "@/hooks/use-create-ctf"
+import { useChainNow } from "@/hooks/use-chain-now"
 import { useDisputePeriods } from "@/hooks/use-dispute-periods"
 import {
   DURATION_PRESETS,
@@ -168,6 +169,7 @@ export function CreateCtfForm() {
   const { isConnected, chainId } = useConnection()
   const switchChain = useSwitchChain()
 
+  const chainNow = useChainNow()
   const [title, setTitle] = useState("")
   /** Coffre d'une tentative abandonnée, à récupérer avec `recover`. */
   const [orphanVault, setOrphanVault] = useState<Address>()
@@ -270,7 +272,9 @@ export function CreateCtfForm() {
     // Avec un Coffre, il faut signer trois transactions avant `createCTF` :
     // on garde 10 min de marge (2 min sinon). En reprise, le début choisi
     // doit seulement ne pas être passé.
-    const now = nowSeconds()
+    // Heure du réseau (en local, `pnpm chain:time` avance le bloc devant
+    // l'horloge) : c'est elle que le contrat compare au début.
+    const now = Math.max(nowSeconds(), chainNow)
     const lead = tx.started ? 60 : pickedVault ? 600 : 120
     // CTF déjà créé (seule la liaison du Coffre reste) : `bind` ne dépend pas
     // de l'heure de début, on ne la revérifie pas.
