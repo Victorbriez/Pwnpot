@@ -48,6 +48,21 @@ export type CtfChainInfo = {
   /** Fin de la fenêtre de contestation : `finalize` possible à partir de là. */
   contestationEnd: number
   levels: CtfLevelInfo[]
+  /** Litige ouvert sur ce CTF (version simplifiée : directement chez l'arbitre). */
+  dispute?: CtfDisputeInfo
+}
+
+export type CtfDisputeInfo = {
+  contester: Address
+  /** Caution de contestation déposée. */
+  bond: bigint
+  /** Frais d'arbitrage avancés par le contestataire. */
+  fee: bigint
+  disputeId: bigint
+  openedAt: number
+  /** À partir de là, n'importe qui peut clore le litige (`applyVoteAfterTimeout`). */
+  timeoutAt: number
+  resolved: boolean
 }
 
 export type Ctf = {

@@ -37,7 +37,7 @@ export function playerNextStep(p: MyParticipation): NextStep {
         ? { label: "Tu as voté", tone: "neutral" }
         : { label: `Vote avant ${left}`, tone: "warning" }
     case "appeal":
-      return { label: `Appel en cours · ${left}`, tone: "warning" }
+      return { label: `Litige chez l'arbitre · ${left}`, tone: "warning" }
     case "finalized":
     case "cheated":
       return p.owed > BigInt(0)

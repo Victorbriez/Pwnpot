@@ -21,16 +21,39 @@ export type ChainCtf = {
 
 export type ChainLevel = { factory: Address; codehash: Hex }
 
+/** Struct `Dispute` renvoyé par `getDispute` (litige simplifié : pas de voix). */
+export type ChainDispute = {
+  contester: Address
+  bond: bigint
+  openedAt: bigint
+  votesCheated: bigint
+  votesNotCheated: bigint
+  appellant: Address
+  appealFee: bigint
+  appealedAt: bigint
+  disputeID: bigint
+  appealed: boolean
+  resolved: boolean
+}
+
+const ZERO = "0x0000000000000000000000000000000000000000"
+
 /**
  * Phase calculée comme `_phase` du contrat : seuls `finalized` et `cheated`
- * sont stockés, le reste dépend de l'heure. Les phases de litige (vote,
- * appel) n'existent pas encore dans le contrat.
+ * sont stockés, le reste dépend de l'heure. Un litige ouvert et pas encore
+ * tranché donne `appeal` (le litige est chez l'arbitre). Pas de vote dans le
+ * contrat actuel : la phase `voting` n'existe qu'en démo.
  */
-export function phaseAt(ctf: ChainCtf, now: number): CtfStatus {
+export function phaseAt(
+  ctf: ChainCtf,
+  now: number,
+  dispute?: ChainDispute
+): CtfStatus {
   if (ctf.cheated) return "cheated"
   if (ctf.finalized) return "finalized"
   if (now < Number(ctf.startTime)) return "open"
   if (now < Number(ctf.endTime)) return "running"
+  if (dispute && dispute.contester !== ZERO) return "appeal"
   return "contestation"
 }
 
@@ -45,10 +68,14 @@ export function toCtf(
   {
     now,
     contestationPeriod,
+    arbitratorTimeout,
+    dispute,
     vaults,
   }: {
     now: number
     contestationPeriod: number
+    arbitratorTimeout: number
+    dispute?: ChainDispute
     /** Adresses (minuscules) reconnues comme VaultFactory à leur code. */
     vaults?: ReadonlySet<string>
   }
@@ -56,7 +83,11 @@ export function toCtf(
   const startTime = Number(ctf.startTime)
   const endTime = Number(ctf.endTime)
   const contestationEnd = endTime + contestationPeriod
-  const status = phaseAt(ctf, now)
+  const status = phaseAt(ctf, now, dispute)
+  const opened = !!dispute && dispute.contester !== ZERO
+  const timeoutAt = opened
+    ? Number(dispute.appealedAt) + arbitratorTimeout
+    : undefined
 
   let remaining = 0
   let elapsed = 1
@@ -69,6 +100,9 @@ export function toCtf(
   } else if (status === "contestation") {
     remaining = Math.max(0, contestationEnd - now)
     elapsed = clamp01((now - endTime) / contestationPeriod)
+  } else if (status === "appeal" && dispute && timeoutAt !== undefined) {
+    remaining = Math.max(0, timeoutAt - now)
+    elapsed = clamp01((now - Number(dispute.appealedAt)) / arbitratorTimeout)
   }
 
   const described = levels.map(({ factory, codehash }) => ({
@@ -104,6 +138,18 @@ export function toCtf(
       endTime,
       contestationEnd,
       levels: described,
+      dispute:
+        opened && timeoutAt !== undefined
+          ? {
+              contester: dispute.contester,
+              bond: dispute.bond,
+              fee: dispute.appealFee,
+              disputeId: dispute.disputeID,
+              openedAt: Number(dispute.openedAt),
+              timeoutAt,
+              resolved: dispute.resolved,
+            }
+          : undefined,
     },
   }
 }

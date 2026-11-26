@@ -9,7 +9,12 @@ import type { Ctf } from "@/lib/ctf/types"
 import { ctfs as demoCtfs } from "@/lib/mock/explore"
 import { ctfPlatformAbi, ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
 import { describeFactory } from "@/lib/onchain/factories"
-import { toCtf, type ChainCtf, type ChainLevel } from "@/lib/onchain/mappers"
+import {
+  toCtf,
+  type ChainCtf,
+  type ChainDispute,
+  type ChainLevel,
+} from "@/lib/onchain/mappers"
 
 export type CtfsState = {
   ctfs: Ctf[]
@@ -27,6 +32,9 @@ const platform = {
 
 const enabled = ctfPlatformAddress !== undefined
 
+/** Lectures par CTF : `getCTF`, `getLevels`, `getDispute`. */
+const READS = 3
+
 /** Tous les CTF : lus dans le contrat, ou les mocks en démo. */
 export function useCtfs(): CtfsState {
   const now = useChainNow()
@@ -41,6 +49,11 @@ export function useCtfs(): CtfsState {
     functionName: "contestationPeriod",
     query: { enabled },
   })
+  const timeout = useReadContract({
+    ...platform,
+    functionName: "arbitratorTimeout",
+    query: { enabled },
+  })
 
   const ids = Array.from({ length: Number(count.data ?? BigInt(0)) }, (_, i) =>
     BigInt(i)
@@ -49,6 +62,7 @@ export function useCtfs(): CtfsState {
     contracts: ids.flatMap((id) => [
       { ...platform, functionName: "getCTF", args: [id] } as const,
       { ...platform, functionName: "getLevels", args: [id] } as const,
+      { ...platform, functionName: "getDispute", args: [id] } as const,
     ]),
     allowFailure: false,
     query: { enabled: enabled && ids.length > 0, refetchInterval: REFRESH_MS },
@@ -58,7 +72,7 @@ export function useCtfs(): CtfsState {
   // déployés par chaque organisateur : on compare leur code.
   const data = ids.length > 0 ? (reads.data ?? []) : []
   const unknown = data
-    .filter((_, i) => i % 2 === 1)
+    .filter((_, i) => i % READS === 1)
     .flatMap((levels) =>
       (levels as readonly ChainLevel[]).map((l) => l.factory)
     )
@@ -67,23 +81,33 @@ export function useCtfs(): CtfsState {
 
   if (!enabled) return { ctfs: demoCtfs, isLoading: false, isDemo: true }
 
-  const error = count.error ?? period.error ?? reads.error ?? undefined
+  const error =
+    count.error ?? period.error ?? timeout.error ?? reads.error ?? undefined
   const loading =
     count.isPending ||
     period.isPending ||
+    timeout.isPending ||
     (ids.length > 0 && reads.isPending) ||
     vaults.isLoading
-  if (loading || error || period.data === undefined)
+  if (
+    loading ||
+    error ||
+    period.data === undefined ||
+    timeout.data === undefined
+  )
     return { ctfs: [], isLoading: loading, error, isDemo: false }
 
   const ctfs = ids.flatMap((id, i) => {
-    const ctf = data[i * 2] as ChainCtf | undefined
-    const levels = data[i * 2 + 1] as readonly ChainLevel[] | undefined
+    const ctf = data[i * READS] as ChainCtf | undefined
+    const levels = data[i * READS + 1] as readonly ChainLevel[] | undefined
+    const dispute = data[i * READS + 2] as ChainDispute | undefined
     if (!ctf || !levels) return []
     return [
       toCtf(Number(id), ctf, levels, {
         now,
         contestationPeriod: Number(period.data),
+        arbitratorTimeout: Number(timeout.data),
+        dispute,
         vaults: vaults.matches,
       }),
     ]

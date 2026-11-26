@@ -1,18 +1,10 @@
 "use client"
 
 import type { NavBadge } from "@/components/site/nav-links"
+import { useCtfs } from "@/hooks/use-ctfs"
 import { useMyCtfs } from "@/hooks/use-my-ctfs"
+import { inDispute } from "@/lib/ctf/types"
 import { formatEth } from "@/lib/format"
-import { disputeRows, isDisputeInProgress } from "@/lib/mock/disputes"
-import { ctfs } from "@/lib/mock/explore"
-import { ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
-
-// Mocks : calculé une fois. Le contrat ne gère pas encore les litiges (#15) ;
-// avec eux, ce nombre viendra des events DisputeOpened.
-const disputesInProgress =
-  ctfPlatformAddress === undefined
-    ? disputeRows(ctfs).filter(isDisputeInProgress).length
-    : 0
 
 export type NavBadgeInfo = {
   label: string
@@ -24,6 +16,9 @@ export type NavBadgeInfo = {
 /** Pastilles de « Mon espace » : solde à retirer et litiges en cours. */
 export function useNavBadges(): Partial<Record<NavBadge, NavBadgeInfo>> {
   const { totals } = useMyCtfs()
+  // Litiges ouverts (chez l'arbitre), lus dans le contrat ou les mocks.
+  const { ctfs } = useCtfs()
+  const disputesInProgress = ctfs.filter((ctf) => inDispute(ctf.status)).length
   const badges: Partial<Record<NavBadge, NavBadgeInfo>> = {}
 
   if (totals.owed > BigInt(0)) {

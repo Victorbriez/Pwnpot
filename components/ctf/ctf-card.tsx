@@ -19,7 +19,7 @@ const phasePrefix: Record<CtfStatus, string> = {
   running: "fin dans",
   contestation: "contestation :",
   voting: "vote :",
-  appeal: "appel :",
+  appeal: "arbitre :",
   finalized: "",
   cheated: "",
 }

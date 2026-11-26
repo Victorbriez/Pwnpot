@@ -168,40 +168,39 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-8">
         <div className="flex flex-col gap-10">
-          {dispute && role && (
+          {dispute && (
             <DisputeCard
               dispute={dispute}
-              tickets={players}
               busy={busy}
-              isDemo={tx.isDemo}
-              role={role.value}
-              onRoleChange={role.set}
+              role={role?.value}
+              onRoleChange={role?.set}
             />
           )}
-          {!tx.isDemo && ctf.status === "contestation" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Contestation</CardTitle>
-                <CardDescription>
-                  {ctf.remaining > 0
-                    ? `Fenêtre de contestation ouverte encore ${formatRemaining(ctf.remaining)}. L'ouverture d'un litige arrive avec la prochaine version du contrat.`
-                    : "La fenêtre de contestation est passée : n'importe qui peut finaliser le CTF."}
-                </CardDescription>
-              </CardHeader>
-              {canFinalize && (
-                <CardFooter>
-                  <Button disabled={busy} onClick={model.finalize}>
-                    {pendingOn("finalize") ? (
-                      <Spinner data-icon="inline-start" />
-                    ) : (
-                      <FlagIcon data-icon="inline-start" />
-                    )}
-                    Finaliser et répartir la cagnotte
-                  </Button>
-                </CardFooter>
-              )}
-            </Card>
-          )}
+          {!tx.isDemo &&
+            ctf.status === "contestation" &&
+            ctf.remaining === 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contestation</CardTitle>
+                  <CardDescription>
+                    La fenêtre de contestation est passée sans litige :
+                    n&apos;importe qui peut finaliser le CTF.
+                  </CardDescription>
+                </CardHeader>
+                {canFinalize && (
+                  <CardFooter>
+                    <Button disabled={busy} onClick={model.finalize}>
+                      {pendingOn("finalize") ? (
+                        <Spinner data-icon="inline-start" />
+                      ) : (
+                        <FlagIcon data-icon="inline-start" />
+                      )}
+                      Finaliser et répartir la cagnotte
+                    </Button>
+                  </CardFooter>
+                )}
+              </Card>
+            )}
 
           {vaults.length > 0 && (
             <section aria-labelledby="vaults" className="flex flex-col gap-4">
