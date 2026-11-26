@@ -585,13 +585,13 @@ export function CreateCtfForm() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
-                              {(
-                                Object.keys(unitLabels) as DurationUnit[]
-                              ).map((unit) => (
-                                <SelectItem key={unit} value={unit}>
-                                  {unitLabels[unit]}
-                                </SelectItem>
-                              ))}
+                              {(Object.keys(unitLabels) as DurationUnit[]).map(
+                                (unit) => (
+                                  <SelectItem key={unit} value={unit}>
+                                    {unitLabels[unit]}
+                                  </SelectItem>
+                                )
+                              )}
                             </SelectGroup>
                           </SelectContent>
                         </Select>
