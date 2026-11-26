@@ -71,8 +71,8 @@ Ce document liste ce qu'un attaquant peut tenter contre Pwnpot, ce qui l'en emp�
 | --- | --- | --- |
 | Rendre une décision injuste | Sa décision ne porte que sur les fonds du litige. Dans le design complet, il n'est saisi qu'en appel ; dans la version déployée, il tranche directement chaque litige | **Oui**, dans ce périmètre |
 | Ne jamais répondre | Timeout de 7 jours : n'importe qui appelle `applyVoteAfterTimeout`, le litige est rejeté (sans vote, c'est le résultat par défaut) | Non |
-| Trancher pendant `openDispute` (réentrance) | `rule` et `openDispute` sont `nonReentrant` ; l'arbitre est `immutable` | Non |
-| Appeler `rule` pour un autre CTF | `rule` vérifie `msg.sender == arbitrator` et la correspondance `disputeID → ctfId` | Non |
+| Trancher pendant `openDispute` (réentrance) | `rule` et `openDispute` sont `nonReentrant` ; l'arbitre est `immutable` (`test_MaliciousArbitrator_RuleDuringOpenDispute_Reverts`) | Non |
+| Appeler `rule` pour un autre CTF | `rule` vérifie `msg.sender == arbitrator` et la correspondance `disputeID → ctfId` ; un identifiant réutilisé est refusé (`test_MaliciousArbitrator_ReusedDisputeId_Rejected`) | Non |
 
 ### Séquenceur Base, RPC, frontend
 
@@ -184,8 +184,8 @@ Cohérent avec le [tableau des rôles](../README.md#rôles-et-confiance) : seule
 
 ### Tests
 
-- **Couverture** (`hardhat test --coverage`) : 99 % des lignes de `CTFPlatform`. Deux lignes défensives ne sont pas atteintes : un arbitre qui réutiliserait un `disputeID` (revert `DisputeAlreadyOpened`) et un crédit de 0 wei (ignoré).
-- **Profil production** : les 208 tests passent sur le bytecode optimisé (avec les tests d'invariants de #31).
+- **Couverture** (`hardhat test --coverage`) : 99 % des lignes de `CTFPlatform`. Une ligne défensive n'est pas atteinte : un crédit de 0 wei (ignoré). Le cas d'un arbitre qui réutilise un `disputeID` est couvert par `test_MaliciousArbitrator_ReusedDisputeId_Rejected`, et le plafond des frais rendus (caution d'organisateur plus petite que les frais) par `test_CheatingConfirmed_FeeRefundCappedByOrganizerBond`.
+- **Profil production** : les 211 tests passent sur le bytecode optimisé (avec les tests d'invariants de #31).
 - **Répétition sur un nœud local** : module Ignition `PwnpotModule` déployé tel quel (profil production, durées courtes), puis quatre parcours joués en vraies transactions avec l'ABI du frontend (triche confirmée, litige rejeté, timeout de l'arbitre, fin sans litige). Chaque refus attendu renvoie la bonne erreur. Après tous les retraits, le solde du contrat est égal au montant brûlé.
 - **Tests d'invariants** : faits depuis ([#31](https://github.com/Victorbriez/Pwnpot/issues/31)), voir [Invariants](#invariants).
 

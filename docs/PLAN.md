@@ -6,7 +6,7 @@ Ce qui reste à faire entre la soutenance intermédiaire (**samedi 7 novembre**)
 
 ## Où on en est (7 novembre)
 
-- **En place et déployé (26 nov)** : `CTFPlatform` avec les **litiges simplifiés** (contestation → arbitre ERC-792, sans vote ni appel), les 3 épreuves, les tests d'attaque et d'invariants, la passe Slither, le frontend en ligne qui lit et écrit dans le contrat. Deux déploiements vérifiés sur Basescan, Blockscout et Sourcify (réel et démo, le site utilise la démo). 208 tests passent, aussi en profil production.
+- **En place et déployé (26 nov)** : `CTFPlatform` avec les **litiges simplifiés** (contestation → arbitre ERC-792, sans vote ni appel), les 3 épreuves, les tests d'attaque et d'invariants, la passe Slither, le frontend en ligne qui lit et écrit dans le contrat. Deux déploiements vérifiés sur Basescan, Blockscout et Sourcify (réel et démo, le site utilise la démo). 211 tests passent, aussi en profil production.
 - **Reste à faire** : `DEMO.md` final et les deux répétitions sur Base Sepolia ([#30](https://github.com/Victorbriez/Pwnpot/issues/30)). Détail dans le [README § État d'avancement](../README.md#état-davancement).
 
 ## Répartition : une tranche verticale par membre
