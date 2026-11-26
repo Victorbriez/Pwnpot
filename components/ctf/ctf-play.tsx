@@ -304,8 +304,9 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                 ) : undefined
               }
               description={
-                lockedReason ??
-                `Crée ton instance, exploite-la, puis demande la vérification : le contrat appelle validateInstance, pas de flag à recopier.${tx.isDemo ? " En démo, la vérification réussit toujours." : ""}`
+                lockedReason
+                  ? `${lockedReason} Pas de flag à trouver : c'est le contrat qui vérifie que ton instance a été exploitée.`
+                  : `Crée ton instance, exploite-la, puis demande la vérification : le contrat appelle validateInstance, pas de flag à recopier.${tx.isDemo ? " En démo, la vérification réussit toujours." : ""}`
               }
             >
               Épreuves

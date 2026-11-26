@@ -76,9 +76,10 @@ export default function HomePage() {
             Garde la cagnotte.
           </h1>
           <p className="max-w-lg text-lg text-pretty text-muted-foreground">
-            Des CTF smart contracts avec de l&apos;ETH à la clé. Tu exploites ta
-            propre instance, la réussite est vérifiée on-chain, et seul le
-            contrat tient la cagnotte.
+            Des CTF smart contracts avec de l&apos;ETH à la clé. Pas de flag à
+            trouver : tu exploites ta propre instance, et c&apos;est le contrat
+            qui vérifie qu&apos;elle a été exploitée. Seul le contrat tient la
+            cagnotte.
           </p>
           <HeroActions />
           <LiveCtfLink />
