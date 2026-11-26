@@ -49,10 +49,10 @@ export default async function VaultCodePage() {
         description={
           <>
             Chaque organisateur déploie son propre Coffre : il n&apos;est donc
-            pas vérifié sur Basescan. Le site compare le code déployé, octet
-            par octet, à celui de ce fichier (hors adresses fixées au
-            déploiement). Le badge « Code Pwnpot » garantit que tu joues
-            exactement ce code. Lis les{" "}
+            pas vérifié sur Basescan. Le site compare le code déployé, octet par
+            octet, à celui de ce fichier (hors adresses fixées au déploiement).
+            Le badge « Code Pwnpot » garantit que tu joues exactement ce code.
+            Lis les{" "}
             <TextLink href="/docs#epreuves">règles des épreuves</TextLink>.
           </>
         }

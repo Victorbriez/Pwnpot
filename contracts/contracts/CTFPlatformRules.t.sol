@@ -572,7 +572,7 @@ contract CTFPlatformRulesTest is CTFPlatformBase {
     }
 
     // ------------------------------------------------------------------
-    // Litiges : pas encore implémentés
+    // Litiges : arbitre et version simplifiée (le reste dans CTFPlatformDisputes.t.sol)
     // ------------------------------------------------------------------
 
     function test_Rule_RevertsWhenNotArbitrator() public {
@@ -581,17 +581,17 @@ contract CTFPlatformRulesTest is CTFPlatformBase {
         platform.rule(0, 1);
     }
 
-    function test_DisputeFunctions_RevertNotImplemented() public {
+    function test_Rule_RevertsOnUnknownDispute() public {
         vm.prank(arbitrator);
-        vm.expectRevert(ICTFPlatform.NotImplemented.selector);
+        vm.expectRevert(abi.encodeWithSelector(ICTFPlatform.UnknownDispute.selector, 0));
         platform.rule(0, 1);
-        vm.expectRevert(ICTFPlatform.NotImplemented.selector);
-        platform.openDispute(0);
+    }
+
+    /// Vote et appel : prévus par le design, hors de la version simplifiée.
+    function test_VoteAndAppeal_RevertNotImplemented() public {
         vm.expectRevert(ICTFPlatform.NotImplemented.selector);
         platform.vote(0, true);
         vm.expectRevert(ICTFPlatform.NotImplemented.selector);
         platform.appeal(0);
-        vm.expectRevert(ICTFPlatform.NotImplemented.selector);
-        platform.applyVoteAfterTimeout(0);
     }
 }

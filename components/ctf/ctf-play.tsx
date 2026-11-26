@@ -377,7 +377,9 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                     <TableRow>
                       <TableHead className="w-16 pl-4">Rang</TableHead>
                       <TableHead>Joueur</TableHead>
-                      <TableHead className="pr-4 text-right">Épreuves</TableHead>
+                      <TableHead className="pr-4 text-right">
+                        Épreuves
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -438,8 +440,7 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                 {formatInt(players)} / {formatInt(ctf.maxPlayers)} joueurs
               </span>
               <span>
-                {formatInt(Math.max(ctf.maxPlayers - players, 0))} places
-                libres
+                {formatInt(Math.max(ctf.maxPlayers - players, 0))} places libres
               </span>
             </div>
           </div>
@@ -460,9 +461,8 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
               </div>
               {isOrganizer ? (
                 <p className="text-sm text-muted-foreground">
-                  Ta caution reste bloquée jusqu&apos;à la fin ; tu la
-                  récupères dans « Mes gains » si aucune triche n&apos;est
-                  confirmée.
+                  Ta caution reste bloquée jusqu&apos;à la fin ; tu la récupères
+                  dans « Mes gains » si aucune triche n&apos;est confirmée.
                 </p>
               ) : (
                 <DataList>
