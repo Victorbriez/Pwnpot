@@ -1,24 +1,18 @@
 import { formatEther } from "viem"
 
+// Jusqu'à quatre décimales : sur testnet les montants sont petits, et deux
+// décimales afficheraient « 0,01 ETH » pour une cagnotte de 0,013 ETH.
+// Les zéros en trop sont retirés au-delà de deux (« 0,50 », « 0,013 »).
 const ethFormatter = new Intl.NumberFormat("fr-FR", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
-
-// Sous 0,01 ETH, deux décimales afficheraient « 0,00 » : on en garde jusqu'à quatre.
-const smallEthFormatter = new Intl.NumberFormat("fr-FR", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 4,
 })
 
 const intFormatter = new Intl.NumberFormat("fr-FR")
 
-/** Montant en wei vers « 6,84 ETH ». Le bigint reste intact jusqu'ici. */
+/** Montant en wei vers « 6,84 ETH » ou « 0,013 ETH ». Le bigint reste intact jusqu'ici. */
 export function formatEth(wei: bigint, { unit = true } = {}): string {
-  const amount = Number(formatEther(wei))
-  const formatter =
-    amount !== 0 && Math.abs(amount) < 0.01 ? smallEthFormatter : ethFormatter
-  const value = formatter.format(amount)
+  const value = ethFormatter.format(Number(formatEther(wei)))
   return unit ? `${value} ETH` : value
 }
 
@@ -49,4 +43,9 @@ export function formatRemaining(seconds: number): string {
       ? `${hours} h ${String(minutes).padStart(2, "0")} min`
       : `${hours} h`
   return `${minutes} min`
+}
+
+/** Compte à rebours d'un badge : « reste 2 j 14 h », puis « terminé » à zéro. */
+export function formatTimeLeft(seconds: number): string {
+  return seconds > 0 ? `reste ${formatRemaining(seconds)}` : "terminé"
 }
