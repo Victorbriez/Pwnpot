@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.34;
 
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 import {CTFPlatform} from "./CTFPlatform.sol";
 import {CTFPlatformBase} from "./CTFPlatformBase.t.sol";
 import {IArbitrable} from "./interfaces/IArbitrable.sol";
 import {IArbitrator} from "./interfaces/IArbitrator.sol";
 import {ICTFPlatform} from "./interfaces/ICTFPlatform.sol";
+import {MaliciousArbitrator} from "./attacks/MaliciousArbitrator.sol";
 import {MockArbitrator} from "./mocks/MockArbitrator.sol";
 
 /// Litiges, version simplifiée (issues #15, #17, #18, #19) : contestation → arbitre
@@ -428,5 +431,88 @@ contract CTFPlatformDisputesTest is CTFPlatformBase {
         assertEq(address(platform).balance, platform.burned());
         assertEq(platform.burned(), outcome == 1 ? BOND - FEE : 0);
         assertEq(address(mock).balance, FEE);
+    }
+
+    // ------------------------------------------------------------------
+    // Cas limites relevés par la vérification complète
+    // ------------------------------------------------------------------
+
+    /// Caution d'organisateur plus petite que les frais d'arbitrage : le
+    /// contestataire ne récupère des frais que ce que la caution contient
+    /// (plafond de CTFPlatform._resolve), rien n'est brûlé, rien ne reste bloqué.
+    function test_CheatingConfirmed_FeeRefundCappedByOrganizerBond() public {
+        ICTFPlatform.CTFParams memory p = _params();
+        p.cashPrize = 1;
+        p.ticketPrice = platform.MIN_TICKET_PRICE();
+        p.maxPlayers = 1;
+        p.organizerBond = p.cashPrize + p.ticketPrice;
+        vm.prank(organizer);
+        uint256 id = platform.createCTF{value: p.cashPrize + p.organizerBond}(p, _factories(1));
+        _buy(id, alice);
+        _toContestation(id);
+
+        (uint256 bond, uint256 fee) = platform.disputeCost(id);
+        assertLt(p.organizerBond, fee, "setup: caution < frais");
+        vm.prank(alice);
+        platform.openDispute{value: bond + fee}(id);
+        _ruling(id, CHEATED);
+
+        assertEq(platform.burned(), 0, "rien a bruler");
+        assertEq(platform.owed(alice), bond + p.organizerBond, "frais rendus, plafonnes a la caution");
+        assertEq(platform.owed(organizer), p.cashPrize, "cash prize rendu");
+
+        vm.prank(alice);
+        platform.claimRefund(id);
+        assertEq(_withdraw(alice), bond + p.organizerBond + p.ticketPrice);
+        assertEq(_withdraw(organizer), p.cashPrize);
+        assertEq(address(platform).balance, 0, "contrat vide");
+    }
+
+    function _withArbitrator(MaliciousArbitrator arbitrator_) internal {
+        platform = new CTFPlatform(address(arbitrator_), CONTESTATION, VOTING, APPEAL, ARBITRATOR_TIMEOUT);
+    }
+
+    /// Un arbitre qui tranche pendant `openDispute` (avant que la plateforme ait
+    /// enregistré le litige) est refusé par `nonReentrant` : tout l'appel revert,
+    /// rien ne bouge, et le CTF se finalise normalement ensuite.
+    function test_MaliciousArbitrator_RuleDuringOpenDispute_Reverts() public {
+        _withArbitrator(new MaliciousArbitrator(MaliciousArbitrator.Mode.RuleDuringCreate));
+        uint256 id = _contestableCTF();
+        uint256 before = address(platform).balance;
+
+        vm.prank(bob);
+        vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
+        platform.openDispute{value: DISPUTE_BOND + FEE}(id);
+
+        assertEq(platform.getDispute(id).contester, address(0), "pas de litige");
+        assertEq(uint256(_phase(id)), uint256(ICTFPlatform.Phase.Contestation));
+        assertFalse(platform.getCTF(id).cheated, "aucune decision");
+        assertEq(address(platform).balance, before, "aucun wei n'a bouge");
+
+        _toFinalizable(id);
+        platform.finalize(id);
+        assertEq(_withdraw(alice), _pot(), "alice gagne normalement");
+    }
+
+    /// Un arbitre qui réutilise un identifiant de litige ne peut pas mélanger
+    /// deux CTF : le second litige est refusé, et la décision ne touche que le
+    /// premier.
+    function test_MaliciousArbitrator_ReusedDisputeId_Rejected() public {
+        MaliciousArbitrator arbitrator_ = new MaliciousArbitrator(MaliciousArbitrator.Mode.ReuseId);
+        _withArbitrator(arbitrator_);
+        uint256 first = _contestableCTF();
+        _open(first, bob);
+        assertEq(platform.getDispute(first).disputeID, 0);
+
+        uint256 second = _contestableCTF();
+        vm.prank(carol);
+        vm.expectRevert(ICTFPlatform.DisputeAlreadyOpened.selector);
+        platform.openDispute{value: DISPUTE_BOND + FEE}(second);
+        assertEq(platform.getDispute(second).contester, address(0), "second litige refuse");
+
+        arbitrator_.ruleOn(IArbitrable(address(platform)), 0, CHEATED);
+        assertTrue(platform.getCTF(first).cheated, "decision sur le premier CTF");
+        assertFalse(platform.getCTF(second).cheated, "le second n'est pas touche");
+        assertEq(uint256(_phase(second)), uint256(ICTFPlatform.Phase.Contestation));
     }
 }

@@ -63,7 +63,7 @@ export function ContractListing() {
           >
             <span
               aria-hidden
-              className="pr-3 text-right text-muted-foreground/50 tabular-nums select-none"
+              className="pr-3 text-right text-muted-foreground tabular-nums select-none"
             >
               {index + 1}
             </span>

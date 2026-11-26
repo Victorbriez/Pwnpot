@@ -5,7 +5,7 @@
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.18"
   },
   "scripts": {
     "dev": "next dev",
@@ -16,12 +16,13 @@
     "typecheck": "next typegen && tsc --noEmit",
     "contracts:build": "pnpm --filter @pwnpot/contracts build",
     "contracts:test": "pnpm --filter @pwnpot/contracts test",
+    "contracts:invariants": "pnpm --filter @pwnpot/contracts exec hardhat test solidity contracts/CTFPlatformInvariants.t.sol --test-profile invariants",
     "contracts:typecheck": "pnpm --filter @pwnpot/contracts typecheck",
     "contracts:test:production": "pnpm --filter @pwnpot/contracts exec hardhat test --build-profile production",
     "contracts:deploy": "pnpm --filter @pwnpot/contracts exec hardhat ignition deploy ignition/modules/Pwnpot.ts --network baseSepolia --deployment-id pwnpot-disputes-demo --parameters ignition/parameters/demo.json --build-profile production --verify",
-    "contracts:verify": "pnpm --filter @pwnpot/contracts exec hardhat ignition verify chain-84532",
+    "contracts:verify": "pnpm --filter @pwnpot/contracts exec hardhat ignition verify pwnpot-disputes-demo --network baseSepolia --build-profile production",
     "contracts:env": "node contracts/scripts/deployment-env.ts",
-    "abi": "pnpm contracts:build && node contracts/scripts/export-abi.ts && prettier --write lib/onchain/ctf-platform-abi.ts lib/onchain/level-artifacts.ts",
+    "abi": "pnpm contracts:build && node contracts/scripts/export-abi.ts && prettier --write lib/onchain/ctf-platform-abi.ts lib/onchain/level-artifacts.ts lib/onchain/vault-source.ts",
     "chain": "pnpm --filter @pwnpot/contracts exec hardhat node --network chain",
     "chain:deploy": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-deploy.ts --network localhost",
     "chain:time": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-time.ts --network localhost",
@@ -36,7 +37,7 @@
     "cn": "^0.5.1",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.65.0",
-    "next": "16.4.3",
+    "next": "16.4.6",
     "next-themes": "^0.4.6",
     "react": "19.3.1",
     "react-day-picker": "^10.0.2",
@@ -53,7 +54,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.4.3",
+    "eslint-config-next": "16.4.6",
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "shadcn": "^4.23.0",

@@ -96,11 +96,14 @@ const stepIcon = {
 export function DisputeCard({
   dispute,
   busy,
+  winners,
   role,
   onRoleChange,
 }: {
   dispute: DisputeModel
   busy: boolean
+  /** Gagnants au podium (0 à 3), pour le tableau du résultat. */
+  winners?: number
   /** Sélecteur joueur / organisateur : démo seulement. */
   role?: Role
   onRoleChange?: (role: Role) => void
@@ -142,7 +145,7 @@ export function DisputeCard({
                 size="xs"
                 variant={s === "current" ? "muted" : "default"}
                 data-state={s}
-                className="data-[state=skipped]:opacity-50 data-[state=upcoming]:opacity-60"
+                className="data-[state=skipped]:text-muted-foreground data-[state=upcoming]:text-muted-foreground"
               >
                 <ItemMedia>
                   <Icon
@@ -216,7 +219,7 @@ export function DisputeCard({
           </PhaseAction>
         )}
 
-        {final && <Result state={state} />}
+        {final && <Result state={state} winners={winners} />}
 
         {dispute.demo && !final && (
           <Alert>
@@ -310,14 +313,16 @@ function PhaseAction({
   )
 }
 
-function Result({ state }: { state: DisputeState }) {
+function Result({ state, winners }: { state: DisputeState; winners?: number }) {
   const periods = useDisputePeriods()
   const cheated = state.phase === "cheated"
   const decidedBy = !state.opened
     ? "Aucun litige pendant la contestation."
     : state.decision === "timeout"
       ? `L'arbitre n'a pas répondu dans les ${formatPeriod(periods.arbitrator)} : le litige est rejeté.`
-      : "Décision de l'arbitre, définitive."
+      : state.decision === "ruling" || cheated
+        ? "Décision de l'arbitre, définitive."
+        : "Litige clos."
   return (
     <div className="flex flex-col gap-4">
       <Alert variant={cheated ? "destructive" : "default"}>
@@ -336,7 +341,7 @@ function Result({ state }: { state: DisputeState }) {
         <AlertDescription>{decidedBy}</AlertDescription>
       </Alert>
       <DataList>
-        {settlement(state).map((line) => (
+        {settlement(state, winners).map((line) => (
           <DataRow key={line.who} label={line.who}>
             {line.what}
           </DataRow>

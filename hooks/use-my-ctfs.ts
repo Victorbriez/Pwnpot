@@ -147,6 +147,11 @@ export function useMyCtfs(): MyCtfs {
         voted: false,
         owed: owedOf(ctf.id),
         refunded: refunded.has(ctf.id),
+        // Aucune réussite dans ce CTF = aucun gagnant : chaque ticket est remboursé.
+        refundable:
+          !refunded.has(ctf.id) &&
+          (ctf.status === "cheated" ||
+            (ctf.status === "finalized" && ranking.length === 0)),
       },
     ]
   })

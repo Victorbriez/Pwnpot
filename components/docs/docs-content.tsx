@@ -12,6 +12,7 @@ import {
   DocText,
   Num,
 } from "@/components/docs/doc-section"
+import { DisputePeriod } from "@/components/dispute/dispute-period"
 import { DisputeFlow } from "@/components/landing/dispute-flow"
 import { Settlement } from "@/components/landing/settlement"
 import { VulnTag } from "@/components/ctf/vuln-tag"
@@ -54,8 +55,8 @@ import { TextLink } from "@/components/site/text-link"
 const hours = (seconds: number) => `${seconds / 3_600} h`
 const days = (seconds: number) => `${seconds / 86_400} jours`
 
-const worstCaseDays =
-  (CONTESTATION_WINDOW + VOTE_WINDOW + APPEAL_WINDOW + ARBITER_TIMEOUT) / 86_400
+// Litiges simplifiés (contrat déployé) : contestation, puis délai de l'arbitre.
+const worstCaseDays = (CONTESTATION_WINDOW + ARBITER_TIMEOUT) / 86_400
 
 // Exemple « Organiser » : celui de docs/DESIGN.md.
 const orgExample = {
@@ -132,22 +133,12 @@ const lifecycle = [
   {
     phase: "Contestation",
     can: `Ouvrir un litige, pendant ${hours(CONTESTATION_WINDOW)}.`,
-    exit: "Le temps. Sans litige, les gains sont retirables à la fin de la fenêtre.",
+    exit: "Le temps. Sans litige, n'importe qui finalise et les gains sont retirables.",
   },
   {
-    phase: "Vote",
-    can: `Voter, pendant ${hours(VOTE_WINDOW)} (détenteurs de ticket, 1 adresse = 1 voix).`,
-    exit: "Le temps.",
-  },
-  {
-    phase: "Fenêtre d'appel",
-    can: `Faire appel à l'arbitre, pendant ${hours(APPEAL_WINDOW)}.`,
-    exit: "Le temps.",
-  },
-  {
-    phase: "En appel",
-    can: "L'arbitre rend sa décision.",
-    exit: `L'arbitre, ou le délai de ${days(ARBITER_TIMEOUT)} : sans réponse, le vote s'applique.`,
+    phase: "Litige chez l'arbitre",
+    can: "L'arbitre rend sa décision : triche ou pas de triche.",
+    exit: `L'arbitre, ou le délai de ${days(ARBITER_TIMEOUT)} : sans réponse, n'importe qui clôt le litige, qui est rejeté.`,
   },
   {
     phase: "Finalisé / Triche confirmée",
@@ -176,14 +167,15 @@ const outcomes = [
     winners: "Comme une fin normale",
     players: "—",
     organizer: "Sa caution + la caution du contestataire",
-    contester: "Perd sa caution",
+    contester: "Perd sa caution et les frais d'arbitrage",
   },
   {
     outcome: "Triche confirmée",
     winners: "—",
     players: "Ticket remboursé",
-    organizer: "Perd sa caution (brûlée), récupère son cash prize",
-    contester: "Caution rendue",
+    organizer:
+      "Perd sa caution (brûlée, moins les frais d'arbitrage rendus au contestataire), récupère son cash prize",
+    contester: "Caution et frais d'arbitrage rendus",
   },
 ]
 
@@ -241,14 +233,11 @@ const parameters = [
     by: "Déploiement",
     value: hours(CONTESTATION_WINDOW),
   },
-  { name: "Durée du vote", by: "Déploiement", value: hours(VOTE_WINDOW) },
-  { name: "Fenêtre d'appel", by: "Déploiement", value: hours(APPEAL_WINDOW) },
   {
     name: "Délai de l'arbitre",
     by: "Déploiement",
     value: days(ARBITER_TIMEOUT),
   },
-  { name: "Quorum", by: "Contrat", value: "max(3 votants, 20 % des tickets)" },
   {
     name: "Caution de contestation",
     by: "Par CTF",
@@ -281,7 +270,7 @@ const faq = [
   },
   {
     q: "Pourquoi un seul ticket par adresse ?",
-    a: "Parce que le vote d'un litige compte une voix par adresse. Avec plusieurs tickets ou des tickets gratuits, un organisateur pourrait acheter le vote.",
+    a: "Pour qu'une adresse corresponde à un joueur : un ticket, une instance par épreuve, une place au classement, un remboursement. Dans le design complet, où les joueurs votent sur les litiges, ça donne aussi une voix par adresse.",
   },
   {
     q: "Le gas est-il remboursé ?",
@@ -438,8 +427,8 @@ export function DocsContent() {
           </li>
           <li>
             <strong>Ticket</strong> : au moins{" "}
-            <Num>{formatEth(MIN_TICKET_PRICE)}</Num>, pour que chaque voix
-            d&apos;un litige ait un coût.
+            <Num>{formatEth(MIN_TICKET_PRICE)}</Num>, pour que multiplier les
+            comptes, ou contester, ait un coût.
           </li>
           <li>
             <strong>Places</strong> : de {MIN_PLAYERS} à {MAX_PLAYERS} joueurs.
@@ -485,7 +474,7 @@ export function DocsContent() {
           si elle a été exploitée (<Code>validateInstance</Code>, en lecture
           seule). Les factories sont libres : c&apos;est la seule option
           compatible avec une plateforme sans owner. Le site affiche si leur
-          code est vérifié sur Basescan.
+          code est vérifié (Sourcify, lisible sur Blockscout).
         </DocText>
         <DocText>
           Pour le Coffre, c&apos;est ta factory qui alimente les instances (
@@ -500,7 +489,7 @@ export function DocsContent() {
       <DocSection
         id="cycle-de-vie"
         title="Cycle de vie d'un CTF"
-        lead={`Sans litige, tout est réglé ${hours(CONTESTATION_WINDOW)} après la fin. Dans le pire cas (contestation, vote, appel, délai de l'arbitre), ${worstCaseDays} jours.`}
+        lead={`Sans litige, tout est réglé ${hours(CONTESTATION_WINDOW)} après la fin. Dans le pire cas (contestation, puis délai de l'arbitre), ${worstCaseDays} jours.`}
       >
         <DataTable
           head={["Phase", "Ce qui est possible", "Ce qui la termine"]}
@@ -545,11 +534,11 @@ export function DocsContent() {
         </DocText>
         <DocSubheading>Pourquoi la caution est brûlée</DocSubheading>
         <DocText>
-          Si elle était partagée entre les votants, voter « triche » deviendrait
-          rentable pour tous les perdants. Brûlée, elle punit
-          l&apos;organisateur sans pousser à mal voter. Son cash prize lui est
-          rendu : la caution suffit comme punition, et la perte reste limitée si
-          l&apos;arbitre se trompe.
+          Si elle était donnée à quelqu&apos;un, cette personne aurait intérêt à
+          crier à la triche (dans le design complet, tous les perdants d&apos;un
+          vote). Brûlée, elle punit l&apos;organisateur sans pousser personne à
+          mal juger. Son cash prize lui est rendu : la caution suffit comme
+          punition, et la perte reste limitée si l&apos;arbitre se trompe.
         </DocText>
         <DocText>Le gas n&apos;est jamais remboursé.</DocText>
       </DocSection>
@@ -565,9 +554,10 @@ export function DocsContent() {
           simplifiée : le contestataire paie la caution et les frais de
           l&apos;arbitre, et le litige part directement chez lui. Triche
           confirmée : caution et frais lui sont rendus. Litige rejeté (ou
-          arbitre muet pendant {days(ARBITER_TIMEOUT)}) : sa caution va à
-          l&apos;organisateur. Le vote et l&apos;appel ci-dessous sont le design
-          complet, prévu par l&apos;interface du contrat.
+          arbitre muet pendant <DisputePeriod of="arbitrator" />) : sa caution
+          va à l&apos;organisateur. Le vote et l&apos;appel ci-dessous sont le
+          design complet, prévu par l&apos;interface du contrat, mais pas
+          déployé.
         </DocText>
         <DocSubheading>Design complet</DocSubheading>
         <DocList>
@@ -658,7 +648,10 @@ export function DocsContent() {
           fiables par défaut. Vérifie que :
         </DocText>
         <DocList>
-          <li>le code de chaque factory est vérifié sur Basescan ;</li>
+          <li>
+            le code de chaque factory est vérifié (Sourcify, Blockscout ou
+            Basescan) ;
+          </li>
           <li>
             <Code>validateInstance</Code> lit seulement l&apos;état de
             l&apos;instance, sans exception pour une adresse ni porte dérobée ;
@@ -672,6 +665,13 @@ export function DocsContent() {
             au code lu.
           </li>
         </DocList>
+        <DocText>
+          La page de chaque CTF t&apos;aide : un badge par épreuve (code vérifié
+          sur Sourcify, non vérifié, proxy), l&apos;empreinte du code comparée
+          au code actuel, et un avertissement à cocher avant d&apos;acheter ton
+          ticket si une épreuve n&apos;est pas vérifiée. Lire{" "}
+          <Code>validateInstance</Code> reste à ta charge.
+        </DocText>
       </DocSection>
 
       <DocSection
@@ -729,6 +729,13 @@ export function DocsContent() {
           head={["Paramètre", "Fixé par", "Valeur"]}
           rows={parameters.map((p) => [p.name, p.by, p.value])}
         />
+        <DocText>
+          Ces durées sont celles de référence. Le site tourne sur le déploiement
+          de démo, où elles sont raccourcies pour la soutenance : contestation{" "}
+          <DisputePeriod of="contestation" />, délai de l&apos;arbitre{" "}
+          <DisputePeriod of="arbitrator" />. Le vote, l&apos;appel et le quorum
+          du design complet ne sont pas déployés.
+        </DocText>
       </DocSection>
 
       <DocSection id="faq" title="Questions fréquentes">

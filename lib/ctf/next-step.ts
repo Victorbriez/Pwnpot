@@ -45,6 +45,7 @@ export function playerNextStep(p: MyParticipation): NextStep {
           }
     case "finalized":
     case "cheated":
+      if (p.refundable) return { label: "Ticket à récupérer", tone: "money" }
       return p.owed > BigInt(0)
         ? { label: `${formatEth(p.owed)} à retirer`, tone: "money" }
         : { label: "Rien à retirer", tone: "neutral" }
@@ -74,6 +75,11 @@ export function organizerNextStep(o: MyOrganized): NextStep {
         ? { label: `${formatEth(o.owed)} à retirer`, tone: "money" }
         : { label: "Clôturé", tone: "neutral" }
     case "cheated":
-      return { label: "Caution brûlée, cash prize rendu", tone: "warning" }
+      return o.owed > BigInt(0)
+        ? {
+            label: `Caution brûlée · ${formatEth(o.owed)} à retirer (cash prize rendu)`,
+            tone: "money",
+          }
+        : { label: "Caution brûlée, cash prize rendu", tone: "warning" }
   }
 }

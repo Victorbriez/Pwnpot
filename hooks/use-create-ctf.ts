@@ -15,6 +15,7 @@ import {
   writeContract,
 } from "wagmi/actions"
 
+import { markVaultRequested } from "@/hooks/use-factory-verification"
 import { totalValue, type CtfParams } from "@/lib/ctf/params"
 import { ctfPlatformAbi, ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
 import { VAULT_SEED } from "@/lib/onchain/factories"
@@ -23,6 +24,10 @@ import {
   vaultFactoryAbi,
   vaultFactoryBytecode,
 } from "@/lib/onchain/level-artifacts"
+import {
+  canCheckVerification,
+  verifyVaultOnSourcify,
+} from "@/lib/onchain/sourcify"
 import { describeTxError, type TxStatus } from "@/lib/onchain/tx-error"
 import { wagmiConfig } from "@/lib/onchain/wagmi"
 
@@ -178,12 +183,29 @@ export function useCreateCtf(): CreateCtfState {
             ? (receipt.contractAddress ?? undefined)
             : "0x00000000000000000000000000000000000000aa"
           if (!vault) throw new Error("Adresse du Coffre introuvable.")
+          // Vérification du code sur Sourcify, sans attendre ni bloquer la
+          // création : si elle échoue, la page du CTF la relance.
+          if (receipt && canCheckVerification) {
+            markVaultRequested(vault)
+            void verifyVaultOnSourcify(vault, receipt.transactionHash).catch(
+              () => undefined
+            )
+          }
           progress.current.vault = vault
           update({ vault })
           markDone("deploy")
         }
 
         if (!created) {
+          // Le début a pu passer pendant le déploiement du Coffre : le contrat
+          // refuserait (`StartInPast`) à chaque reprise. On le dit clairement.
+          if (
+            !isDemo &&
+            params.startTime <= BigInt(Math.floor(Date.now() / 1000) + 30)
+          )
+            throw new Error(
+              "L'heure de début est passée (ou presque) : le contrat refusera ce CTF. Recommence à zéro avec un début plus tard."
+            )
           const addresses = factories.map((f) => (f === "vault" ? vault! : f))
           const receipt = await confirm("create", () =>
             writeContract(wagmiConfig, {

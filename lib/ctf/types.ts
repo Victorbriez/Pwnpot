@@ -117,6 +117,11 @@ export type MyParticipation = {
   owed: bigint
   /** Ticket remboursé avec `claimRefund` (CTF sans gagnant). */
   refunded?: boolean
+  /**
+   * Ticket à réclamer avec `claimRefund` : CTF fini sans gagnant ou triché, pas
+   * encore réclamé. Tant qu'il ne l'est pas, `owed` vaut 0 pour ce CTF.
+   */
+  refundable?: boolean
 }
 
 export type MyOrganized = {

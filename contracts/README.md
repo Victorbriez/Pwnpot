@@ -13,7 +13,7 @@ contracts/
   *.t.sol                  tests unitaires Solidity (forge-std)
 test/                      tests d'intégration TypeScript (node:test + viem)
 ignition/modules/          modules de déploiement
-ignition/deployments/      trace des déploiements, committée (pwnpot-disputes, pwnpot-disputes-demo)
+ignition/deployments/      trace des déploiements, committée (pwnpot-disputes, pwnpot-disputes-demo ; chain-84532 = celui d'octobre)
 ```
 
 ## Commandes
@@ -56,7 +56,7 @@ pnpm exec hardhat ignition verify <id> --network baseSepolia --build-profile pro
 ```
 
 - Le keystore est chiffré et propre à chaque utilisateur de la machine. Son mot de passe ne se récupère pas.
-- Pour que `ignition verify` fonctionne, ajouter le bloc `verify: { etherscan: { apiKey: configVariable("ETHERSCAN_API_KEY") } }` dans `hardhat.config.ts`.
+- `ignition verify` lit la clé Basescan dans le keystore (`ETHERSCAN_API_KEY`), via le bloc `verify` de `hardhat.config.ts`.
 - Un nouveau `--deployment-id` à chaque nouveau code : Ignition refuse de redéployer un module modifié sous le même identifiant.
 - Committer `ignition/deployments/<id>/` après chaque déploiement, reporter les adresses dans le [README racine](../README.md#adresses-déployées), puis `DEPLOYMENT=<id> pnpm contracts:env` donne les variables à mettre sur Vercel.
 - Si Blockscout répond 429 (trop de requêtes) pendant `--verify`, relancer `ignition verify <id>` un peu plus tard : ce qui est déjà vérifié est ignoré.

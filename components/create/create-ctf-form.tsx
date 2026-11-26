@@ -260,7 +260,12 @@ export function CreateCtfForm() {
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
-    const checked = validateCtfDraft(draft, { now: nowSeconds() })
+    // Avec un Coffre, il faut signer trois transactions avant `createCTF` :
+    // on garde 10 min de marge (2 min sinon). En reprise, le début choisi
+    // doit seulement ne pas être passé.
+    const now = nowSeconds()
+    const lead = tx.started ? 60 : slots.includes("vault") ? 600 : 120
+    const checked = validateCtfDraft(draft, { now, minStart: now + lead })
     setStartError(checked.errors.start)
     if (!checked.params || needsWallet || wrongChain) return
     tx.submit(checked.params, slots)
@@ -462,8 +467,9 @@ export function CreateCtfForm() {
             <FieldSet disabled={locked}>
               <FieldLegend>3. Cagnotte</FieldLegend>
               <FieldDescription>
-                Le podium se partage le cash prize et les tickets vendus (60 /
-                30 / 10 %).
+                Le podium se partage le cash prize et les tickets vendus : 60 /
+                30 / 10 %, ou 67 / 33 % à deux gagnants, et tout au 1er
+                s&apos;il est seul.
               </FieldDescription>
               <FieldGroup className="grid sm:grid-cols-3">
                 <AmountField
@@ -662,12 +668,22 @@ export function CreateCtfForm() {
           {tx.vault && tx.status === "error" && (
             <p className="text-sm text-muted-foreground">
               Ton Coffre est déployé ({truncateAddress(tx.vault)}). Relance pour
-              reprendre à l&apos;étape qui a échoué ; ses fonds restent
-              récupérables tant qu&apos;il n&apos;est pas lié.
+              reprendre à l&apos;étape qui a échoué. Si tu recommences à zéro,
+              ce Coffre n&apos;est lié à aucun CTF : récupère son ETH avec{" "}
+              <code className="font-mono">recover()</code> depuis ce wallet, sur{" "}
+              <a
+                href={`${baseSepolia.blockExplorers.default.url}/address/${tx.vault}#writeContract`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-foreground underline underline-offset-4"
+              >
+                Basescan
+              </a>
+              .
             </p>
           )}
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex-col items-stretch gap-2">
           {tx.status === "success" ? (
             <div className="flex w-full flex-col gap-2">
               <Link
@@ -720,6 +736,17 @@ export function CreateCtfForm() {
                 <RocketIcon data-icon="inline-start" />
               )}
               {tx.started ? "Reprendre la création" : "Publier le CTF"}
+            </Button>
+          )}
+          {tx.status === "error" && tx.started && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="lg"
+              className="w-full"
+              onClick={handleReset}
+            >
+              Recommencer à zéro
             </Button>
           )}
         </CardFooter>

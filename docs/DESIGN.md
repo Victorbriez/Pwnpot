@@ -21,13 +21,40 @@ Ce document décrit le fonctionnement complet de la plateforme : le cycle de vie
 | Acteur | Description |
 | --- | --- |
 | **Organisateur** | Publie un CTF, fournit les factories des épreuves, dépose le cash prize et une caution |
-| **Joueur** | Paie un ticket (un seul par adresse), exploite ses instances, soumet ses réussites, peut contester et voter |
+| **Joueur** | Paie un ticket (un seul par adresse), exploite ses instances, soumet ses réussites, peut contester (et voter, dans le design complet) |
 | **Arbitre** | Contrat ERC-792 fixé au déploiement de `CTFPlatform` (`immutable`). `MockArbitrator` pour les tests et la démo, Kleros en extension |
 | **N'importe qui** | Peut déclencher les transitions liées au temps (clôture, finalisation, application d'un timeout) : aucune étape ne dépend d'un acteur précis |
 
 ---
 
 ## Cycle de vie d'un CTF
+
+**Version déployée** (litiges simplifiés, voir [Litiges et appel](#litiges-et-appel)) : la contestation part directement à l'arbitre.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Open : createCTF (cash prize + caution)
+    Open --> Running : startTime atteint
+    Running --> Contestation : endTime atteint
+    Contestation --> Finalized : fenêtre écoulée sans litige (finalize)
+    Contestation --> Appealed : openDispute (caution + frais d'arbitrage)
+    Appealed --> Finalized : arbitre « pas de triche », ou timeout (applyVoteAfterTimeout)
+    Appealed --> Cheated : arbitre « triche »
+    Finalized --> [*]
+    Cheated --> [*]
+```
+
+| Phase | Ce qui est possible | Qui déclenche la sortie |
+| --- | --- | --- |
+| `Open` | Acheter un ticket | Le temps (`startTime`) |
+| `Running` | Acheter un ticket (jusqu'à `maxPlayers`), créer ses instances, soumettre ses réussites | Le temps (`endTime`) |
+| `Contestation` | Ouvrir un litige (`openDispute`) | Le temps : n'importe qui appelle `finalize`. Sans litige, les gains sont retirables dès la fin de cette fenêtre |
+| `Appealed` | L'arbitre rend sa décision (`rule`) | L'arbitre, ou le timeout : sans réponse, n'importe qui appelle `applyVoteAfterTimeout` et le litige est rejeté |
+| `Finalized` / `Cheated` | Retirer ce qui est dû (`withdraw`), réclamer son ticket (`claimRefund`) s'il n'y a pas de gagnant ou si la triche est confirmée | — |
+
+Les phases `Voting` et `AppealWindow` existent dans l'enum `Phase` mais ne sont jamais atteintes par le contrat déployé.
+
+**Design complet** (vote des joueurs puis appel, prévu par l'interface, non déployé) :
 
 ```mermaid
 stateDiagram-v2
@@ -58,7 +85,7 @@ stateDiagram-v2
 
 Toutes les transitions liées au temps sont **appelables par n'importe qui**. Si l'organisateur disparaît, le CTF se termine quand même.
 
-**Durée maximale après `endTime`** : contestation 48 h + vote 48 h + appel 24 h + délai de l'arbitre 7 jours, soit **12 jours** dans le pire cas. Sans litige, tout est réglé 48 h après la fin.
+**Durée maximale après `endTime`** : contestation 48 h + délai de l'arbitre 7 jours, soit **9 jours** dans le pire cas pour le contrat déployé (12 jours dans le design complet, avec 48 h de vote et 24 h d'appel). Sans litige, tout est réglé 48 h après la fin. Le déploiement de démo raccourcit ces durées à 10 et 15 minutes.
 
 ---
 
@@ -171,13 +198,13 @@ L'appel à un tiers sans intérêt dans la partie corrige ces deux biais, et son
 | 5 | Un joueur soumet à la place d'un autre (front-running) | `submit` ne valide que l'instance enregistrée pour `msg.sender` : soumettre à la place de quelqu'un n'a aucun effet | Plateforme |
 | 6 | Copier un exploit vu on-chain | Possible et assumé : tout ce qui est on-chain est public. Le copieur arrive après, donc il est derrière au classement. Le podium réduit l'intérêt de copier sans le supprimer : un copieur rapide peut finir 2e ou 3e | Classement |
 | 7 | L'organisateur publie une épreuve impossible pour garder la cagnotte | S'il n'y a aucune réussite, les tickets sont remboursés et l'organisateur ne gagne rien. Le code est vérifiable avant de payer | Règles de paiement |
-| 8 | Factory truquée : elle refuse la validation à certains joueurs | Factories libres (seule option compatible avec « pas d'owner »). Le front affiche un badge « source vérifiée » / « non vérifiée » (API Basescan) et le `codehash` enregistré à la création. Litige en dernier recours | Plateforme + frontend + litige |
+| 8 | Factory truquée : elle refuse la validation à certains joueurs | Factories libres (seule option compatible avec « pas d'owner »). Le front affiche un badge « code vérifié » / « non vérifié » (Sourcify, sans clé), le `codehash` enregistré à la création comparé au code actuel, et avertit avant l'achat du ticket si une épreuve n'est pas vérifiée. Litige en dernier recours | Plateforme + frontend + litige |
 | 9 | Factory malveillante : gaz infini, réentrance, revert | `staticcall` avec limite de gaz pour la validation, `nonReentrant`, CEI. Au pire, seule cette épreuve est bloquée, jamais les fonds | Plateforme |
 | 10 | L'organisateur fuite la solution à un complice | Pas prouvable on-chain. Dissuadé par la caution, contestable par litige. Limite assumée | Caution + litige |
 | 11 | Un joueur conteste par frustration | La caution de contestation est perdue si le litige est rejeté, et versée à l'organisateur | Litige |
-| 12 | Les perdants votent « triche » par intérêt | L'organisateur fait appel à l'arbitre, et ses frais lui sont remboursés s'il gagne | Appel |
-| 13 | L'organisateur multiplie les adresses pour bloquer le vote (Sybil) | Un ticket par adresse, prix minimum de 0.0001 ETH : chaque voix coûte un ticket. Les joueurs peuvent faire appel | Vote + appel |
-| 14 | L'arbitre ne répond jamais | Timeout de 7 jours : la décision du vote s'applique | Plateforme |
+| 12 | _(Design complet)_ Les perdants votent « triche » par intérêt | L'organisateur fait appel à l'arbitre, et ses frais lui sont remboursés s'il gagne. Version déployée : pas de vote, l'arbitre tranche directement | Appel |
+| 13 | _(Design complet)_ L'organisateur multiplie les adresses pour bloquer le vote (Sybil) | Un ticket par adresse, prix minimum de 0.0001 ETH : chaque voix coûte un ticket. Les joueurs peuvent faire appel | Vote + appel |
+| 14 | L'arbitre ne répond jamais | Timeout de 7 jours : n'importe qui clôt le litige, qui est rejeté (dans le design complet, la décision du vote s'applique) | Plateforme |
 | 15 | L'arbitre est malhonnête | Il ne tranche que les fonds du litige. Choisi au déploiement et visible de tous | Contrat |
 | 16 | L'organisateur disparaît en cours de route | Toutes les transitions liées au temps sont appelables par n'importe qui | Contrat |
 | 17 | Réentrance sur les retraits | Pull payment, solde remis à zéro **avant** le `call`, `nonReentrant` | Contrat |
@@ -201,16 +228,16 @@ L'appel à un tiers sans intérêt dans la partie corrige ces deux biais, et son
 | `startTime`, `endTime` | Organisateur | Durée du CTF de 1 h à 30 jours |
 | Tickets par adresse | Constante | 1 |
 | Fenêtre de contestation | Constructeur (`immutable`) | 48 h |
-| Durée du vote | Constructeur (`immutable`) | 48 h |
-| Fenêtre d'appel | Constructeur (`immutable`) | 24 h |
+| Durée du vote _(design complet, stockée mais pas utilisée)_ | Constructeur (`immutable`) | 48 h |
+| Fenêtre d'appel _(design complet, stockée mais pas utilisée)_ | Constructeur (`immutable`) | 24 h |
 | Timeout de l'arbitre | Constructeur (`immutable`) | 7 jours |
-| Quorum | Constante | max(3 votants, 20 % des tickets) |
+| Quorum _(design complet, non déployé)_ | — | max(3 votants, 20 % des tickets) |
 | Caution de contestation | Par CTF | max(3 × `ticketPrice`, 0.001 ETH), toujours ≥ frais d'arbitrage |
 | Frais d'arbitrage (`MockArbitrator`) | Déployeur | Fixes, inférieurs à 0.001 ETH (le minimum de la caution de contestation) |
 | Limite de gaz de `validateInstance` | Constante (`VALIDATION_GAS`) | 300 000 |
 | Arbitre | Déployeur | `immutable`, fixé au déploiement |
 
-Les quatre durées du litige sont des **arguments du constructeur** stockés en `immutable` : elles sont fixées à vie pour un déploiement donné. Pour la démo, un déploiement séparé les réduit à quelques minutes.
+Les quatre durées du litige sont des **arguments du constructeur** stockés en `immutable` : elles sont fixées à vie pour un déploiement donné. Le contrat déployé n'utilise que la fenêtre de contestation et le délai de l'arbitre ; la durée du vote et la fenêtre d'appel servent au design complet. Pour la démo, un déploiement séparé les réduit à quelques minutes.
 
 ---
 
@@ -305,9 +332,9 @@ interface ICTFPlatform is IArbitrable {
 | 2 | Cash prize si triche confirmée | **Rendu à l'organisateur** | La caution brûlée suffit comme punition : elle dépasse déjà ce qu'un tricheur peut gagner. Et c'est moins grave si l'arbitre condamne à tort un organisateur honnête |
 | 3 | Gas | **Aucun remboursement** | Impossible à calculer proprement on-chain ; la complexité ne vaut pas le gain |
 | 4 | Tickets | **Un seul ticket par adresse**, prix minimum **0.0001 ETH** | Sans prix minimum, voter ne coûte rien et un organisateur achète le vote avec des adresses gratuites |
-| 5 | Factories | **Libres**. Le front affiche un badge « source vérifiée » / « non vérifiée » (API Basescan) et le `codehash` enregistré | C'est la seule option compatible avec « pas d'owner » : une liste blanche demanderait quelqu'un pour la tenir |
-| 6 | Durées et quorum | Contestation **48 h** (sans litige, gains retirables à la fin de cette fenêtre), vote **48 h**, appel **24 h**, délai max de l'arbitre **7 jours** : 12 jours dans le pire cas. Arguments du constructeur en `immutable`. Quorum = **max(3 votants, 20 % des tickets)** ; quorum raté = « pas de triche », appelable par le contestataire. Organisateur : durée d'un CTF de 1 h à 30 jours, `maxPlayers` de 1 à 200 | Durées fixées à vie (pas d'admin), mais réductibles à quelques minutes pour la démo. Le plancher de 3 votants évite qu'une seule voix tranche un petit CTF |
+| 5 | Factories | **Libres**. Le front affiche un badge « code vérifié » / « non vérifié » (Sourcify, sans clé), le `codehash` enregistré comparé au code actuel, et avertit avant l'achat du ticket si une épreuve n'est pas vérifiée | C'est la seule option compatible avec « pas d'owner » : une liste blanche demanderait quelqu'un pour la tenir |
+| 6 | Durées et quorum | Contestation **48 h** (sans litige, gains retirables à la fin de cette fenêtre), vote **48 h**, appel **24 h**, délai max de l'arbitre **7 jours** : 12 jours dans le pire cas (9 jours pour le contrat déployé, sans vote ni appel). Arguments du constructeur en `immutable`. Quorum (design complet) = **max(3 votants, 20 % des tickets)** ; quorum raté = « pas de triche », appelable par le contestataire. Organisateur : durée d'un CTF de 1 h à 30 jours, `maxPlayers` de 1 à 200 | Durées fixées à vie (pas d'admin), mais réductibles à quelques minutes pour la démo. Le plancher de 3 votants évite qu'une seule voix tranche un petit CTF |
 | 7 | Points et égalités | **1 point** par épreuve réussie. À égalité, la dernière réussite la plus tôt (timestamp du bloc du `submit`) passe devant. Dans le même bloc, le premier enregistré garde sa place (comparaison stricte) | Règle simple, déterministe, calculable à chaque `submit` |
 | 8 | Solde du Coffre | Géré par **la factory**, pas par `CTFPlatform`. L'organisateur alimente sa factory (`maxPlayers × 0.0001 ETH`) et récupère le reste après le CTF via une fonction de la factory. Ce que le joueur vide, il le garde | `CTFPlatform` reste générique et ne connaît pas le détail des épreuves |
-| 9 | Frais d'arbitrage | **Remboursés au gagnant de l'appel** (modèle Kleros), pris sur la caution du camp perdant (contestataire, ou organisateur avant le burn), plafonnés au montant de cette caution. Les frais du `MockArbitrator` sont fixés sous le minimum de la caution de contestation | Un organisateur honnête n'a pas à payer pour être blanchi ; le plafond garantit que la plateforme ne paie jamais plus qu'elle ne détient |
+| 9 | Frais d'arbitrage | **Remboursés au gagnant de l'appel** (modèle Kleros), pris sur la caution du camp perdant (contestataire, ou organisateur avant le burn), plafonnés au montant de cette caution. Version déployée : le contestataire avance les frais, ils lui sont rendus si la triche est confirmée (pris sur la caution de l'organisateur, plafonnés à celle-ci) et perdus sinon. Les frais du `MockArbitrator` sont fixés sous le minimum de la caution de contestation | Un organisateur honnête n'a pas à payer pour être blanchi ; le plafond garantit que la plateforme ne paie jamais plus qu'elle ne détient |
 | 10 | Cautions | Organisateur ≥ `cashPrize + maxPlayers × ticketPrice`. Contestation = `max(3 × ticketPrice, 0.001 ETH)`, toujours ≥ frais d'arbitrage. Ex. : 1 ETH de prize, 20 joueurs, ticket à 0.01 ETH → caution ≥ 1,2 ETH, contestation 0.03 ETH | La caution couvre le gain maximal d'une triche ; la contestation est assez chère pour dissuader l'abus et couvre toujours les frais d'appel |

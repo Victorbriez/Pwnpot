@@ -16,7 +16,7 @@ export default function DocsPage() {
     <PageShell wide>
       <PageHeader
         title="Comment ça marche"
-        description="Toutes les règles de Pwnpot, avec des exemples chiffrés. Elles sont écrites dans le contrat : ce que tu lis ici, c'est ce qu'il applique."
+        description="Toutes les règles de Pwnpot, avec des exemples chiffrés. Le contrat fait foi : cette page décrit la version déployée, et signale le design complet quand elle en parle."
       />
       <TocLayout sections={docSections}>
         <DocsContent />

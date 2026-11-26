@@ -37,7 +37,9 @@ export function CtfTimeline({ ctf }: { ctf: Ctf }) {
 
   const steps: Step[] = [
     {
-      label: "Inscriptions",
+      // Phase « Ouvert » : tickets en vente avant le début (ils le restent
+      // pendant les épreuves, tant qu'il reste des places).
+      label: "Ouvert",
       date: chain && `jusqu'au ${formatDate(chain.startTime)}`,
     },
     { label: "Épreuves", date: chain && formatDate(chain.startTime) },

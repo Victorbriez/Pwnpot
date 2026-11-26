@@ -48,6 +48,12 @@ export function DisputeList() {
       <Section
         title="Litiges chez l'arbitre"
         empty="Aucun litige en cours."
+        hint={
+          <>
+            Un litige apparaît ici dès qu&apos;un joueur conteste, jusqu&apos;à
+            la décision de l&apos;arbitre.
+          </>
+        }
         rows={inProgress}
         describe={(ctf) => {
           const contester = ctf.chain?.dispute?.contester
@@ -73,6 +79,12 @@ export function DisputeList() {
       <Section
         title="Encore contestables"
         empty="Aucun CTF dans sa fenêtre de contestation."
+        hint={
+          <>
+            Les CTF terminés apparaissent ici pendant{" "}
+            <DisputePeriod of="contestation" />.
+          </>
+        }
         rows={contestable}
         describe={(ctf) => (
           <>
@@ -93,11 +105,14 @@ export function DisputeList() {
 function Section({
   title,
   empty,
+  hint,
   rows,
   describe,
 }: {
   title: string
   empty: string
+  /** Quand un CTF apparaît dans cette liste. */
+  hint: React.ReactNode
   rows: Row[]
   describe: (row: Row) => React.ReactNode
 }) {
@@ -130,10 +145,7 @@ function Section({
               <ScaleIcon />
             </EmptyMedia>
             <EmptyTitle>{empty}</EmptyTitle>
-            <EmptyDescription>
-              Les CTF terminés apparaissent ici pendant{" "}
-              <DisputePeriod of="contestation" />.
-            </EmptyDescription>
+            <EmptyDescription>{hint}</EmptyDescription>
           </EmptyHeader>
         </Empty>
       )}

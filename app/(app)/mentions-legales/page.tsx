@@ -128,8 +128,16 @@ export default function LegalPage() {
             avec Base Account, ce service est fourni par Coinbase.
           </li>
           <li>
+            <strong>Mesures techniques de Coinbase</strong> : le SDK de Base
+            Account, chargé avec les boutons de connexion, peut envoyer des
+            mesures d&apos;usage à Coinbase (domaine{" "}
+            <code className="font-mono text-sm">cca-lite.coinbase.com</code>),
+            même sans wallet connecté. Elles ne contiennent ni ton adresse de
+            wallet ni tes transactions Pwnpot.
+          </li>
+          <li>
             <strong>Transactions</strong> : chaque transaction que tu signes
-            (ticket, instance, soumission, vote, retrait) est inscrite sur la
+            (ticket, instance, soumission, litige, retrait) est inscrite sur la
             blockchain avec ton adresse. Elle est publique, et ni l&apos;éditeur
             ni personne ne peut l&apos;effacer.
           </li>
@@ -149,7 +157,9 @@ export default function LegalPage() {
           {host.name} et Coinbase sont des sociétés américaines : les journaux
           techniques peuvent être traités aux États-Unis, dans le cadre de
           l&apos;EU-US Data Privacy Framework ou de clauses contractuelles
-          types, comme décrit dans leurs politiques de confidentialité.
+          types, comme décrit dans leurs politiques de confidentialité. Le
+          fournisseur du nœud RPC décrit ses propres conditions dans sa
+          politique de confidentialité.
         </p>
 
         <h3>Tes droits</h3>
@@ -212,10 +222,11 @@ export default function LegalPage() {
 
       <LegalSection id="propriete" title="Propriété intellectuelle">
         <p>
-          Le code et le contenu du site appartiennent à leur auteur. Ils ne sont
-          pas publiés sous licence libre : toute reproduction demande son
-          accord. Le code des contrats déployés reste lisible par tous sur la
-          blockchain, comme tout contrat vérifié.
+          Le code des contrats (CTFPlatform, les épreuves et l&apos;arbitre de
+          démonstration) est publié sous licence MIT, indiquée en tête de chaque
+          fichier, et vérifié publiquement sur la blockchain. Le reste du code
+          et le contenu du site appartiennent à leur auteur : leur reproduction
+          demande son accord.
         </p>
         <p>
           Le code de chaque épreuve reste la propriété de l&apos;organisateur

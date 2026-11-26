@@ -12,15 +12,18 @@ import { baseSepolia } from "viem/chains"
 
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
-import { useFactoryVerification } from "@/hooks/use-factory-verification"
-import { canCheckVerification } from "@/lib/onchain/sourcify"
+import {
+  useFactoryVerification,
+  useVaultVerification,
+} from "@/hooks/use-factory-verification"
+import { blockscoutCodeUrl, canCheckVerification } from "@/lib/onchain/sourcify"
 
 const explorer = baseSepolia.blockExplorers.default.url
 /** Code du Coffre, affiché sur le site (app/(app)/code/vault). */
 const VAULT_SOURCE_PATH = "/code/vault"
 
 /**
- * Badge « code vérifié » d'une factory, avec un lien vers son code sur Basescan.
+ * Badge « code vérifié » d'une factory, avec un lien vers son code (Blockscout si vérifié, Basescan sinon).
  * Les factories sont écrites par les organisateurs : le joueur doit pouvoir
  * lire le code avant de payer son ticket (docs/SECURITY.md).
  */
@@ -31,25 +34,60 @@ export function FactoryVerificationBadge({
   factory: Address
   /**
    * Coffre déployé par l'organisateur : son code est comparé octet par octet
-   * à VaultFactory (hors `immutable`), Sourcify ne le connaît pas.
+   * à VaultFactory (hors `immutable`), puis vérifié sur Sourcify depuis le site.
    */
   matchedByCode?: boolean
 }) {
-  const { data, isPending, isError } = useFactoryVerification(
-    matchedByCode ? undefined : factory
-  )
+  if (matchedByCode) return <VaultBadge vault={factory} />
+  return <SourcifyBadge factory={factory} />
+}
 
-  if (matchedByCode)
+/**
+ * Coffre déployé par l'organisateur. Vérifié par Sourcify (envoyé à la
+ * création, ou à la première visite) : « Code vérifié », lien vers Blockscout.
+ * En attendant, ou si Sourcify ne répond pas : « Code Pwnpot », reconnu octet
+ * par octet, lien vers la source sur le site.
+ */
+function VaultBadge({ vault }: { vault: Address }) {
+  const { verified, verifying } = useVaultVerification(vault)
+
+  if (verified)
     return (
       <Badge
         variant="success"
-        render={<Link href={VAULT_SOURCE_PATH} />}
-        title="Code identique à la VaultFactory de Pwnpot, déployé par l'organisateur pour ce CTF. Lis la source sur le site."
+        render={
+          <a href={blockscoutCodeUrl(vault)} target="_blank" rel="noreferrer" />
+        }
+        title="Coffre déployé par l'organisateur pour ce CTF, code source vérifié par Sourcify. Lis-le sur Blockscout."
       >
         <BadgeCheckIcon data-icon="inline-start" />
-        Code Pwnpot
+        Code vérifié
       </Badge>
     )
+
+  return (
+    <Badge
+      variant="success"
+      render={<Link href={VAULT_SOURCE_PATH} />}
+      title={
+        verifying
+          ? "Vérification du code sur Sourcify en cours. En attendant : code identique à la VaultFactory de Pwnpot, lis la source sur le site."
+          : "Code identique à la VaultFactory de Pwnpot, déployé par l'organisateur pour ce CTF. Lis la source sur le site."
+      }
+    >
+      {verifying ? (
+        <Spinner data-icon="inline-start" />
+      ) : (
+        <BadgeCheckIcon data-icon="inline-start" />
+      )}
+      Code Pwnpot
+    </Badge>
+  )
+}
+
+/** Factory partagée ou inconnue : état publié par Sourcify. Code vérifié : lien vers Blockscout, qui le reprend (Basescan non). */
+function SourcifyBadge({ factory }: { factory: Address }) {
+  const { data, isPending, isError } = useFactoryVerification(factory)
 
   if (!canCheckVerification) return null
 
@@ -86,8 +124,14 @@ export function FactoryVerificationBadge({
       return (
         <Badge
           variant="success"
-          render={link("#code")}
-          title={`Code source publié${data.name ? ` (${data.name})` : ""} et identique au contrat déployé. Lis-le sur Basescan.`}
+          render={
+            <a
+              href={blockscoutCodeUrl(factory)}
+              target="_blank"
+              rel="noreferrer"
+            />
+          }
+          title={`Code source publié${data.name ? ` (${data.name})` : ""} et identique au contrat déployé, vérifié par Sourcify. Lis-le sur Blockscout.`}
         >
           <BadgeCheckIcon data-icon="inline-start" />
           Code vérifié

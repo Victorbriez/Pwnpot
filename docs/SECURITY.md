@@ -71,8 +71,8 @@ Ce document liste ce qu'un attaquant peut tenter contre Pwnpot, ce qui l'en emp�
 | --- | --- | --- |
 | Rendre une décision injuste | Sa décision ne porte que sur les fonds du litige. Dans le design complet, il n'est saisi qu'en appel ; dans la version déployée, il tranche directement chaque litige | **Oui**, dans ce périmètre |
 | Ne jamais répondre | Timeout de 7 jours : n'importe qui appelle `applyVoteAfterTimeout`, le litige est rejeté (sans vote, c'est le résultat par défaut) | Non |
-| Trancher pendant `openDispute` (réentrance) | `rule` et `openDispute` sont `nonReentrant` ; l'arbitre est `immutable` | Non |
-| Appeler `rule` pour un autre CTF | `rule` vérifie `msg.sender == arbitrator` et la correspondance `disputeID → ctfId` | Non |
+| Trancher pendant `openDispute` (réentrance) | `rule` et `openDispute` sont `nonReentrant` ; l'arbitre est `immutable` (`test_MaliciousArbitrator_RuleDuringOpenDispute_Reverts`) | Non |
+| Appeler `rule` pour un autre CTF | `rule` vérifie `msg.sender == arbitrator` et la correspondance `disputeID → ctfId` ; un identifiant réutilisé est refusé (`test_MaliciousArbitrator_ReusedDisputeId_Rejected`) | Non |
 
 ### Séquenceur Base, RPC, frontend
 
@@ -87,7 +87,9 @@ Ce document liste ce qu'un attaquant peut tenter contre Pwnpot, ce qui l'en emp�
 
 ## Invariants
 
-Ces propriétés doivent être vraies à tout moment. Ce sont les cibles des tests d'invariants (fuzz Solidity `forge-std`, lancé par Hardhat).
+Ces propriétés doivent être vraies à tout moment. Elles sont vérifiées par [`CTFPlatformInvariants.t.sol`](../contracts/contracts/CTFPlatformInvariants.t.sol) ([#31](https://github.com/Victorbriez/Pwnpot/issues/31)) : un *handler* enchaîne des actions aléatoires (créer un CTF, acheter un ticket, créer et soumettre une instance exploitée ou non, avancer le temps, finaliser, contester, faire trancher l'arbitre ou attendre son timeout, se faire rembourser, retirer, et un tiers ou le déployeur qui tente de trancher), puis chaque invariant est vérifié. 256 suites de 60 actions à chaque `pnpm contracts:test`, 10 000 avec `pnpm contracts:invariants` (environ 7 min). Sur 10 000 suites, toutes les issues sont atteintes (podium à 1, 2 et 3 gagnants, aucun gagnant, litige rejeté, timeout de l'arbitre, triche confirmée).
+
+Bugs injectés pour vérifier que les invariants les détectent : un `withdraw` qui ne remet pas `owed` à zéro est détecté dès 256 suites (invariants 1, 2 et 6) ; un 3e du podium crédité deux fois n'est détecté par les invariants qu'avec les 10 000 suites (invariants 1 et 2), car le cas à trois gagnants est plus rare ; il est en revanche détecté à chaque CI par 5 tests ciblés (`test_ThreeWinners_SixtyThirtyTen`, `test_HappyPath_ThreeWinners`, `testFuzz_Conservation`…). Lancer `pnpm contracts:invariants` avant chaque déploiement.
 
 1. **Solvabilité** : `address(this).balance ≥ Σ owed[*] + Σ fonds encore bloqués dans les CTF en cours`.
 2. **Conservation** : pour un CTF finalisé, `cash prize + Σ tickets + caution organisateur + caution de contestation = Σ crédits distribués + montant brûlé` (les frais d'arbitrage partent chez l'arbitre à l'ouverture du litige ; s'ils sont rendus au contestataire, c'est sur la caution de l'organisateur). Testé au wei près par `testFuzz_Conservation_WithDispute`.
@@ -102,7 +104,7 @@ Ces propriétés doivent être vraies à tout moment. Ce sont les cibles des tes
 
 - **La fuite de solution n'est pas prouvable.** Un organisateur qui donne la solution à un complice avant le CTF ne laisse aucune trace on-chain. Le design la rend **coûteuse** (caution) et **contestable** (litige), mais pas impossible.
 - **Litiges simplifiés.** Le contrat déployé n'a ni vote des joueurs ni appel : la contestation part directement à l'arbitre (`vote` et `appeal` revert `NotImplemented`). C'est le plan B de [PLAN.md](PLAN.md#risques-et-plans-b), assumé faute de temps. L'interface (`Dispute`, events, phases) prévoit déjà la version complète.
-- **L'arbitre est trusted.** Il est choisi au déploiement : c'est le seul choix du déployeur qui pèse sur les litiges. Dans la version déployée, il tranche seul chaque litige. En démo, `MockArbitrator` est contrôlé par l'équipe (le compte qui déploie rend les décisions). Il faut le dire explicitement au jury. Kleros se brancherait sans changer `CTFPlatform`.
+- **L'arbitre est trusted.** Il est choisi au déploiement : c'est le seul choix du déployeur qui pèse sur les litiges. Dans la version déployée, il tranche seul chaque litige. En démo, `MockArbitrator` est contrôlé par l'équipe (le compte qui déploie rend les décisions). Il faut le dire explicitement au jury. Un vrai arbitre décentralisé (Kleros) n'existe pas sur Base Sepolia : voir [Brancher un vrai arbitre](#brancher-un-vrai-arbitre-kleros).
 - **Un litige retarde les gains.** N'importe quel détenteur de ticket peut bloquer `finalize` jusqu'à 7 jours en contestant. S'il a tort, il perd sa caution (versée à l'organisateur) et les frais d'arbitrage. Exception : un complice de l'organisateur ne perd que les frais, puisque sa caution revient à l'organisateur (voir [Organisateur malveillant](#organisateur-malveillant)).
 - **Un seul litige par CTF, sans preuve on-chain.** Le premier contestataire prend la place. `openDispute` ne transmet aucun élément à l'arbitre (pas d'ERC-1497) : en démo, l'équipe qui tient `MockArbitrator` est informée hors chaîne.
 - _(Design complet)_ **Le vote des joueurs ne serait pas neutre.** Les perdants ont intérêt à voter « triche ». L'appel corrige ce biais : un organisateur honnête avance les frais d'arbitrage, qui lui sont remboursés s'il gagne.
@@ -110,6 +112,23 @@ Ces propriétés doivent être vraies à tout moment. Ce sont les cibles des tes
 - **Un exploit est copiable** une fois publié sur la chaîne. Le classement au temps limite l'intérêt de copier.
 - **Le podium réduit l'intérêt de copier, mais ne le supprime pas.** Un copieur rapide peut finir 2e ou 3e et toucher une part de la cagnotte.
 - **Le gas n'est pas remboursé** en cas de triche confirmée. Les joueurs récupèrent leur ticket, pas le gas dépensé.
+
+### Brancher un vrai arbitre (Kleros)
+
+Vérification faite le 26 nov 2026 pour [#32](https://github.com/Victorbriez/Pwnpot/issues/32) : **Kleros n'est pas déployé sur Base Sepolia, ni sur Base.**
+
+- Les déploiements de Kleros v2 (`KlerosCore`, le tribunal) sont listés dans le [dépôt officiel](https://github.com/kleros/kleros-v2/tree/dev/contracts/deployments) : Arbitrum et Arbitrum Sepolia pour le tribunal, plus des contrats annexes sur Ethereum, Gnosis et leurs testnets (Sepolia, Chiado). Aucun dossier pour Base ou Base Sepolia. Le tribunal de test est sur Arbitrum Sepolia, à l'adresse `0xE8442307d36e9bf6aB27F1A009F95CE8E11C3479` ([fichier de déploiement](https://github.com/kleros/kleros-v2/blob/dev/contracts/deployments/arbitrumSepolia/KlerosCore.json)).
+
+On ne peut donc pas montrer un litige tranché par de vrais jurés sur Base Sepolia. L'arbitre de démo, `MockArbitrator`, reste la seule option sur ce réseau.
+
+**Ce qu'il faudrait pour brancher Kleros**, sur un réseau où il existe (Arbitrum Sepolia pour un test, Arbitrum en production) :
+
+- **Les appels sont compatibles.** `CTFPlatform` n'utilise que `createDispute(uint256, bytes)`, `arbitrationCost(bytes)` et `rule(uint256, uint256)`, avec les mêmes signatures que l'interface `IArbitratorV2` / `IArbitrableV2` de Kleros v2 ([IArbitratorV2.sol](https://github.com/kleros/kleros-v2/blob/dev/contracts/src/arbitration/interfaces/IArbitratorV2.sol), [IArbitrableV2.sol](https://github.com/kleros/kleros-v2/blob/dev/contracts/src/arbitration/interfaces/IArbitrableV2.sol)). Les décisions concordent : 1 = triche, 2 = pas de triche, 0 (refus de trancher) traité comme « pas de triche ». L'arbitre étant `immutable`, il suffit de déployer `CTFPlatform` avec l'adresse de `KlerosCore`.
+- **Trois adaptations seraient quand même nécessaires**, donc un nouveau déploiement de code :
+  1. `openDispute` passe un `_extraData` vide, alors que Kleros s'en sert pour choisir le tribunal et le nombre de jurés.
+  2. Kleros v2 attend que le contrat arbitrable émette `DisputeRequest` avec un modèle de litige (`templateId`), pour que les jurés voient de quoi il s'agit. `CTFPlatform` ne le fait pas, et ne transmet aucune preuve (voir la limite « sans preuve on-chain » ci-dessus).
+  3. Un litige Kleros passe par plusieurs périodes (preuves, vote, appel), réglées par tribunal. Le timeout de 7 jours (`arbitratorTimeout`) serait à allonger : sinon, n'importe qui pourrait clore le litige comme « pas de triche » avant que les jurés aient tranché.
+- **Pwnpot devrait alors quitter Base**, ce qui sort du sujet du module. Le choix assumé reste donc : Base Sepolia avec `MockArbitrator`, arbitre de confiance tenu par l'équipe, et la porte ouverte vers Kleros sans toucher au reste de la logique.
 
 ---
 
@@ -165,10 +184,10 @@ Cohérent avec le [tableau des rôles](../README.md#rôles-et-confiance) : seule
 
 ### Tests
 
-- **Couverture** (`hardhat test --coverage`) : 99 % des lignes de `CTFPlatform`. Deux lignes défensives ne sont pas atteintes : un arbitre qui réutiliserait un `disputeID` (revert `DisputeAlreadyOpened`) et un crédit de 0 wei (ignoré).
-- **Profil production** : les 195 tests passent sur le bytecode optimisé.
+- **Couverture** (`hardhat test --coverage`) : 99 % des lignes de `CTFPlatform`. Une ligne défensive n'est pas atteinte : un crédit de 0 wei (ignoré). Le cas d'un arbitre qui réutilise un `disputeID` est couvert par `test_MaliciousArbitrator_ReusedDisputeId_Rejected`, et le plafond des frais rendus (caution d'organisateur plus petite que les frais) par `test_CheatingConfirmed_FeeRefundCappedByOrganizerBond`.
+- **Profil production** : les 211 tests passent sur le bytecode optimisé (avec les tests d'invariants de #31).
 - **Répétition sur un nœud local** : module Ignition `PwnpotModule` déployé tel quel (profil production, durées courtes), puis quatre parcours joués en vraies transactions avec l'ABI du frontend (triche confirmée, litige rejeté, timeout de l'arbitre, fin sans litige). Chaque refus attendu renvoie la bonne erreur. Après tous les retraits, le solde du contrat est égal au montant brûlé.
-- **Reste à faire** : tests d'invariants avec état sur des suites d'appels aléatoires ([#31](https://github.com/Victorbriez/Pwnpot/issues/31), hors périmètre du code freeze). La répétition et `testFuzz_Conservation_WithDispute` couvrent les mêmes propriétés sur les parcours réels.
+- **Tests d'invariants** : faits depuis ([#31](https://github.com/Victorbriez/Pwnpot/issues/31)), voir [Invariants](#invariants).
 
 ---
 
@@ -178,6 +197,7 @@ Avant chaque déploiement sur Base Sepolia :
 
 - [ ] `pnpm contracts:test` passe, avec un test d'exploit par épreuve et un test par issue (gagnant, aucun gagnant, litige rejeté, triche confirmée, timeout de l'arbitre).
 - [ ] `pnpm --filter @pwnpot/contracts exec hardhat test --build-profile production` passe.
+- [ ] `pnpm contracts:invariants` passe (10 000 suites d'actions aléatoires).
 - [ ] Slither lancé (`pipx install slither-analyzer`) : chaque alerte est corrigée, ou écartée avec une justification écrite ici.
 - [ ] Liste des points d'entrée qui modifient l'état revue après chaque changement de `CTFPlatform` (plugin `entry-point-analyzer`).
 - [ ] Aucune clé, seed ni `.env` dans git.

@@ -28,10 +28,14 @@ export function gainLines(
       .map((p) => ({
         ctf: p.ctf,
         amount: p.owed,
+        // Le contestataire d'une triche confirmée récupère aussi sa caution
+        // et les frais d'arbitrage, crédités dans le même solde.
         reason:
-          p.ctf.status === "cheated" || p.refunded
-            ? "Ticket remboursé"
-            : podium(p.rank),
+          p.ctf.status === "cheated"
+            ? "Ticket remboursé, et caution de contestation si tu as contesté"
+            : p.refunded
+              ? "Ticket remboursé"
+              : podium(p.rank),
       })),
     ...organizing
       .filter((o) => o.owed > zero)
@@ -43,7 +47,9 @@ export function gainLines(
             ? "Cash prize rendu"
             : o.noWinner
               ? "Aucun gagnant : cash prize et caution rendus"
-              : "Caution rendue",
+              : o.ctf.chain?.dispute
+                ? "Caution rendue + caution du contestataire"
+                : "Caution rendue",
       })),
   ]
 }
