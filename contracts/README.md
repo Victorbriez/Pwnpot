@@ -6,10 +6,10 @@ Contrats de Pwnpot : Solidity 0.8.34, Hardhat 3 (toolbox viem), OpenZeppelin 5. 
 
 ```
 contracts/
-  CTFPlatform.sol          cagnotte, tickets, cautions, scores, litiges, retraits   (à venir)
-  interfaces/              ILevel, IArbitrator / IArbitrable (ERC-792)             (à venir)
-  levels/                  factories + contrats vulnérables des épreuves            (à venir)
-  mocks/MockArbitrator.sol arbitre de test et de démo                               (à venir)
+  CTFPlatform.sol          cagnotte, tickets, cautions, scores, litiges, retraits
+  interfaces/              ILevel, IArbitrator / IArbitrable (ERC-792), ICTFPlatform
+  levels/                  factories + contrats vulnérables des épreuves
+  mocks/MockArbitrator.sol arbitre de test et de démo
   *.t.sol                  tests unitaires Solidity (forge-std)
 test/                      tests d'intégration TypeScript (node:test + viem)
 ignition/modules/          modules de déploiement

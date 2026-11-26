@@ -360,11 +360,11 @@ export function DocsContent() {
             ],
             [
               "Joueur",
-              "Achète un ticket (un seul par adresse), exploite ses instances, soumet ses réussites, peut contester et voter.",
+              "Achète un ticket (un seul par adresse), exploite ses instances, soumet ses réussites, peut contester (et voter, dans le design complet).",
             ],
             [
               "Arbitre",
-              "Contrat ERC-792 fixé au déploiement. Il ne tranche que les litiges portés en appel.",
+              "Contrat ERC-792 fixé au déploiement. Il tranche les litiges (directement dans la version déployée, en appel dans le design complet).",
             ],
             [
               "N'importe qui",
@@ -560,6 +560,16 @@ export function DocsContent() {
         lead="Si un joueur soupçonne une triche (épreuve truquée, solution fuitée), il peut contester après la fin du CTF."
       >
         <DisputeFlow />
+        <DocText>
+          <strong>Version déployée.</strong> Le contrat applique une version
+          simplifiée : le contestataire paie la caution et les frais de
+          l&apos;arbitre, et le litige part directement chez lui. Triche
+          confirmée : caution et frais lui sont rendus. Litige rejeté (ou
+          arbitre muet pendant {days(ARBITER_TIMEOUT)}) : sa caution va à
+          l&apos;organisateur. Le vote et l&apos;appel ci-dessous sont le design
+          complet, prévu par l&apos;interface du contrat.
+        </DocText>
+        <DocSubheading>Design complet</DocSubheading>
         <DocList>
           <li>
             <strong>Ouverture</strong> : pendant {hours(CONTESTATION_WINDOW)},
@@ -698,13 +708,14 @@ export function DocsContent() {
             public. Le copieur arrive après, mais peut encore finir 2e ou 3e.
           </li>
           <li>
-            <strong>Vote biaisé</strong> : les perdants ont intérêt à voter «
-            triche ». L&apos;appel corrige ce biais.
+            <strong>Litiges simplifiés</strong> : pas de vote ni d&apos;appel
+            dans le contrat déployé, l&apos;arbitre tranche directement.
+            Contester bloque la finalisation jusqu&apos;à{" "}
+            {days(ARBITER_TIMEOUT)}, au prix de la caution.
           </li>
           <li>
-            <strong>Arbitre</strong> : il est de confiance en appel. Sur ce
-            testnet, c&apos;est un arbitre de démonstration contrôlé par
-            l&apos;équipe.
+            <strong>Arbitre</strong> : il est de confiance. Sur ce testnet,
+            c&apos;est un arbitre de démonstration contrôlé par l&apos;équipe.
           </li>
         </DocList>
       </DocSection>
