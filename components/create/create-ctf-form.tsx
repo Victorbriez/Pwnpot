@@ -76,6 +76,7 @@ import {
   type CreateCtfState,
   type FactorySlot,
 } from "@/hooks/use-create-ctf"
+import { useDisputePeriods } from "@/hooks/use-dispute-periods"
 import {
   DURATION_PRESETS,
   DURATION_UNITS,
@@ -88,7 +89,7 @@ import {
   type CtfField,
   type DurationUnit,
 } from "@/lib/ctf/params"
-import { formatEth } from "@/lib/format"
+import { formatEth, formatPeriod } from "@/lib/format"
 import {
   isFactoryAvailable,
   knownFactories,
@@ -163,6 +164,7 @@ function combine(day: Date | undefined, time: string): Date | undefined {
 
 export function CreateCtfForm() {
   const tx = useCreateCtf()
+  const contestation = formatPeriod(useDisputePeriods().contestation)
   const { isConnected, chainId } = useConnection()
   const switchChain = useSwitchChain()
 
@@ -603,8 +605,8 @@ export function CreateCtfForm() {
               </FieldGroup>
               <FieldDescription>
                 {end
-                  ? `Fin le ${format(end, "EEEE d MMMM 'à' HH:mm", { locale: fr })}, puis 48 h pour contester un résultat.`
-                  : "De 1 h à 30 jours. Après la fin, 48 h sont réservées pour contester un résultat."}
+                  ? `Fin le ${format(end, "EEEE d MMMM 'à' HH:mm", { locale: fr })}, puis ${contestation} pour contester un résultat.`
+                  : `De 1 h à 30 jours. Après la fin, ${contestation} sont réservées pour contester un résultat.`}
               </FieldDescription>
             </FieldSet>
           </FieldGroup>

@@ -37,20 +37,38 @@ import { Spinner } from "@/components/ui/spinner"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { DataList, DataRow } from "@/components/site/data-list"
 import type { DisputeModel } from "@/hooks/use-dispute"
+import {
+  useDisputePeriods,
+  type DisputePeriods,
+} from "@/hooks/use-dispute-periods"
 import { settlement, type DisputeState } from "@/lib/ctf/dispute"
-import { formatEth, formatRemaining } from "@/lib/format"
+import {
+  formatEth,
+  formatPeriod,
+  formatRemaining,
+  formatTimeLeft,
+} from "@/lib/format"
 
 export type Role = "player" | "organizer"
 
 type Step = {
   key: "contestation" | "appealed" | "result"
   label: string
-  duration?: string
+  /** Durée lue dans le contrat (`immutable`), courte sur le déploiement de démo. */
+  duration?: (periods: DisputePeriods) => string
 }
 
 const steps: Step[] = [
-  { key: "contestation", label: "Contestation", duration: "48 h" },
-  { key: "appealed", label: "Arbitre (ERC-792)", duration: "7 j max" },
+  {
+    key: "contestation",
+    label: "Contestation",
+    duration: (p) => formatPeriod(p.contestation),
+  },
+  {
+    key: "appealed",
+    label: "Arbitre (ERC-792)",
+    duration: (p) => `${formatPeriod(p.arbitrator)} max`,
+  },
   { key: "result", label: "Résultat" },
 ]
 
@@ -88,6 +106,7 @@ export function DisputeCard({
   onRoleChange?: (role: Role) => void
 }) {
   const { state, bond, fee } = dispute
+  const periods = useDisputePeriods()
   const [pending, setPending] = useState<string>()
   const final = state.phase === "finalized" || state.phase === "cheated"
   const states = stepStates(state)
@@ -107,9 +126,9 @@ export function DisputeCard({
           Litige
         </CardTitle>
         <CardDescription>
-          Un détenteur de ticket peut contester le résultat pendant 48 h. Le
-          litige part directement à l&apos;arbitre, dont la décision est
-          définitive.
+          Un détenteur de ticket peut contester le résultat pendant{" "}
+          {formatPeriod(periods.contestation)}. Le litige part directement à
+          l&apos;arbitre, dont la décision est définitive.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
@@ -146,12 +165,12 @@ export function DisputeCard({
                 <ItemActions className="text-xs text-muted-foreground tabular-nums">
                   {s === "current" ? (
                     <Badge variant="brand">
-                      reste {formatRemaining(state.remaining)}
+                      {formatTimeLeft(state.remaining)}
                     </Badge>
                   ) : s === "skipped" ? (
                     "sautée"
                   ) : (
-                    step.duration
+                    step.duration?.(periods)
                   )}
                 </ItemActions>
               </Item>
@@ -180,7 +199,7 @@ export function DisputeCard({
 
         {state.phase === "appealed" && (
           <PhaseAction
-            text={`${state.mine ? "Tu as ouvert ce litige." : "Un joueur a ouvert un litige."} L'arbitre (ERC-792) tranche : « triche » ou « pas de triche ». Sans réponse sous 7 jours, n'importe qui peut clore le litige, qui est alors rejeté.`}
+            text={`${state.mine ? "Tu as ouvert ce litige." : "Un joueur a ouvert un litige."} L'arbitre (ERC-792) tranche : « triche » ou « pas de triche ». Sans réponse sous ${formatPeriod(periods.arbitrator)}, n'importe qui peut clore le litige, qui est alors rejeté.`}
           >
             {!dispute.demo && (
               <Button
@@ -292,11 +311,12 @@ function PhaseAction({
 }
 
 function Result({ state }: { state: DisputeState }) {
+  const periods = useDisputePeriods()
   const cheated = state.phase === "cheated"
   const decidedBy = !state.opened
     ? "Aucun litige pendant la contestation."
     : state.decision === "timeout"
-      ? "L'arbitre n'a pas répondu dans les 7 jours : le litige est rejeté."
+      ? `L'arbitre n'a pas répondu dans les ${formatPeriod(periods.arbitrator)} : le litige est rejeté.`
       : "Décision de l'arbitre, définitive."
   return (
     <div className="flex flex-col gap-4">

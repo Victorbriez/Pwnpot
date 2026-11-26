@@ -11,7 +11,7 @@ Ce document décrit le fonctionnement complet de la plateforme : le cycle de vie
 5. [Litiges et appel](#litiges-et-appel)
 6. [Problématiques et réponses](#problématiques-et-réponses)
 7. [Paramètres](#paramètres)
-8. [Interface du contrat (cible)](#interface-du-contrat-cible)
+8. [Interface du contrat](#interface-du-contrat)
 9. [Décisions actées](#décisions-actées)
 
 ---
@@ -171,7 +171,7 @@ L'appel à un tiers sans intérêt dans la partie corrige ces deux biais, et son
 | 5 | Un joueur soumet à la place d'un autre (front-running) | `submit` ne valide que l'instance enregistrée pour `msg.sender` : soumettre à la place de quelqu'un n'a aucun effet | Plateforme |
 | 6 | Copier un exploit vu on-chain | Possible et assumé : tout ce qui est on-chain est public. Le copieur arrive après, donc il est derrière au classement. Le podium réduit l'intérêt de copier sans le supprimer : un copieur rapide peut finir 2e ou 3e | Classement |
 | 7 | L'organisateur publie une épreuve impossible pour garder la cagnotte | S'il n'y a aucune réussite, les tickets sont remboursés et l'organisateur ne gagne rien. Le code est vérifiable avant de payer | Règles de paiement |
-| 8 | Factory truquée : elle refuse la validation à certains joueurs | Factories libres (seule option compatible avec « pas d'owner »). Le front affiche un badge « source vérifiée » / « non vérifiée » (API Basescan) et le `codehash` enregistré à la création. Litige en dernier recours | Plateforme + frontend + litige |
+| 8 | Factory truquée : elle refuse la validation à certains joueurs | Factories libres (seule option compatible avec « pas d'owner »). Le front affiche un badge « code vérifié » / « non vérifié » (Sourcify, sans clé), le `codehash` enregistré à la création comparé au code actuel, et avertit avant l'achat du ticket si une épreuve n'est pas vérifiée. Litige en dernier recours | Plateforme + frontend + litige |
 | 9 | Factory malveillante : gaz infini, réentrance, revert | `staticcall` avec limite de gaz pour la validation, `nonReentrant`, CEI. Au pire, seule cette épreuve est bloquée, jamais les fonds | Plateforme |
 | 10 | L'organisateur fuite la solution à un complice | Pas prouvable on-chain. Dissuadé par la caution, contestable par litige. Limite assumée | Caution + litige |
 | 11 | Un joueur conteste par frustration | La caution de contestation est perdue si le litige est rejeté, et versée à l'organisateur | Litige |
@@ -207,19 +207,22 @@ L'appel à un tiers sans intérêt dans la partie corrige ces deux biais, et son
 | Quorum | Constante | max(3 votants, 20 % des tickets) |
 | Caution de contestation | Par CTF | max(3 × `ticketPrice`, 0.001 ETH), toujours ≥ frais d'arbitrage |
 | Frais d'arbitrage (`MockArbitrator`) | Déployeur | Fixes, inférieurs à 0.001 ETH (le minimum de la caution de contestation) |
-| Limite de gaz de `validateInstance` | Constante | 300 000 *(proposé)* |
+| Limite de gaz de `validateInstance` | Constante (`VALIDATION_GAS`) | 300 000 |
 | Arbitre | Déployeur | `immutable`, fixé au déploiement |
 
 Les quatre durées du litige sont des **arguments du constructeur** stockés en `immutable` : elles sont fixées à vie pour un déploiement donné. Pour la démo, un déploiement séparé les réduit à quelques minutes.
 
 ---
 
-## Interface du contrat (cible)
+## Interface du contrat
 
-Interface indicative pour aligner frontend, tests et doc. Elle sera remplacée par le code réel.
+Interface réelle de `CTFPlatform`, tirée de [`ICTFPlatform.sol`](../contracts/contracts/interfaces/ICTFPlatform.sol), qui fait foi (structs `CTFParams`, `CTF`, `Level`, `Player`, `Dispute` comprises). Les litiges sont en **version simplifiée** : `vote` et `appeal` sont déclarées pour le design complet mais revert `NotImplemented`.
 
 ```solidity
-interface ICTFPlatform {
+interface ICTFPlatform is IArbitrable {
+    enum Phase { Open, Running, Contestation, Voting, AppealWindow, Appealed, Finalized, Cheated }
+    // Voting et AppealWindow ne sont jamais atteintes dans la version simplifiée.
+
     // Organisateur
     function createCTF(CTFParams calldata p, address[] calldata factories) external payable returns (uint256 ctfId);
 
@@ -227,19 +230,39 @@ interface ICTFPlatform {
     function buyTicket(uint256 ctfId) external payable;
     function createInstance(uint256 ctfId, uint256 levelIndex) external returns (address instance);
     function submit(uint256 ctfId, uint256 levelIndex) external;
+    function claimRefund(uint256 ctfId) external;          // aucun gagnant, ou triche confirmée
 
     // Temps (n'importe qui)
-    function finalize(uint256 ctfId) external;
-    function applyVoteAfterTimeout(uint256 ctfId) external;
+    function finalize(uint256 ctfId) external;              // après la contestation, sans litige
+    function applyVoteAfterTimeout(uint256 ctfId) external; // arbitre muet : litige rejeté
 
     // Litiges
-    function openDispute(uint256 ctfId) external payable;
-    function vote(uint256 ctfId, bool cheated) external;
-    function appeal(uint256 ctfId) external payable;
-    function rule(uint256 disputeID, uint256 ruling) external; // appelée par l'arbitre (IArbitrable)
+    function openDispute(uint256 ctfId) external payable;   // msg.value = bond + fee de disputeCost
+    function rule(uint256 disputeID, uint256 ruling) external; // IArbitrable, appelée par l'arbitre seul
+    function vote(uint256 ctfId, bool cheated) external;    // revert NotImplemented
+    function appeal(uint256 ctfId) external payable;        // revert NotImplemented
 
     // Argent
     function withdraw() external;
+
+    // Lecture
+    function ctfCount() external view returns (uint256);
+    function getCTF(uint256 ctfId) external view returns (CTF memory);
+    function getLevels(uint256 ctfId) external view returns (Level[] memory);
+    function getPlayer(uint256 ctfId, address player) external view returns (Player memory);
+    function getPodium(uint256 ctfId) external view returns (address[3] memory);
+    function getDispute(uint256 ctfId) external view returns (Dispute memory);
+    function disputeCost(uint256 ctfId) external view returns (uint256 bond, uint256 fee);
+    function burned() external view returns (uint256);
+    function phaseOf(uint256 ctfId) external view returns (Phase);
+    function instanceOf(uint256 ctfId, uint256 levelIndex, address player) external view returns (address);
+    function isSolved(uint256 ctfId, uint256 levelIndex, address player) external view returns (bool);
+    function owed(address account) external view returns (uint256);
+    function arbitrator() external view returns (address);
+    function contestationPeriod() external view returns (uint256);
+    function votingPeriod() external view returns (uint256);
+    function appealPeriod() external view returns (uint256);
+    function arbitratorTimeout() external view returns (uint256);
 
     // Events : un par étape, lus par le frontend
     event CTFCreated(uint256 indexed ctfId, address indexed organizer);
@@ -247,13 +270,30 @@ interface ICTFPlatform {
     event InstanceCreated(uint256 indexed ctfId, uint256 levelIndex, address indexed player, address instance);
     event LevelSolved(uint256 indexed ctfId, uint256 levelIndex, address indexed player, uint256 timestamp);
     event DisputeOpened(uint256 indexed ctfId, address indexed contester);
-    event Voted(uint256 indexed ctfId, address indexed voter, bool cheated);
-    event Appealed(uint256 indexed ctfId, uint256 disputeID);
+    event Appealed(uint256 indexed ctfId, uint256 disputeID); // litige transmis à l'arbitre, dès openDispute
     event Ruled(uint256 indexed ctfId, bool cheated);
     event Finalized(uint256 indexed ctfId, bool cheated);
+    event Credited(uint256 indexed ctfId, address indexed account, uint256 amount);
+    event RefundClaimed(uint256 indexed ctfId, address indexed player, uint256 amount);
     event Withdrawn(address indexed to, uint256 amount);
+    event Voted(uint256 indexed ctfId, address indexed voter, bool cheated); // design complet, jamais émis
+    // + event Ruling(IArbitrator indexed arbitrator, uint256 indexed disputeID, uint256 ruling), hérité d'IArbitrable
 }
 ```
+
+**Erreurs personnalisées**, une par refus, décodées par le frontend :
+
+| Où | Erreurs |
+| --- | --- |
+| Constructeur | `ZeroArbitrator`, `ZeroPeriod` |
+| `createCTF` | `TitleTooLong`, `StartInPast`, `InvalidDuration`, `InvalidMaxPlayers`, `TicketPriceTooLow`, `ZeroCashPrize`, `BondTooLow`, `NoLevels`, `TooManyLevels`, `FactoryNotContract`, `WrongValue` |
+| Commun | `CTFNotFound`, `WrongPhase` |
+| `buyTicket` | `OrganizerCannotPlay`, `AlreadyHasTicket`, `CTFFull`, `WrongValue` |
+| `createInstance`, `submit` | `NoTicket`, `InvalidLevel`, `InstanceAlreadyCreated`, `InvalidInstance`, `NoInstance`, `AlreadySolved`, `NotSolved` |
+| `finalize`, `claimRefund`, `withdraw` | `ContestationNotOver`, `NothingToRefund`, `NothingToWithdraw`, `TransferFailed` |
+| Litiges | `ContestationOver`, `DisputeAlreadyOpened`, `WrongDisputeBond`, `NotArbitrator`, `UnknownDispute`, `InvalidRuling`, `TimeoutNotReached`, `NotImplemented` |
+
+`AlreadyVoted` et `NotAppealable` sont déclarées pour le design complet et ne sont jamais levées.
 
 ---
 
@@ -265,7 +305,7 @@ interface ICTFPlatform {
 | 2 | Cash prize si triche confirmée | **Rendu à l'organisateur** | La caution brûlée suffit comme punition : elle dépasse déjà ce qu'un tricheur peut gagner. Et c'est moins grave si l'arbitre condamne à tort un organisateur honnête |
 | 3 | Gas | **Aucun remboursement** | Impossible à calculer proprement on-chain ; la complexité ne vaut pas le gain |
 | 4 | Tickets | **Un seul ticket par adresse**, prix minimum **0.0001 ETH** | Sans prix minimum, voter ne coûte rien et un organisateur achète le vote avec des adresses gratuites |
-| 5 | Factories | **Libres**. Le front affiche un badge « source vérifiée » / « non vérifiée » (API Basescan) et le `codehash` enregistré | C'est la seule option compatible avec « pas d'owner » : une liste blanche demanderait quelqu'un pour la tenir |
+| 5 | Factories | **Libres**. Le front affiche un badge « code vérifié » / « non vérifié » (Sourcify, sans clé), le `codehash` enregistré comparé au code actuel, et avertit avant l'achat du ticket si une épreuve n'est pas vérifiée | C'est la seule option compatible avec « pas d'owner » : une liste blanche demanderait quelqu'un pour la tenir |
 | 6 | Durées et quorum | Contestation **48 h** (sans litige, gains retirables à la fin de cette fenêtre), vote **48 h**, appel **24 h**, délai max de l'arbitre **7 jours** : 12 jours dans le pire cas. Arguments du constructeur en `immutable`. Quorum = **max(3 votants, 20 % des tickets)** ; quorum raté = « pas de triche », appelable par le contestataire. Organisateur : durée d'un CTF de 1 h à 30 jours, `maxPlayers` de 1 à 200 | Durées fixées à vie (pas d'admin), mais réductibles à quelques minutes pour la démo. Le plancher de 3 votants évite qu'une seule voix tranche un petit CTF |
 | 7 | Points et égalités | **1 point** par épreuve réussie. À égalité, la dernière réussite la plus tôt (timestamp du bloc du `submit`) passe devant. Dans le même bloc, le premier enregistré garde sa place (comparaison stricte) | Règle simple, déterministe, calculable à chaque `submit` |
 | 8 | Solde du Coffre | Géré par **la factory**, pas par `CTFPlatform`. L'organisateur alimente sa factory (`maxPlayers × 0.0001 ETH`) et récupère le reste après le CTF via une fonction de la factory. Ce que le joueur vide, il le garde | `CTFPlatform` reste générique et ne connaît pas le détail des épreuves |

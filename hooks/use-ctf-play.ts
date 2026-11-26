@@ -1,7 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { parseEventLogs, type Address, type TransactionReceipt } from "viem"
+import {
+  parseEventLogs,
+  type Address,
+  type Hex,
+  type TransactionReceipt,
+} from "viem"
 import { useConnection } from "wagmi"
 
 import type { Role } from "@/components/dispute/dispute-card"
@@ -40,6 +45,8 @@ export type PlayChallenge = {
   factory?: Address
   /** Coffre reconnu à son code : Sourcify ne le connaît pas. */
   matchedByCode?: boolean
+  /** Empreinte du code enregistrée par CTFPlatform à la création du CTF. */
+  codehash?: Hex
   /** Ce que le joueur doit obtenir, pour les épreuves connues. */
   goal?: string
   /** Pourquoi l'instance ne peut pas encore être créée (Coffre non lié). */
@@ -337,6 +344,7 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
             ? undefined
             : "Ce Coffre n'est pas encore lié au CTF par l'organisateur : impossible de créer l'instance pour l'instant.",
           factory: level.factory,
+          codehash: level.codehash,
           done: state.solved[index] ?? false,
           instance: state.instances[index],
         }

@@ -22,10 +22,11 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { ChainError, ChainLoading } from "@/components/onchain/chain-state"
+import { DisputePeriod } from "@/components/dispute/dispute-period"
 import { useCtfs } from "@/hooks/use-ctfs"
 import { contestBond } from "@/lib/ctf/dispute"
 import type { Ctf } from "@/lib/ctf/types"
-import { formatEth, formatRemaining } from "@/lib/format"
+import { formatEth, formatRemaining, formatTimeLeft } from "@/lib/format"
 import { truncateAddress } from "@/lib/onchain/format"
 
 type Row = Ctf
@@ -80,9 +81,7 @@ export function DisputeList() {
               + frais de l&apos;arbitre
             </ItemDescription>
             <ItemActions>
-              <Badge variant="muted">
-                reste {formatRemaining(ctf.remaining)}
-              </Badge>
+              <Badge variant="muted">{formatTimeLeft(ctf.remaining)}</Badge>
             </ItemActions>
           </>
         )}
@@ -132,7 +131,8 @@ function Section({
             </EmptyMedia>
             <EmptyTitle>{empty}</EmptyTitle>
             <EmptyDescription>
-              Les CTF terminés apparaissent ici pendant 48 h.
+              Les CTF terminés apparaissent ici pendant{" "}
+              <DisputePeriod of="contestation" />.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

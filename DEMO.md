@@ -10,10 +10,11 @@
 | Joueur 1 (gagnant) | Profil B | `0x…` | ticket + gas |
 | Joueur 2 | Profil C | `0x…` | ticket + caution de contestation + frais d'arbitrage (0.0005 ETH) + gas |
 
-- `CTFPlatform` : `0x…` ([Basescan](https://sepolia.basescan.org/address/0x…))
-- `MockArbitrator` : `0x…`
-- Durées raccourcies pour la démo (`ignition/parameters/demo.json`) : contestation et timeout de l'arbitre en minutes.
-- Le **compte qui a déployé** est le `ruler` de `MockArbitrator` : c'est lui qui rend les décisions (`giveRuling`), depuis Basescan / Blockscout (*Write Contract*).
+- `CTFPlatform` (déploiement démo `pwnpot-disputes-demo`) : `0xb701e1c29F0cA0F237414a4F395Ed1f04e9fbf60` ([Basescan](https://sepolia.basescan.org/address/0xb701e1c29F0cA0F237414a4F395Ed1f04e9fbf60#code))
+- `MockArbitrator` : `0x424daD72E083dD0011DC7F098A18b27692E9870D` ([Basescan](https://sepolia.basescan.org/address/0x424daD72E083dD0011DC7F098A18b27692E9870D#writeContract))
+- Durées raccourcies pour la démo (`ignition/parameters/demo.json`) : contestation 10 min, timeout de l'arbitre 15 min.
+- **Un CTF dure au moins 1 h** (`MIN_DURATION`) : les CTF de la démo se créent à l'avance, calés pour finir juste avant le passage.
+- Le **compte qui a déployé** (`0xA469B2A79DD89792D71921F987Dfdc0b189466ad`) est le `ruler` de `MockArbitrator` : c'est lui qui rend les décisions (`giveRuling`), depuis Basescan / Blockscout (*Write Contract*).
 - Contrats d'attaque des épreuves 1 et 2 déployés à l'avance par le joueur 1 : `0x…`
 
 ## Scénario 1 — Un CTF qui se passe bien (~6 min)

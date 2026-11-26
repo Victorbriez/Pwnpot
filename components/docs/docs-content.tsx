@@ -485,7 +485,7 @@ export function DocsContent() {
           si elle a été exploitée (<Code>validateInstance</Code>, en lecture
           seule). Les factories sont libres : c&apos;est la seule option
           compatible avec une plateforme sans owner. Le site affiche si leur
-          code est vérifié sur Basescan.
+          code est vérifié (Sourcify, lisible sur Blockscout).
         </DocText>
         <DocText>
           Pour le Coffre, c&apos;est ta factory qui alimente les instances (
@@ -658,7 +658,10 @@ export function DocsContent() {
           fiables par défaut. Vérifie que :
         </DocText>
         <DocList>
-          <li>le code de chaque factory est vérifié sur Basescan ;</li>
+          <li>
+            le code de chaque factory est vérifié (Sourcify, Blockscout ou
+            Basescan) ;
+          </li>
           <li>
             <Code>validateInstance</Code> lit seulement l&apos;état de
             l&apos;instance, sans exception pour une adresse ni porte dérobée ;
@@ -672,6 +675,13 @@ export function DocsContent() {
             au code lu.
           </li>
         </DocList>
+        <DocText>
+          La page de chaque CTF t&apos;aide : un badge par épreuve (code vérifié
+          sur Sourcify, non vérifié, proxy), l&apos;empreinte du code comparée
+          au code actuel, et un avertissement à cocher avant d&apos;acheter ton
+          ticket si une épreuve n&apos;est pas vérifiée. Lire{" "}
+          <Code>validateInstance</Code> reste à ta charge.
+        </DocText>
       </DocSection>
 
       <DocSection
