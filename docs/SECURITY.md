@@ -87,7 +87,9 @@ Ce document liste ce qu'un attaquant peut tenter contre Pwnpot, ce qui l'en emp�
 
 ## Invariants
 
-Ces propriétés doivent être vraies à tout moment. Ce sont les cibles des tests d'invariants (fuzz Solidity `forge-std`, lancé par Hardhat).
+Ces propriétés doivent être vraies à tout moment. Elles sont vérifiées par [`CTFPlatformInvariants.t.sol`](../contracts/contracts/CTFPlatformInvariants.t.sol) ([#31](https://github.com/Victorbriez/Pwnpot/issues/31)) : un *handler* enchaîne des actions aléatoires (créer un CTF, acheter un ticket, créer et soumettre une instance exploitée ou non, avancer le temps, finaliser, contester, faire trancher l'arbitre ou attendre son timeout, se faire rembourser, retirer, et un tiers ou le déployeur qui tente de trancher), puis chaque invariant est vérifié. 256 suites de 60 actions à chaque `pnpm contracts:test`, 10 000 avec `pnpm contracts:invariants` (environ 7 min). Sur 10 000 suites, toutes les issues sont atteintes (podium à 1, 2 et 3 gagnants, aucun gagnant, litige rejeté, timeout de l'arbitre, triche confirmée).
+
+Bugs injectés pour vérifier que les invariants les détectent : un `withdraw` qui ne remet pas `owed` à zéro est détecté dès 256 suites (invariants 1, 2 et 6) ; un 3e du podium crédité deux fois n'est détecté qu'avec les 10 000 suites (invariants 1 et 2), car le cas à trois gagnants est plus rare. Lancer `pnpm contracts:invariants` avant chaque déploiement.
 
 1. **Solvabilité** : `address(this).balance ≥ Σ owed[*] + Σ fonds encore bloqués dans les CTF en cours`.
 2. **Conservation** : pour un CTF finalisé, `cash prize + Σ tickets + caution organisateur + caution de contestation = Σ crédits distribués + montant brûlé` (les frais d'arbitrage partent chez l'arbitre à l'ouverture du litige ; s'ils sont rendus au contestataire, c'est sur la caution de l'organisateur). Testé au wei près par `testFuzz_Conservation_WithDispute`.
@@ -178,6 +180,7 @@ Avant chaque déploiement sur Base Sepolia :
 
 - [ ] `pnpm contracts:test` passe, avec un test d'exploit par épreuve et un test par issue (gagnant, aucun gagnant, litige rejeté, triche confirmée, timeout de l'arbitre).
 - [ ] `pnpm --filter @pwnpot/contracts exec hardhat test --build-profile production` passe.
+- [ ] `pnpm contracts:invariants` passe (10 000 suites d'actions aléatoires).
 - [ ] Slither lancé (`pipx install slither-analyzer`) : chaque alerte est corrigée, ou écartée avec une justification écrite ici.
 - [ ] Liste des points d'entrée qui modifient l'état revue après chaque changement de `CTFPlatform` (plugin `entry-point-analyzer`).
 - [ ] Aucune clé, seed ni `.env` dans git.
