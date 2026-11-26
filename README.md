@@ -149,14 +149,15 @@ pnpm install
 cp .env.example .env.local      # valeurs du déploiement démo ; vider l'adresse pour le mode démo
 ```
 
-| Commande                       | Effet                                               |
-| ------------------------------ | --------------------------------------------------- |
-| `pnpm dev`                     | Lance le frontend sur http://localhost:3000         |
-| `pnpm build`                   | Build de production                                 |
-| `pnpm lint` / `pnpm typecheck` | ESLint / `tsc --noEmit` du frontend                 |
-| `pnpm contracts:build`         | Compile les contrats                                |
-| `pnpm contracts:test`          | Tests Solidity + TypeScript des contrats            |
-| `pnpm contracts:typecheck`     | Compile puis vérifie les types des tests et scripts |
+| Commande                       | Effet                                                     |
+| ------------------------------ | --------------------------------------------------------- |
+| `pnpm dev`                     | Lance le frontend sur http://localhost:3000               |
+| `pnpm build`                   | Build de production                                       |
+| `pnpm start`                   | Sert le build de production en local (après `pnpm build`) |
+| `pnpm lint` / `pnpm typecheck` | ESLint / `tsc --noEmit` du frontend                       |
+| `pnpm contracts:build`         | Compile les contrats                                      |
+| `pnpm contracts:test`          | Tests Solidity + TypeScript des contrats                  |
+| `pnpm contracts:typecheck`     | Compile puis vérifie les types des tests et scripts       |
 
 Variables du frontend (`.env.local`, aucune n'est secrète) :
 

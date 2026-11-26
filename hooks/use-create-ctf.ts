@@ -11,6 +11,7 @@ import {
 import { baseSepolia } from "viem/chains"
 import {
   deployContract,
+  getBlock,
   waitForTransactionReceipt,
   writeContract,
 } from "wagmi/actions"
@@ -199,9 +200,15 @@ export function useCreateCtf(): CreateCtfState {
         if (!created) {
           // Le début a pu passer pendant le déploiement du Coffre : le contrat
           // refuserait (`StartInPast`) à chaque reprise. On le dit clairement.
+          // Heure de la chaîne : c'est elle que compare le contrat (en local,
+          // `pnpm chain:time` peut l'avancer devant l'horloge).
+          const chainNow = isDemo
+            ? BigInt(0)
+            : (await getBlock(wagmiConfig, { chainId })).timestamp
+          const now = BigInt(Math.floor(Date.now() / 1000))
           if (
             !isDemo &&
-            params.startTime <= BigInt(Math.floor(Date.now() / 1000) + 30)
+            params.startTime <= (chainNow > now ? chainNow : now) + BigInt(30)
           )
             throw new Error(
               "L'heure de début est passée (ou presque) : le contrat refusera ce CTF. Recommence à zéro avec un début plus tard."

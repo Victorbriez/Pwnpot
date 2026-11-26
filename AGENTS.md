@@ -79,6 +79,7 @@ lib/mock/                      données fictives en attendant CTFPlatform
 ```bash
 pnpm dev                  # serveur de dev
 pnpm build                # build de prod
+pnpm start                # sert le build de prod en local (après pnpm build)
 pnpm lint                 # ESLint (frontend)
 pnpm typecheck            # tsc --noEmit (frontend)
 pnpm format               # Prettier
