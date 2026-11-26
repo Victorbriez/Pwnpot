@@ -24,20 +24,20 @@ N'importe qui peut publier un CTF. Chaque épreuve est un contrat volontairement
 
 ## État d'avancement
 
-| Partie                                                                                     | État                                                                                                                                                                              |
-| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frontend Next.js 16 + wagmi 3, en ligne sur [pwnpot.vercel.app](https://pwnpot.vercel.app) | ✅ en place : lit et écrit dans `CTFPlatform` sur Base Sepolia                                                                                                                    |
-| Workspace Hardhat 3 (`contracts/`), keystore, réseau `baseSepolia`                         | ✅ en place                                                                                                                                                                       |
-| `CTFPlatform` (CTF, tickets, instances, scores, finalisation, remboursements, retraits)    | ✅ déployé et vérifié                                                                                                                                                             |
-| Factories des 3 épreuves + tests d'exploit                                                 | ✅ en place : Usurpateur et Coffre-fort à code partagées, Coffre déployé par chaque organisateur                                                                                  |
-| Écrans du frontend (explorer, création, jeu, classement, gains)                            | ✅ en place                                                                                                                                                                       |
-| Tests d'attaque (factory malveillante, réentrance au retrait, bombe à gaz)                 | ✅ en place : `CTFPlatformAttacks.t.sol` ([#8](https://github.com/Victorbriez/Pwnpot/issues/8))                                                                                   |
-| Litiges : ouverture, vote, appel ERC-792                                                   | ⏳ à faire : `openDispute`, `vote`, `appeal` et `rule` existent mais revert avec `NotImplemented`. `MockArbitrator` est déployé. Les écrans de litige ne tournent qu'en mode démo |
-| Déploiement vérifié (Basescan, Blockscout, Sourcify)                                       | ✅ en place (durées de démo : contestation et vote 10 min)                                                                                                                        |
+| Partie                                                                                     | État                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend Next.js 16 + wagmi 3, en ligne sur [pwnpot.vercel.app](https://pwnpot.vercel.app) | ✅ en place : lit et écrit dans `CTFPlatform` sur Base Sepolia                                                                                                                |
+| Workspace Hardhat 3 (`contracts/`), keystore, réseau `baseSepolia`                         | ✅ en place                                                                                                                                                                   |
+| `CTFPlatform` (CTF, tickets, instances, scores, finalisation, remboursements, retraits)    | ✅ déployé et vérifié                                                                                                                                                         |
+| Factories des 3 épreuves + tests d'exploit                                                 | ✅ en place : Usurpateur et Coffre-fort à code partagées, Coffre déployé par chaque organisateur                                                                              |
+| Écrans du frontend (explorer, création, jeu, classement, gains)                            | ✅ en place                                                                                                                                                                   |
+| Tests d'attaque (factory malveillante, réentrance au retrait, bombe à gaz)                 | ✅ en place : `CTFPlatformAttacks.t.sol` ([#8](https://github.com/Victorbriez/Pwnpot/issues/8))                                                                               |
+| Litiges : contestation et arbitre ERC-792                                                  | ✅ version simplifiée : `openDispute` saisit directement l'arbitre, `rule` tranche, timeout de 7 j. Le vote des joueurs et l'appel ne sont pas implémentés (`NotImplemented`) |
+| Déploiement vérifié (Basescan, Blockscout, Sourcify)                                       | ✅ en place (durées de démo : contestation 10 min)                                                                                                                            |
 
 Le plan jusqu'au code freeze, la répartition et les risques sont dans [docs/PLAN.md](docs/PLAN.md).
 
-> Le design ci-dessous est la cible. Tout est déployé **sauf les litiges** (étape 7, votants et arbitre) : ils arrivent avant le code freeze. Les choix de l'équipe sont résumés dans [docs/DESIGN.md § Décisions actées](docs/DESIGN.md#décisions-actées).
+> Le design ci-dessous est la cible. Tout est déployé, avec des **litiges simplifiés** : la contestation part directement à l'arbitre, sans vote des joueurs ni appel (voir [docs/DESIGN.md § Litiges et appel](docs/DESIGN.md#litiges-et-appel)). Les choix de l'équipe sont résumés dans [docs/DESIGN.md § Décisions actées](docs/DESIGN.md#décisions-actées).
 
 ---
 
@@ -65,7 +65,7 @@ flowchart LR
 4. **Validation** : le joueur soumet. La plateforme demande à la factory si l'instance est résolue (`validateInstance`, appelé en `staticcall` avec une limite de gaz). Si oui, la réussite et son horodatage sont enregistrés on-chain.
 5. **Fin** : après la deadline et une fenêtre de contestation de 48 h, cash prize et tickets sont crédités au podium (60 / 30 / 10 %). Chacun appelle `withdraw()` (_pull payment_).
 6. **Personne n'a réussi** : les tickets sont remboursés. L'organisateur récupère son cash prize et sa caution, mais ne gagne rien.
-7. **Litige** _(pas encore dans le contrat déployé)_ : si un joueur soupçonne une triche de l'organisateur (solution fuitée à un complice, épreuve truquée), il ouvre un litige en déposant une caution de contestation. Les joueurs votent (1 adresse = 1 voix), puis le camp perdant peut faire appel à un arbitre ERC-792. Si la triche est confirmée, la caution de l'organisateur est brûlée, son cash prize lui est rendu et les tickets sont remboursés.
+7. **Litige** : si un joueur soupçonne une triche de l'organisateur (solution fuitée à un complice, épreuve truquée), il ouvre un litige pendant la contestation en déposant une caution et les frais d'arbitrage. Dans la version déployée, le litige part **directement à un arbitre ERC-792** (le design complet prévoit d'abord un vote des joueurs, puis un appel). Si la triche est confirmée, la caution de l'organisateur est brûlée, son cash prize lui est rendu et les tickets sont remboursés. Sans décision sous 7 jours, le litige est rejeté.
 
 Le détail des phases, des flux d'argent et des règles est dans [docs/DESIGN.md](docs/DESIGN.md).
 
@@ -79,10 +79,10 @@ Les quatre points ci-dessous suivent la structure du test de décentralisation d
 2. **La version centralisée.** Une plateforme avec une base de données et un administrateur pourrait encaisser les tickets et ne jamais payer. Elle pourrait aussi déclarer un faux gagnant, annuler un CTF après coup, geler un compte ou disparaître avec la cagnotte. Ici, aucune de ces actions n'existe dans le contrat.
 3. **Qui est protégé.** Le joueur qui paie un ticket à un organisateur qu'il ne connaît pas. Il peut lire le code des épreuves et les règles de paiement **avant** de payer, et il sait que personne ne peut les changer ensuite.
 4. **Ce qui reste trusted.**
-   - **L'organisateur connaît les solutions** et peut les fuiter à un complice. Ce n'est pas prouvable on-chain. C'est dissuadé économiquement par sa caution, et contestable par un litige (à venir : tant que les litiges ne sont pas déployés, la caution est toujours rendue).
+   - **L'organisateur connaît les solutions** et peut les fuiter à un complice. Ce n'est pas prouvable on-chain. C'est dissuadé économiquement par sa caution, et contestable par un litige.
    - **Une factory est écrite par l'organisateur** : elle peut être truquée (validation qui refuse certains joueurs, porte dérobée). Les joueurs doivent lire le code vérifié avant de payer. Le litige couvre ce cas.
-   - **Le vote des joueurs est intéressé** : les perdants ont intérêt à voter « triche », et l'organisateur peut inscrire des complices (un ticket payant par adresse) pour peser dans le vote. L'appel à l'arbitre corrige ces deux biais.
-   - **L'arbitre**, fixé au déploiement, est trusted en appel, et seulement sur les fonds du litige.
+   - **L'arbitre**, fixé au déploiement, est trusted, et seulement sur les fonds du litige. Dans la version déployée, il tranche seul chaque litige ; en démo, c'est `MockArbitrator`, contrôlé par l'équipe.
+   - _(Design complet)_ **Le vote des joueurs serait intéressé** : les perdants ont intérêt à voter « triche », et l'organisateur peut inscrire des complices (un ticket payant par adresse). L'appel à l'arbitre corrige ces deux biais.
 
 > Pwnpot n'est pas « fully decentralised » : il réduit la confiance au minimum, rend sa trahison coûteuse, et l'écrit noir sur blanc.
 
@@ -90,7 +90,7 @@ Les quatre points ci-dessous suivent la structure du test de décentralisation d
 
 ## Rôles et confiance
 
-> Les litiges ne sont pas encore dans le contrat déployé : les lignes **Votants** et **Arbitre**, et « contester, voter » pour le joueur, décrivent la cible.
+> Litiges simplifiés dans le contrat déployé : la ligne **Votants** et « voter » pour le joueur décrivent la cible. Aujourd'hui, l'**arbitre** tranche directement chaque litige, et son timeout rejette le litige.
 
 | Rôle                                                    | Ce qu'il peut faire                                                 | S'il agit de mauvaise foi                                                                                                                                                                                                                                                           | S'il disparaît                                                                                                         |
 | ------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -105,13 +105,13 @@ Les quatre points ci-dessous suivent la structure du test de décentralisation d
 
 ## Architecture : on-chain / off-chain
 
-| Où                                                | Quoi                                                                                                                                | Pourquoi là                                                 |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| **On-chain** (`CTFPlatform`)                      | Fonds (cash prize, tickets, cautions), inscriptions, instances par joueur, réussites horodatées, litiges, votes, crédits de retrait | C'est ce qui doit être impossible à modifier ou à détourner |
-| **On-chain** (factories + instances)              | Le code des épreuves et leur condition de réussite                                                                                  | La réussite doit être vérifiable par n'importe qui          |
-| **On-chain** (`MockArbitrator` / arbitre ERC-792) | Décisions d'appel                                                                                                                   | Interface standard, remplaçable par Kleros                  |
-| **Off-chain** (frontend Next.js)                  | Affichage, construction des transactions, lecture des events                                                                        | Ne détient **aucun état** : tout est relu depuis la chaîne  |
-| **Off-chain** (wallet du joueur)                  | Signature des transactions                                                                                                          | Le frontend ne voit jamais une clé privée                   |
+| Où                                                | Quoi                                                                                                                         | Pourquoi là                                                 |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **On-chain** (`CTFPlatform`)                      | Fonds (cash prize, tickets, cautions), inscriptions, instances par joueur, réussites horodatées, litiges, crédits de retrait | C'est ce qui doit être impossible à modifier ou à détourner |
+| **On-chain** (factories + instances)              | Le code des épreuves et leur condition de réussite                                                                           | La réussite doit être vérifiable par n'importe qui          |
+| **On-chain** (`MockArbitrator` / arbitre ERC-792) | Décisions sur les litiges                                                                                                    | Interface standard, remplaçable par Kleros                  |
+| **Off-chain** (frontend Next.js)                  | Affichage, construction des transactions, lecture des events                                                                 | Ne détient **aucun état** : tout est relu depuis la chaîne  |
+| **Off-chain** (wallet du joueur)                  | Signature des transactions                                                                                                   | Le frontend ne voit jamais une clé privée                   |
 
 Il n'y a **aucun backend**. Si le frontend disparaît, tout reste utilisable depuis Basescan (_Write Contract_) ou un script viem.
 

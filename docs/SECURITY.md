@@ -67,8 +67,9 @@ Ce document liste ce qu'un attaquant peut tenter contre Pwnpot, ce qui l'en emp�
 
 | Attaque | Parade | Reste possible ? |
 | --- | --- | --- |
-| Rendre une décision injuste | Il n'est saisi qu'en appel, et sa décision ne porte que sur les fonds du litige | **Oui**, dans ce périmètre |
-| Ne jamais répondre | Timeout : le vote s'applique | Non |
+| Rendre une décision injuste | Sa décision ne porte que sur les fonds du litige. Dans le design complet, il n'est saisi qu'en appel ; dans la version déployée, il tranche directement chaque litige | **Oui**, dans ce périmètre |
+| Ne jamais répondre | Timeout de 7 jours : n'importe qui appelle `applyVoteAfterTimeout`, le litige est rejeté (sans vote, c'est le résultat par défaut) | Non |
+| Trancher pendant `openDispute` (réentrance) | `rule` et `openDispute` sont `nonReentrant` ; l'arbitre est `immutable` | Non |
 | Appeler `rule` pour un autre CTF | `rule` vérifie `msg.sender == arbitrator` et la correspondance `disputeID → ctfId` | Non |
 
 ### Séquenceur Base, RPC, frontend
@@ -84,10 +85,10 @@ Ce document liste ce qu'un attaquant peut tenter contre Pwnpot, ce qui l'en emp�
 
 ## Invariants
 
-Ces propriétés doivent être vraies à tout moment. Ce sont les cibles des tests d'invariants (fuzzing Foundry).
+Ces propriétés doivent être vraies à tout moment. Ce sont les cibles des tests d'invariants (fuzz Solidity `forge-std`, lancé par Hardhat).
 
 1. **Solvabilité** : `address(this).balance ≥ Σ owed[*] + Σ fonds encore bloqués dans les CTF en cours`.
-2. **Conservation** : pour un CTF finalisé, `cash prize + Σ tickets + caution organisateur + caution de contestation = Σ crédits distribués + montant brûlé`.
+2. **Conservation** : pour un CTF finalisé, `cash prize + Σ tickets + caution organisateur + caution de contestation = Σ crédits distribués + montant brûlé` (les frais d'arbitrage partent chez l'arbitre à l'ouverture du litige ; s'ils sont rendus au contestataire, c'est sur la caution de l'organisateur). Testé au wei près par `testFuzz_Conservation_WithDispute`.
 3. **Une seule issue** : un CTF finalisé ne peut plus changer d'issue, et ses fonds ne sont crédités qu'une fois.
 4. **Pas de réussite sans exploit** : `LevelSolved(ctf, level, player)` implique que `validateInstance(instance(player), player)` renvoyait `true` au moment de la soumission.
 5. **Pas d'admin** : aucune fonction ne permet à une adresse fixe (déployeur compris) de déplacer des fonds ou de changer une règle.
@@ -98,8 +99,10 @@ Ces propriétés doivent être vraies à tout moment. Ce sont les cibles des tes
 ## Limites connues et assumées
 
 - **La fuite de solution n'est pas prouvable.** Un organisateur qui donne la solution à un complice avant le CTF ne laisse aucune trace on-chain. Le design la rend **coûteuse** (caution) et **contestable** (litige), mais pas impossible.
-- **Le vote des joueurs n'est pas neutre.** Les perdants ont intérêt à voter « triche ». L'appel corrige ce biais : un organisateur honnête doit avancer les frais d'arbitrage, qui lui sont remboursés s'il gagne (plafonnés à la caution de contestation).
-- **L'arbitre est trusted en appel.** Il est choisi au déploiement : c'est le seul choix du déployeur qui pèse sur les litiges. En démo, `MockArbitrator` est contrôlé par l'équipe. Il faut le dire explicitement au jury.
+- **Litiges simplifiés.** Le contrat déployé n'a ni vote des joueurs ni appel : la contestation part directement à l'arbitre (`vote` et `appeal` revert `NotImplemented`). C'est le plan B de [PLAN.md](PLAN.md#risques-et-plans-b), assumé faute de temps. L'interface (`Dispute`, events, phases) prévoit déjà la version complète.
+- **L'arbitre est trusted.** Il est choisi au déploiement : c'est le seul choix du déployeur qui pèse sur les litiges. Dans la version déployée, il tranche seul chaque litige. En démo, `MockArbitrator` est contrôlé par l'équipe (le compte qui déploie rend les décisions). Il faut le dire explicitement au jury. Kleros se brancherait sans changer `CTFPlatform`.
+- **Un litige retarde les gains.** N'importe quel détenteur de ticket peut bloquer `finalize` jusqu'à 7 jours en contestant. Ça lui coûte sa caution et les frais d'arbitrage s'il a tort.
+- _(Design complet)_ **Le vote des joueurs ne serait pas neutre.** Les perdants ont intérêt à voter « triche ». L'appel corrige ce biais : un organisateur honnête avance les frais d'arbitrage, qui lui sont remboursés s'il gagne.
 - **Les factories sont du code tiers.** La plateforme isole leur exécution, mais ne peut pas juger si une épreuve est « honnête ». C'est au joueur de lire le code vérifié.
 - **Un exploit est copiable** une fois publié sur la chaîne. Le classement au temps limite l'intérêt de copier.
 - **Le podium réduit l'intérêt de copier, mais ne le supprime pas.** Un copieur rapide peut finir 2e ou 3e et toucher une part de la cagnotte.

@@ -115,6 +115,15 @@ Pourquoi le **cash prize est rendu** à l'organisateur en cas de triche : la cau
 
 ## Litiges et appel
 
+> **Version implémentée dans le contrat déployé : simplifiée.** Ce qui suit est le design complet. `CTFPlatform` applique aujourd'hui le plan B de [PLAN.md](PLAN.md#risques-et-plans-b) :
+>
+> - **Ouverture** comme ci-dessous, mais le contestataire paie la caution **et les frais de l'arbitre** : le litige part **directement à l'arbitre**, sans vote des joueurs ni appel. `vote` et `appeal` revert `NotImplemented`.
+> - **Décision** : `rule(disputeID, 1)` = triche confirmée, `2` = rejeté, `0` (refus de trancher) = rejeté.
+> - **Timeout** : sans décision 7 jours après l'ouverture, n'importe qui appelle `applyVoteAfterTimeout` et le litige est **rejeté** (comme un vote sans quorum).
+> - **Flux d'argent** : ceux du tableau, le contestataire jouant le rôle de celui qui saisit l'arbitre. Triche confirmée → caution et frais rendus au contestataire (frais pris sur la caution de l'organisateur avant le burn). Rejet → caution versée à l'organisateur, frais perdus.
+>
+> Le vote et l'appel restent la suite prévue : la structure `Dispute`, les events `Voted` / `Appealed` et les phases `Voting` / `AppealWindow` sont déjà dans l'interface.
+
 ```mermaid
 flowchart LR
     fin(["Fin du CTF"]) --> w{"Litige pendant<br/>la contestation ?"}
