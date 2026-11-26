@@ -184,6 +184,24 @@ contract CTFPlatformFactoriesTest is CTFPlatformBase {
         assertTrue(platform.isSolved(id, 0, alice));
     }
 
+    /// Any answer at all: the level is solved if and only if the factory returns
+    /// exactly `abi.encode(true)`. Generalizes the two tests above to random
+    /// bytes (any length, any content), and checks no score leaks otherwise.
+    function testFuzz_MalformedReturnFactory_OnlyExactTrueIsSolved(bytes calldata answer) public {
+        MalformedReturnFactory factory = new MalformedReturnFactory(answer);
+        (uint256 id, ) = _ctfWith(address(factory));
+        vm.prank(alice);
+        platform.createInstance(id, 0);
+
+        bool exactTrue = keccak256(answer) == keccak256(abi.encode(true));
+        if (!exactTrue) vm.expectRevert(ICTFPlatform.NotSolved.selector);
+        vm.prank(alice);
+        platform.submit(id, 0);
+
+        assertEq(platform.isSolved(id, 0, alice), exactTrue, "solved iff exactly true");
+        assertEq(platform.getPlayer(id, alice).score, exactTrue ? 1 : 0, "score");
+    }
+
     // ------------------------------------------------------------------
     // 3. Funded factory that runs dry
     // ------------------------------------------------------------------
