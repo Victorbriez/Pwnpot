@@ -19,6 +19,21 @@ export default defineConfig({
       },
     },
   },
+  // Tests d'invariants (contracts/CTFPlatformInvariants.t.sol, issue #31) :
+  // quelques centaines de suites d'actions à chaque `hardhat test`, et 10 000
+  // avec `--test-profile invariants` (pnpm contracts:invariants).
+  test: {
+    solidity: {
+      profiles: {
+        default: {
+          invariant: { runs: 256, depth: 60 },
+        },
+        invariants: {
+          invariant: { runs: 10_000, depth: 60 },
+        },
+      },
+    },
+  },
   // Vérification du code sur Basescan (API Etherscan v2), Blockscout et Sourcify.
   // Clé lue dans le keystore : pnpm hardhat keystore set ETHERSCAN_API_KEY
   verify: {
