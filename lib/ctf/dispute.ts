@@ -62,9 +62,22 @@ export function phaseDuration(phase: DisputePhase): number {
 
 export type SettlementLine = { who: string; what: string }
 
-/** Qui récupère quoi à la fin (tableau « Flux d'argent »). */
-export function settlement(state: DisputeState): SettlementLine[] {
+const podiumSplit: Record<number, string> = {
+  1: "tout au 1er",
+  2: "67 / 33 %",
+  3: "60 / 30 / 10 %",
+}
+
+/**
+ * Qui récupère quoi à la fin (tableau « Flux d'argent »). `winners` : gagnants
+ * au podium (0 à 3), inconnu tant qu'il se charge.
+ */
+export function settlement(
+  state: DisputeState,
+  winners?: number
+): SettlementLine[] {
   const cheated = state.phase === "cheated"
+  const contestBond = state.opened ? " + la caution du contestataire" : ""
   const lines: SettlementLine[] = cheated
     ? [
         { who: "Joueurs", what: "Ticket remboursé" },
@@ -73,15 +86,21 @@ export function settlement(state: DisputeState): SettlementLine[] {
           what: "Caution brûlée (moins les frais d'arbitrage), cash prize rendu",
         },
       ]
-    : [
-        { who: "Podium", what: "Cash prize + tickets, 60 / 30 / 10 %" },
-        {
-          who: "Organisateur",
-          what: state.opened
-            ? "Sa caution + la caution du contestataire"
-            : "Sa caution",
-        },
-      ]
+    : winners === 0
+      ? [
+          { who: "Joueurs", what: "Ticket remboursé (aucun gagnant)" },
+          {
+            who: "Organisateur",
+            what: `Cash prize + sa caution${contestBond}`,
+          },
+        ]
+      : [
+          {
+            who: "Podium",
+            what: `Cash prize + tickets${winners ? `, ${podiumSplit[winners]}` : ""}`,
+          },
+          { who: "Organisateur", what: `Sa caution${contestBond}` },
+        ]
   if (state.opened) {
     lines.push({
       who: "Contestataire",

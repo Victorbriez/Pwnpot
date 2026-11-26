@@ -70,7 +70,7 @@ export default async function VaultCodePage() {
               <span key={index} className="contents">
                 <span
                   aria-hidden
-                  className="pr-4 pl-4 text-right text-muted-foreground/60 tabular-nums select-none"
+                  className="pr-4 pl-4 text-right text-muted-foreground tabular-nums select-none"
                 >
                   {index + 1}
                 </span>

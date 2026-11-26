@@ -197,6 +197,15 @@ export function useCreateCtf(): CreateCtfState {
         }
 
         if (!created) {
+          // Le début a pu passer pendant le déploiement du Coffre : le contrat
+          // refuserait (`StartInPast`) à chaque reprise. On le dit clairement.
+          if (
+            !isDemo &&
+            params.startTime <= BigInt(Math.floor(Date.now() / 1000) + 30)
+          )
+            throw new Error(
+              "L'heure de début est passée (ou presque) : le contrat refusera ce CTF. Recommence à zéro avec un début plus tard."
+            )
           const addresses = factories.map((f) => (f === "vault" ? vault! : f))
           const receipt = await confirm("create", () =>
             writeContract(wagmiConfig, {

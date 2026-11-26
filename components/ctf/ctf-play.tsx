@@ -93,7 +93,9 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
           <EmptyMedia variant="icon">
             <SearchXIcon />
           </EmptyMedia>
-          <EmptyTitle>Ce CTF n&apos;existe pas</EmptyTitle>
+          <EmptyTitle>
+            <h1>Ce CTF n&apos;existe pas</h1>
+          </EmptyTitle>
           <EmptyDescription>
             Aucun CTF ne porte ce numéro sur le contrat.{" "}
             <Link href="/explore" className="underline underline-offset-4">
@@ -184,6 +186,7 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
             <DisputeCard
               dispute={dispute}
               busy={busy}
+              winners={model.winners}
               role={role?.value}
               onRoleChange={role?.set}
             />

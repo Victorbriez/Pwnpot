@@ -154,8 +154,9 @@ function useChainDispute(
   const info = chain.dispute
   const opened = info !== undefined
   const closed = phase === "finalized" || phase === "cheated"
+  // Tant que les events `Ruled` se chargent, on ne sait pas encore qui a clos.
   const decision =
-    !closed || !opened
+    !closed || !opened || ruled.isPending
       ? undefined
       : (ruled.data ?? []).length > 0
         ? "ruling"
