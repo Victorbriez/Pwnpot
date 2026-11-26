@@ -111,8 +111,8 @@ export default function CguPage() {
             par adresse ni porte dérobée ;
           </li>
           <li>
-            publier et vérifier le code de ses factories sur Basescan, sans
-            proxy ni code remplaçable ;
+            publier et vérifier le code de ses factories (au moins sur Sourcify,
+            que lit le site), sans proxy ni code remplaçable ;
           </li>
           <li>
             ne communiquer aucune solution, ni aucun indice réservé, à un joueur
@@ -160,19 +160,21 @@ export default function CguPage() {
         </p>
         <p>
           Copier un exploit vu sur la chaîne est possible : tout ce qui est
-          on-chain est public. Le classement départage les joueurs selon
-          l&apos;heure de leur dernière réussite.
+          on-chain est public. Le classement départage les joueurs au nombre
+          d&apos;épreuves réussies, puis, à égalité, à l&apos;heure de leur
+          dernière réussite.
         </p>
       </LegalSection>
 
       <LegalSection id="litiges" title="Litiges et arbitrage">
         <p>
           Un joueur qui soupçonne une triche de l&apos;organisateur peut ouvrir
-          un litige, pendant la fenêtre de contestation, en déposant une
-          caution. Les détenteurs de tickets votent, puis le camp perdant peut
-          faire appel à un arbitre au standard{" "}
-          <ExternalLink href={site.links.erc792}>ERC-792</ExternalLink>. Le
-          détail est sur la{" "}
+          un litige, pendant la fenêtre de contestation, en déposant une caution
+          et en avançant les frais d&apos;arbitrage. Le litige part directement
+          à un arbitre au standard{" "}
+          <ExternalLink href={site.links.erc792}>ERC-792</ExternalLink>, dont la
+          décision est définitive ; sans réponse dans le délai prévu par le
+          contrat, il est rejeté. Le détail est sur la{" "}
           <InternalLink href="/#litiges">page d&apos;accueil</InternalLink>.
         </p>
         <p>
@@ -223,9 +225,9 @@ export default function CguPage() {
 
       <LegalSection id="interface" title="Contenus et interface">
         <p>
-          Les titres, descriptions et épreuves d&apos;un CTF sont publiés par
-          son organisateur. L&apos;éditeur peut retirer de l&apos;interface un
-          CTF manifestement illicite ou malveillant. Ce retrait ne touche pas au
+          Le titre et les épreuves d&apos;un CTF sont publiés par son
+          organisateur. L&apos;éditeur peut retirer de l&apos;interface un CTF
+          manifestement illicite ou malveillant. Ce retrait ne touche pas au
           contrat : le CTF et ses fonds restent accessibles on-chain, selon les
           mêmes règles.
         </p>

@@ -23,11 +23,12 @@ const challenges: {
     vuln: "reentrancy",
     title: "Coffre",
     goal: "Vide le coffre de tout son ETH.",
-    check: "address(instance).balance == 0",
+    check: "instance.initialBalance() > 0 && instance.drained()",
     code: `function withdraw() external {
-  uint256 bal = balances[msg.sender];
-  (bool ok,) = msg.sender.call{value: bal}("");
+  uint256 amount = balances[msg.sender];
+  (bool ok,) = msg.sender.call{value: amount}("");
   require(ok);
+  if (address(this).balance == 0) drained = true;
   balances[msg.sender] = 0;
 }`,
   },
@@ -37,7 +38,7 @@ const challenges: {
     goal: "Deviens le propriétaire du contrat.",
     check: "instance.owner() == player",
     code: `function changeOwner(address newOwner) external {
-  if (tx.origin != msg.sender) {
+  if (tx.origin == player && tx.origin != msg.sender) {
     owner = newOwner;
   }
 }`,
@@ -160,13 +161,13 @@ export default function HomePage() {
             </h2>
             <p className="max-w-md text-pretty text-muted-foreground">
               Un organisateur a fuité la solution ? Une épreuve refuse de
-              valider certains joueurs ? Les joueurs tranchent d&apos;abord, un
-              arbitre ensuite si le camp perdant fait appel.
+              valider certains joueurs ? Un détenteur de ticket conteste, et un
+              arbitre extérieur tranche.
             </p>
             <p className="max-w-md text-sm text-pretty text-muted-foreground">
-              Deux niveaux, parce qu&apos;aucun camp n&apos;est neutre : un
-              tiers sans intérêt dans la partie corrige le vote, et ses frais
-              dissuadent d&apos;en abuser.
+              Contester coûte une caution et les frais de l&apos;arbitre, perdus
+              si la triche n&apos;est pas retenue : de quoi dissuader d&apos;en
+              abuser.
             </p>
           </div>
           <DisputeFlow />

@@ -5,9 +5,9 @@ import { DEMO_ARBITRATION_FEE } from "@/lib/ctf/dispute"
 import { formatEth } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-// Exemple de docs/DESIGN.md : cash prize 0,4 ETH, ticket 0,05 ETH, 20 places
-// dont 16 vendues, caution 1,4 ETH (= cash prize + 20 × ticket), caution de
-// contestation 0,15 ETH (= 3 × ticket). Frais d'arbitrage : ceux de
+// Exemple du site (accueil, Doc, exploit-trace.tsx) : cash prize 0,4 ETH,
+// ticket 0,05 ETH, 20 places dont 16 vendues, caution 1,4 ETH (= cash prize
+// + 20 × ticket), caution de contestation 0,15 ETH (= 3 × ticket). Frais d'arbitrage : ceux de
 // MockArbitrator. Les règles sont celles de CTFPlatform (litiges simplifiés).
 const TICKET = parseEther("0.05")
 const SOLD = BigInt(16)

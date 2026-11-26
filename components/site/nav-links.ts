@@ -67,7 +67,7 @@ export const appNav: NavEntry[] = [
       {
         href: "/disputes",
         label: "Litiges",
-        description: "Contester une triche, voter, faire appel.",
+        description: "Contester une triche, suivre la décision de l'arbitre.",
         icon: ScaleIcon,
         badge: "disputes",
       },
