@@ -181,8 +181,7 @@ export function validateCtfDraft(
     duration >= MIN_DURATION &&
     duration <= MAX_DURATION
   if (!durationOk) errors.duration = "Entre 1 h et 30 jours."
-  const end =
-    start !== undefined && durationOk ? start + duration : undefined
+  const end = start !== undefined && durationOk ? start + duration : undefined
   if (start === undefined) errors.start = "Choisis une date et une heure."
   else if (now !== undefined && start < now)
     errors.start = "Le début est déjà passé."
