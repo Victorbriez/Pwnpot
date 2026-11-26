@@ -37,6 +37,57 @@ export async function fetchFactoryVerification(
   return { status: "verified", name: data.compilation?.name ?? null }
 }
 
+const SOURCIFY_VERIFY = "https://sourcify.dev/server/v2/verify"
+
+/** Page du code vérifié par Sourcify : Blockscout reprend ses vérifications, pas Basescan. */
+export function blockscoutCodeUrl(address: Address): string {
+  return `https://base-sepolia.blockscout.com/address/${address}?tab=contract`
+}
+
+type VerifyJob = {
+  isJobCompleted: boolean
+  contract?: { match?: "exact_match" | "match" | null }
+  error?: { customCode?: string; message?: string }
+}
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Fait vérifier un Coffre (VaultFactory déployée par un organisateur) par
+ * Sourcify, avec l'entrée de compilation exacte de `vaultFactoryBytecode`.
+ * Sourcify recompile et compare au code on-chain : il ne nous fait pas
+ * confiance. Vrai si le Coffre est vérifié (ou l'était déjà).
+ */
+export async function verifyVaultOnSourcify(
+  address: Address,
+  creationTransactionHash?: `0x${string}`
+): Promise<boolean> {
+  // Chargée à la demande : ~20 ko de sources, inutiles ailleurs.
+  const { vaultVerification } = await import("@/lib/onchain/vault-source")
+  const res = await fetch(`${SOURCIFY_VERIFY}/${baseSepolia.id}/${address}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...vaultVerification, creationTransactionHash }),
+  })
+  // 409 : déjà vérifié.
+  if (res.status === 409) return true
+  if (!res.ok) throw new Error(`Sourcify a répondu ${res.status}`)
+  const { verificationId } = (await res.json()) as { verificationId: string }
+
+  // Sourcify recompile en quelques secondes ; on attend au plus une minute.
+  for (let attempt = 0; attempt < 30; attempt++) {
+    await wait(2_000)
+    const job = (await (
+      await fetch(`${SOURCIFY_VERIFY}/${verificationId}`)
+    ).json()) as VerifyJob
+    if (!job.isJobCompleted) continue
+    const match = job.contract?.match
+    if (match === "exact_match" || match === "match") return true
+    throw new Error(job.error?.message ?? "Vérification refusée par Sourcify.")
+  }
+  throw new Error("Sourcify n'a pas répondu à temps.")
+}
+
 /**
  * Faux sur le nœud local : il a le même chain id que Base Sepolia, mais ses
  * adresses n'ont rien à voir avec celles que Sourcify connaît.

@@ -15,6 +15,7 @@ import {
   writeContract,
 } from "wagmi/actions"
 
+import { markVaultRequested } from "@/hooks/use-factory-verification"
 import { totalValue, type CtfParams } from "@/lib/ctf/params"
 import { ctfPlatformAbi, ctfPlatformAddress } from "@/lib/onchain/ctf-platform"
 import { VAULT_SEED } from "@/lib/onchain/factories"
@@ -23,6 +24,10 @@ import {
   vaultFactoryAbi,
   vaultFactoryBytecode,
 } from "@/lib/onchain/level-artifacts"
+import {
+  canCheckVerification,
+  verifyVaultOnSourcify,
+} from "@/lib/onchain/sourcify"
 import { describeTxError, type TxStatus } from "@/lib/onchain/tx-error"
 import { wagmiConfig } from "@/lib/onchain/wagmi"
 
@@ -178,6 +183,14 @@ export function useCreateCtf(): CreateCtfState {
             ? (receipt.contractAddress ?? undefined)
             : "0x00000000000000000000000000000000000000aa"
           if (!vault) throw new Error("Adresse du Coffre introuvable.")
+          // Vérification du code sur Sourcify, sans attendre ni bloquer la
+          // création : si elle échoue, la page du CTF la relance.
+          if (receipt && canCheckVerification) {
+            markVaultRequested(vault)
+            void verifyVaultOnSourcify(vault, receipt.transactionHash).catch(
+              () => undefined
+            )
+          }
           progress.current.vault = vault
           update({ vault })
           markDone("deploy")
