@@ -17,7 +17,7 @@ Pour chaque classe de faille du [Day 3](https://blockchain.lucas.zip/day-3#the-c
 
 ## La faille la plus pertinente pour Pwnpot
 
-**La réentrance via du code tiers.** Pwnpot est la seule plateforme du module qui détient de l'argent **et** appelle du code écrit par d'autres : les factories des organisateurs. C'est donc le test d'attaque qu'on apporte ([`CTFPlatformAttacks.t.sol`](../contracts/contracts/CTFPlatformAttacks.t.sol), [#8](https://github.com/Victorbriez/Pwnpot/issues/8)) :
+**La réentrance via du code tiers**, celle qui a vidé The DAO en 2016 (voir le [post-mortem](THE-DAO.md)). Pwnpot est la seule plateforme du module qui détient de l'argent **et** appelle du code écrit par d'autres : les factories des organisateurs. C'est donc le test d'attaque qu'on apporte ([`CTFPlatformAttacks.t.sol`](../contracts/contracts/CTFPlatformAttacks.t.sol), [#8](https://github.com/Victorbriez/Pwnpot/issues/8)) :
 
 1. une `MaliciousFactory` qui, dans `createInstance`, rappelle `CTFPlatform` pour tenter de soumettre ou de retirer → revert ;
 2. un `MaliciousReceiver` dont le `receive()` rappelle `withdraw` pendant le paiement, avec l'argent d'un autre joueur dans le contrat → revert, et aucun wei ne sort en trop ;
