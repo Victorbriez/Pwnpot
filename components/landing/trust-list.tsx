@@ -13,7 +13,7 @@ const items: { risk: string; limit: string }[] = [
   {
     risk: "L'arbitre tranche seul chaque litige.",
     limit:
-      "Il est fixé au déploiement, visible de tous, et ne touche que les fonds du litige. Ici, c'est un MockArbitrator tenu par l'équipe : Kleros, l'arbitre décentralisé compatible, n'existe pas sur Base Sepolia.",
+      "Il est fixé au déploiement, visible de tous, et ne touche que les fonds du litige. Ici, c'est un MockArbitrator tenu par l'équipe : Kleros, un arbitre décentralisé au même standard, n'existe pas sur Base Sepolia, et demanderait quelques adaptations du contrat.",
   },
   {
     risk: "Un litige peut être ouvert par un complice.",

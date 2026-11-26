@@ -5,8 +5,9 @@ import {
 } from "viem"
 
 /**
- * Les refus du contrat (custom errors de CTFPlatform, des épreuves et de
- * MockArbitrator), en clair. Le nom technique reste affiché entre parenthèses.
+ * Les refus du contrat (custom errors de CTFPlatform et des épreuves, celles
+ * que l'ABI du site décode), en clair. Le nom technique reste affiché entre
+ * parenthèses.
  */
 const errorMessages: Record<string, string> = {
   // CTFPlatform : création
@@ -54,13 +55,15 @@ const errorMessages: Record<string, string> = {
   NotOrganizer: "Seul l'organisateur du Coffre peut faire ça.",
   NotBound: "Ce Coffre n'est pas encore lié au CTF par l'organisateur.",
   AlreadyBound: "Ce Coffre est déjà lié à un CTF.",
-  InvalidCTF: "Ce CTF ne liste pas ce Coffre une seule fois.",
+  InvalidCTF:
+    "Ce Coffre ne peut pas être lié à ce CTF : CTF inexistant, organisé par un autre wallet, ou qui ne liste pas ce Coffre exactement une fois.",
   InsufficientFunds:
-    "Le Coffre n'a pas assez d'ETH pour une nouvelle instance.",
+    "Le Coffre n'a pas assez d'ETH : il en faut places × 0,0001 ETH pour le lier, et 0,0001 ETH par nouvelle instance.",
   AlreadyHasInstance: "Tu as déjà un coffre (dans un autre CTF).",
-  NotAPlayer: "Il faut un ticket pour ce CTF.",
-  CTFNotRunning: "Le CTF n'est pas en cours.",
-  CTFNotOver: "Attends la fin du CTF.",
+  NotAPlayer: "Il faut un ticket pour le CTF auquel ce Coffre est lié.",
+  CTFNotRunning: "Le CTF auquel ce Coffre est lié n'est pas en cours.",
+  CTFNotOver:
+    "Pas encore : attends la fin du CTF lié, et la clôture d'un éventuel litige.",
   NothingToRecover: "Il n'y a rien à récupérer.",
   ZeroAddress: "Adresse nulle.",
 }

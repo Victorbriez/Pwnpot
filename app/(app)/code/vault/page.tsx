@@ -48,11 +48,12 @@ export default async function VaultCodePage() {
         title="Code du Coffre"
         description={
           <>
-            Chaque organisateur déploie son propre Coffre : il n&apos;est donc
-            pas vérifié sur Basescan. Le site compare le code déployé, octet par
-            octet, à celui de ce fichier (hors adresses fixées au déploiement).
-            Le badge « Code Pwnpot » garantit que tu joues exactement ce code.
-            Lis les{" "}
+            Chaque organisateur déploie son propre Coffre. Le site l&apos;envoie
+            à Sourcify dès sa création, qui vérifie que son code est exactement
+            celui de ce fichier : le badge « Code vérifié » renvoie alors vers
+            Blockscout. En attendant, le site compare lui-même le code déployé,
+            octet par octet (hors adresses fixées au déploiement), et affiche «
+            Code Pwnpot ». Lis les{" "}
             <TextLink href="/docs#epreuves">règles des épreuves</TextLink>.
           </>
         }

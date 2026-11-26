@@ -32,7 +32,7 @@ export function gainLines(
         // et les frais d'arbitrage, crédités dans le même solde.
         reason:
           p.ctf.status === "cheated"
-            ? "Ticket remboursé, et caution de contestation si tu as contesté"
+            ? "Ticket remboursé, et caution + frais d'arbitrage si tu as contesté"
             : p.refunded
               ? "Ticket remboursé"
               : podium(p.rank),

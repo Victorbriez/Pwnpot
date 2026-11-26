@@ -44,7 +44,7 @@ import { gainLines } from "@/lib/ctf/gains"
 import { nowSeconds } from "@/lib/ctf/params"
 import { formatEth } from "@/lib/format"
 import { useWithdrawals } from "@/hooks/use-withdrawals"
-import type { Withdrawal } from "@/lib/mock/gains"
+import type { Withdrawal } from "@/lib/ctf/types"
 import { explorerTxUrl } from "@/lib/site"
 
 // Fuseau fixe : même rendu côté serveur et navigateur.

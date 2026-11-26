@@ -31,7 +31,7 @@ Ou directement dans ce dossier :
 ```bash
 pnpm exec hardhat test solidity     # uniquement les .t.sol
 pnpm exec hardhat test nodejs       # uniquement les tests TypeScript
-pnpm exec hardhat test --build-profile production   # sur le bytecode optimisé, celui qu'on déploie
+pnpm exec hardhat test --build-profile production   # sur le bytecode optimisé, celui que déploie Ignition
 ```
 
 ## Profils de compilation
@@ -39,7 +39,7 @@ pnpm exec hardhat test --build-profile production   # sur le bytecode optimisé,
 | Profil | Optimiseur | Utilisé par |
 | --- | --- | --- |
 | `default` | désactivé | les tests : compilation plus rapide, meilleures traces |
-| `production` | activé, 200 runs | Ignition et `verify` : c'est ce qui est déployé |
+| `production` | activé, 200 runs | Ignition et `verify` : CTFPlatform et les factories partagées. Le Coffre (VaultFactory) est déployé par le site depuis `lib/onchain/level-artifacts.ts`, en profil `default` |
 
 Les mesures de gaz faites en test (profil `default`) ne reflètent donc pas le coût réel en production.
 

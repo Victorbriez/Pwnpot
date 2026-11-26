@@ -4,7 +4,7 @@
 
 N'importe qui peut publier un CTF. Chaque épreuve est un contrat volontairement vulnérable que le joueur doit exploiter : vider un coffre, devenir propriétaire, retrouver un mot de passe « caché ». Il n'y a pas de flag : c'est le contrat qui vérifie que l'exploit a réussi. La cagnotte, les tickets et les cautions sont détenus par le contrat `CTFPlatform`, qui n'a ni owner, ni proxy, ni fonction admin. Personne, ni la plateforme ni l'organisateur, ne peut les détourner.
 
-> Projet du module _Blockchain & Decentralised Applications_ (Epitech, Lucas Santoni). **Testnet uniquement**, aucun fond réel.
+> Projet du module _Blockchain & Decentralised Applications_ (Epitech, Lucas Santoni). **Testnet uniquement**, aucun fonds réel.
 
 ---
 
@@ -108,13 +108,13 @@ Les quatre points ci-dessous suivent la structure du test de décentralisation d
 
 ## Architecture : on-chain / off-chain
 
-| Où                                                | Quoi                                                                                                                         | Pourquoi là                                                 |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| **On-chain** (`CTFPlatform`)                      | Fonds (cash prize, tickets, cautions), inscriptions, instances par joueur, réussites horodatées, litiges, crédits de retrait | C'est ce qui doit être impossible à modifier ou à détourner |
-| **On-chain** (factories + instances)              | Le code des épreuves et leur condition de réussite                                                                           | La réussite doit être vérifiable par n'importe qui          |
-| **On-chain** (`MockArbitrator` / arbitre ERC-792) | Décisions sur les litiges                                                                                                    | Interface standard, remplaçable par Kleros                  |
-| **Off-chain** (frontend Next.js)                  | Affichage, construction des transactions, lecture des events                                                                 | Ne détient **aucun état** : tout est relu depuis la chaîne  |
-| **Off-chain** (wallet du joueur)                  | Signature des transactions                                                                                                   | Le frontend ne voit jamais une clé privée                   |
+| Où                                                | Quoi                                                                                                                         | Pourquoi là                                                                                                                                                   |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **On-chain** (`CTFPlatform`)                      | Fonds (cash prize, tickets, cautions), inscriptions, instances par joueur, réussites horodatées, litiges, crédits de retrait | C'est ce qui doit être impossible à modifier ou à détourner                                                                                                   |
+| **On-chain** (factories + instances)              | Le code des épreuves et leur condition de réussite                                                                           | La réussite doit être vérifiable par n'importe qui                                                                                                            |
+| **On-chain** (`MockArbitrator` / arbitre ERC-792) | Décisions sur les litiges                                                                                                    | Interface standard ERC-792 : un autre arbitre (Kleros) demanderait quelques adaptations, voir [SECURITY.md](docs/SECURITY.md#brancher-un-vrai-arbitre-kleros) |
+| **Off-chain** (frontend Next.js)                  | Affichage, construction des transactions, lecture des events                                                                 | Ne détient **aucun état** : tout est relu depuis la chaîne                                                                                                    |
+| **Off-chain** (wallet du joueur)                  | Signature des transactions                                                                                                   | Le frontend ne voit jamais une clé privée                                                                                                                     |
 
 Il n'y a **aucun backend**. Si le frontend disparaît, tout reste utilisable depuis Basescan (_Write Contract_) ou un script viem.
 
@@ -140,13 +140,13 @@ docs/                          design, épreuves, sécurité
 
 ## Installation et commandes
 
-Prérequis : Node.js ≥ 22 et pnpm.
+Prérequis : Node.js ≥ 22.18 (les scripts `.ts` sont lancés directement par `node`) et pnpm.
 
 ```bash
 git clone https://github.com/Victorbriez/Pwnpot.git
 cd Pwnpot
 pnpm install
-cp .env.example .env.local      # puis renseigner l'adresse de CTFPlatform
+cp .env.example .env.local      # valeurs du déploiement démo ; vider l'adresse pour le mode démo
 ```
 
 | Commande                       | Effet                                               |
@@ -183,8 +183,11 @@ pnpm --filter @pwnpot/contracts exec hardhat keystore set BASE_SEPOLIA_RPC_URL
 pnpm --filter @pwnpot/contracts exec hardhat keystore set BASE_SEPOLIA_PRIVATE_KEY
 pnpm --filter @pwnpot/contracts exec hardhat keystore set ETHERSCAN_API_KEY
 
-# déploiement (profil production, optimiseur activé)
-pnpm --filter @pwnpot/contracts exec hardhat ignition deploy ignition/modules/<Module>.ts --network baseSepolia
+# déploiement (profil production, optimiseur activé). Toujours un --deployment-id :
+# sans lui, Ignition reprend chain-84532, le déploiement d'octobre.
+# Raccourci pour le déploiement démo : pnpm contracts:deploy (puis pnpm contracts:verify).
+pnpm --filter @pwnpot/contracts exec hardhat ignition deploy ignition/modules/Pwnpot.ts --network baseSepolia \
+  --build-profile production --deployment-id <nouvel-id> [--parameters ignition/parameters/demo.json] --verify
 
 # vérification sur Basescan, Blockscout et Sourcify. `verify` ne recompile pas :
 # il compare avec les artefacts présents, qui doivent venir du profil production.
@@ -194,7 +197,7 @@ pnpm --filter @pwnpot/contracts exec hardhat ignition verify <deployment-id> --n
 
 - La clé de déploiement est celle d'un compte **dédié au testnet**, sans fonds réels.
 - Les dossiers `contracts/ignition/deployments/` sont **committés** : c'est la trace de ce qui a été déployé, et où (`pwnpot-disputes`, `pwnpot-disputes-demo`, et `chain-84532` pour le déploiement d'octobre). Pour un nouveau déploiement, passer un nouveau `--deployment-id` : Ignition refuse de redéployer un module dont le code a changé sous le même identifiant.
-- Les tests tournent aussi sur le bytecode réellement déployé (optimiseur activé) : `pnpm --filter @pwnpot/contracts exec hardhat test --build-profile production`. La CI lance cette commande sur chaque PR.
+- Les tests tournent aussi sur le bytecode optimisé, celui de `CTFPlatform` et des factories partagées déployées (le Coffre, lui, est déployé depuis le site avec le profil par défaut, que couvrent les tests habituels) : `pnpm --filter @pwnpot/contracts exec hardhat test --build-profile production`. La CI lance cette commande sur chaque PR.
 
 ---
 

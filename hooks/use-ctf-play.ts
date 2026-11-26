@@ -287,6 +287,14 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
     !!address && address.toLowerCase() === ctf.organizer.toLowerCase()
   const winners = state.podium.length
   const owedHere = credits.byCtf.get(ctfId) ?? BigInt(0)
+  // Ticket à réclamer (claimRefund) : aucun gagnant ou triche confirmée. Pas
+  // avant d'avoir lu le podium, vide pendant le chargement.
+  const refundable =
+    !state.isLoading &&
+    (ctf.status === "cheated" ||
+      (ctf.status === "finalized" && winners === 0)) &&
+    state.hasTicket &&
+    !state.refunded
 
   const step = isOrganizer
     ? organizerNextStep({ ctf, owed: owedHere })
@@ -296,6 +304,7 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
         rank: myRank,
         voted: false,
         owed: owedHere,
+        refundable,
       })
 
   const id = BigInt(ctfId)
@@ -390,12 +399,7 @@ function useChainCtfPlay(ctfId: number): CtfPlayState {
       // Remboursement : aucun gagnant, ou triche confirmée par l'arbitre.
       // Pas avant d'avoir lu le podium : vide pendant le chargement, il ferait
       // croire à un CTF sans gagnant (et `claimRefund` revert).
-      canRefund:
-        !state.isLoading &&
-        (ctf.status === "cheated" ||
-          (ctf.status === "finalized" && winners === 0)) &&
-        state.hasTicket &&
-        !state.refunded,
+      canRefund: refundable,
       needsWallet: !address,
       tx,
       action,

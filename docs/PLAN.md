@@ -4,7 +4,7 @@ Ce qui reste à faire entre la soutenance intermédiaire (**samedi 7 novembre**)
 
 > **Répartition proposée, à valider en équipe.** Elle suit ce que chacun a déjà construit : Baptiste a écrit `CTFPlatform` et ses tests, Yann les trois épreuves, Victor le frontend et le déploiement.
 
-## Où on en est (7 novembre)
+## Où on en est (26 novembre)
 
 - **En place et déployé (26 nov)** : `CTFPlatform` avec les **litiges simplifiés** (contestation → arbitre ERC-792, sans vote ni appel), les 3 épreuves, les tests d'attaque et d'invariants, la passe Slither, le frontend en ligne qui lit et écrit dans le contrat. Deux déploiements vérifiés sur Basescan, Blockscout et Sourcify (réel et démo, le site utilise la démo). 211 tests passent, aussi en profil production.
 - **Reste à faire** : `DEMO.md` final et les deux répétitions sur Base Sepolia ([#30](https://github.com/Victorbriez/Pwnpot/issues/30)). Détail dans le [README § État d'avancement](../README.md#état-davancement).

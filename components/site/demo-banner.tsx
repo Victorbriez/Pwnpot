@@ -14,9 +14,10 @@ export function DemoBanner() {
       <div className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 sm:px-6 lg:px-12">
         <FlaskConicalIcon aria-hidden className="size-4 shrink-0" />
         <AlertDescription className="text-warning-text">
-          <strong className="font-semibold">Mode démo.</strong> CTFPlatform
-          n&apos;est pas encore déployé : les CTF et les transactions sont
-          simulés.
+          <strong className="font-semibold">Mode démo.</strong> Ce site
+          n&apos;est relié à aucun CTFPlatform (variable
+          NEXT_PUBLIC_CTF_PLATFORM_ADDRESS vide) : les CTF et les transactions
+          sont simulés.
         </AlertDescription>
       </div>
     </Alert>
