@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import {
   ArrowDownToLineIcon,
@@ -9,12 +10,14 @@ import {
   SearchXIcon,
   ShieldCheckIcon,
   TicketIcon,
+  TriangleAlertIcon,
   VaultIcon,
 } from "lucide-react"
 import { baseSepolia } from "viem/chains"
 
 import { remainingLabel } from "@/components/ctf/ctf-card"
 import { CtfTimeline } from "@/components/ctf/ctf-timeline"
+import { FactoryCodehash } from "@/components/ctf/factory-codehash"
 import { FactoryVerificationBadge } from "@/components/ctf/factory-verification-badge"
 import { StatusPill } from "@/components/ctf/status-pill"
 import { VulnTag } from "@/components/ctf/vuln-tag"
@@ -23,6 +26,7 @@ import { ChainError, ChainLoading } from "@/components/onchain/chain-state"
 import { TxStatusAlert } from "@/components/onchain/tx-status"
 import { DataList, DataRow } from "@/components/site/data-list"
 import { AddressDisplay } from "@/components/ui/address-display"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -32,6 +36,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ConnectWallet } from "@/components/ui/connect-wallet"
 import {
   Empty,
@@ -40,6 +45,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import {
+  Field,
+  FieldContent,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
@@ -57,6 +68,7 @@ import {
   type PlayAction,
   type PlayChallenge,
 } from "@/hooks/use-ctf-play"
+import { useUnverifiedLevels } from "@/hooks/use-factory-verification"
 import { formatEth, formatInt, formatRemaining } from "@/lib/format"
 import { truncateAddress } from "@/lib/onchain/format"
 import { cn } from "@/lib/utils"
@@ -588,6 +600,12 @@ function ChallengeRow({
         {challenge.goal && (
           <p className="text-sm text-pretty">{challenge.goal}</p>
         )}
+        {challenge.factory && challenge.codehash && (
+          <FactoryCodehash
+            factory={challenge.factory}
+            recorded={challenge.codehash}
+          />
+        )}
         <p className="text-sm text-muted-foreground">
           {done ? (
             "Réussie : 1 point."
@@ -657,41 +675,14 @@ function PrimaryAction({
   const { ctf, canBuy, canRefund, needsWallet, step, tx, hasTicket } = model
   const busy = tx.status === "signing" || tx.status === "confirming"
 
-  if (canBuy && needsWallet)
-    return (
-      <div className="flex flex-col gap-2">
-        <ConnectWallet
-          label="Connecter un wallet pour jouer"
-          className="h-10 w-full justify-center"
-        />
-        <p className="text-xs text-muted-foreground">
-          Ticket à {formatEth(ctf.ticketPrice)}, remboursé si personne ne
-          réussit ou si la triche est confirmée.
-        </p>
-      </div>
-    )
-
   if (canBuy)
     return (
-      <div className="flex flex-col gap-2">
-        <Button
-          size="lg"
-          className="w-full"
-          disabled={busy}
-          onClick={model.buyTicket}
-        >
-          {pendingOn("ticket") ? (
-            <Spinner data-icon="inline-start" />
-          ) : (
-            <TicketIcon data-icon="inline-start" />
-          )}
-          Acheter un ticket · {formatEth(ctf.ticketPrice)}
-        </Button>
-        <p className="text-xs text-muted-foreground">
-          Ton ticket entre dans la cagnotte. Il est remboursé si personne ne
-          réussit ou si la triche est confirmée.
-        </p>
-      </div>
+      <BuyTicket
+        model={model}
+        busy={busy}
+        pending={pendingOn("ticket")}
+        needsWallet={needsWallet}
+      />
     )
 
   if (canRefund)
@@ -730,4 +721,117 @@ function PrimaryAction({
     )
 
   return null
+}
+
+/**
+ * Achat du ticket. Si une épreuve n'a pas de code vérifié (ou est un proxy),
+ * le joueur doit cocher qu'il a compris avant de payer : il ne peut pas lire ce
+ * que fait la factory (docs/CHALLENGES.md § Ce qu'un joueur doit vérifier).
+ */
+function BuyTicket({
+  model,
+  busy,
+  pending,
+  needsWallet,
+}: {
+  model: CtfPlayModel
+  busy: boolean
+  pending: boolean
+  /** Pas de wallet : l'avertissement s'affiche déjà, avant la connexion. */
+  needsWallet: boolean
+}) {
+  const unverified = useUnverifiedLevels(model.challenges)
+  const [accepted, setAccepted] = useState(false)
+
+  return (
+    <div className="flex flex-col gap-3">
+      {unverified.length > 0 && (
+        <Alert className="border-warning/40 bg-warning/10 text-warning-text">
+          <TriangleAlertIcon />
+          <AlertTitle>
+            {unverified.length > 1
+              ? "Des épreuves n'ont pas de code vérifié"
+              : "Une épreuve n'a pas de code vérifié"}
+          </AlertTitle>
+          <AlertDescription className="text-warning-text">
+            {unverified.join(", ")} : impossible de lire ce que fait la factory
+            avant de payer. Elle peut refuser ta réussite ou être modifiée.
+          </AlertDescription>
+        </Alert>
+      )}
+      {needsWallet ? (
+        <>
+          <ConnectWallet
+            label="Connecter un wallet pour jouer"
+            className="h-10 w-full justify-center"
+          />
+          <p className="text-xs text-muted-foreground">
+            Ticket à {formatEth(model.ctf.ticketPrice)}, remboursé si personne
+            ne réussit ou si la triche est confirmée.
+          </p>
+        </>
+      ) : (
+        <BuyTicketButton
+          model={model}
+          busy={busy}
+          pending={pending}
+          unverified={unverified.length > 0}
+          accepted={accepted}
+          onAcceptedChange={setAccepted}
+        />
+      )}
+    </div>
+  )
+}
+
+function BuyTicketButton({
+  model,
+  busy,
+  pending,
+  unverified,
+  accepted,
+  onAcceptedChange,
+}: {
+  model: CtfPlayModel
+  busy: boolean
+  pending: boolean
+  unverified: boolean
+  accepted: boolean
+  onAcceptedChange: (accepted: boolean) => void
+}) {
+  return (
+    <>
+      {unverified && (
+        <FieldLabel htmlFor="accept-unverified">
+          <Field orientation="horizontal">
+            <Checkbox
+              id="accept-unverified"
+              checked={accepted}
+              onCheckedChange={(checked) => onAcceptedChange(checked === true)}
+            />
+            <FieldContent>
+              <FieldTitle>J&apos;ai compris, je joue quand même</FieldTitle>
+            </FieldContent>
+          </Field>
+        </FieldLabel>
+      )}
+      <Button
+        size="lg"
+        className="w-full"
+        disabled={busy || (unverified && !accepted)}
+        onClick={model.buyTicket}
+      >
+        {pending ? (
+          <Spinner data-icon="inline-start" />
+        ) : (
+          <TicketIcon data-icon="inline-start" />
+        )}
+        Acheter un ticket · {formatEth(model.ctf.ticketPrice)}
+      </Button>
+      <p className="text-xs text-muted-foreground">
+        Ton ticket entre dans la cagnotte. Il est remboursé si personne ne
+        réussit ou si la triche est confirmée.
+      </p>
+    </>
+  )
 }

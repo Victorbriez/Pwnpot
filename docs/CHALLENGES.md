@@ -178,7 +178,7 @@ contract CodeSafe {
    - joue l'exploit ;
    - vérifie que `validateInstance` renvoie `true`.
 4. Écrire un **test négatif** : un joueur qui n'a pas exploité son instance ne peut pas valider, et l'instance d'un autre joueur ne compte pas pour lui.
-5. Déployer la factory, puis la **vérifier sur Basescan**. Une factory non vérifiée ne devrait pas être jouée.
+5. Déployer la factory, puis la **vérifier**, au moins sur Sourcify (`hardhat ignition verify` le fait, avec Basescan et Blockscout). Le site lit Sourcify : une factory qu'il ne connaît pas est signalée « non vérifiée ». Le Coffre, lui, est envoyé à Sourcify par le site, à sa création.
 6. Documenter l'épreuve dans ce fichier : faille, condition de réussite, exploit attendu.
 
 ---
@@ -187,9 +187,17 @@ contract CodeSafe {
 
 Les factories sont écrites par les organisateurs : elles ne sont **pas fiables par défaut**. Avant d'acheter un ticket, un joueur prudent vérifie que :
 
-- le code de chaque factory est **vérifié** sur Basescan ;
+- le code de chaque factory est **vérifié** (Sourcify, Blockscout ou Basescan) ;
 - `validateInstance` lit seulement l'état de l'instance, sans exception par adresse, sans porte dérobée et sans dépendance à une variable que l'organisateur pourrait modifier ;
 - la factory n'est **pas un proxy** (pas de `delegatecall` vers une implémentation remplaçable) ;
 - le `codehash` enregistré par la plateforme à la création du CTF correspond bien au code lu.
+
+Le site fait une partie de ce travail sur la page de chaque CTF :
+
+- un badge par épreuve : « Code vérifié » (Sourcify, lien vers le code sur Blockscout), « Code non vérifié » ou « Proxy : code modifiable ». Chaque Coffre est envoyé à Sourcify à sa création (ou à la première visite de la page s'il a été créé avant) ; en attendant, il affiche « Code Pwnpot », reconnu octet par octet ;
+- l'empreinte du code (`codehash`) enregistrée par la plateforme, comparée au code actuel de la factory (« identique » ou « différente ») ;
+- si une épreuve n'a pas de code vérifié ou est un proxy, un avertissement avant l'achat du ticket, qu'il faut cocher pour pouvoir payer.
+
+La vérification passe par Sourcify, qui ne demande pas de clé : rien de secret n'est exposé dans le site. Lire `validateInstance` reste à la charge du joueur.
 
 Si une épreuve est truquée malgré tout, le recours est le [litige](DESIGN.md#litiges-et-appel).
