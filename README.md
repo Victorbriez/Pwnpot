@@ -217,6 +217,7 @@ Le `ruler` des deux `MockArbitrator` (le compte qui rend les décisions) est le 
 | [docs/CHALLENGES.md](docs/CHALLENGES.md)   | Interface d'une épreuve, les 3 épreuves (faille, condition de réussite, exploit), comment en ajouter une             |
 | [docs/SECURITY.md](docs/SECURITY.md)       | Modèle de menace : attaques possibles, parades, limites connues                                                      |
 | [docs/FAILURES.md](docs/FAILURES.md)       | Catalogue des failles du Day 3 : non applicable, traitée ou acceptée, avec le test associé                           |
+| [docs/THE-DAO.md](docs/THE-DAO.md)         | Post-mortem de The DAO (2016) : la réentrance qui l'a vidée, et ce que Pwnpot fait différemment                      |
 | [docs/PLAN.md](docs/PLAN.md)               | Ce qui reste jusqu'au code freeze, répartition par membre, risques et plans B                                        |
 | [contracts/README.md](contracts/README.md) | Travailler dans le workspace Hardhat                                                                                 |
 | [DEMO.md](DEMO.md)                         | Scénario de la soutenance, pas à pas                                                                                 |
