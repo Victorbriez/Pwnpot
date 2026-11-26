@@ -114,7 +114,7 @@ const playSteps: Step[] = [
   },
   {
     title: "Retirer",
-    body: "À la fin, ce qui t'est dû est crédité sur ton solde. Tu le retires depuis Mes gains.",
+    body: "À la fin, tes gains sont crédités sur ton solde ; s'il n'y a aucun gagnant ou si la triche est confirmée, réclame d'abord ton ticket (« Récupérer mon ticket »). Tu retires le tout depuis Mes gains.",
     call: "withdraw()",
   },
 ]
@@ -142,7 +142,7 @@ const lifecycle = [
   },
   {
     phase: "Finalisé / Triche confirmée",
-    can: "Retirer ce qui est dû.",
+    can: "Retirer ce qui est dû ; réclamer son ticket (claimRefund) s'il n'y a aucun gagnant ou si la triche est confirmée.",
     exit: "—",
   },
 ]

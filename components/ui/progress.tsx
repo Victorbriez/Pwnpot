@@ -12,6 +12,9 @@ function Progress({
   return (
     <ProgressPrimitive.Root
       value={value}
+      // Locale fixe : sinon le serveur formate « 67% » et le navigateur
+      // français « 67 % », d'où un écart d'hydratation.
+      locale="fr-FR"
       data-slot="progress"
       className={cn("flex flex-wrap gap-3", className)}
       {...props}

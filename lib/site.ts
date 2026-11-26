@@ -14,7 +14,7 @@ export const site = {
       : "http://localhost:3000",
   year: 2026,
   /** Date affichée en tête des mentions légales et des CGU. */
-  legalUpdatedAt: "4 novembre 2026",
+  legalUpdatedAt: "26 novembre 2026",
   editor: {
     name: "Victor Briez",
     school: "Epitech",

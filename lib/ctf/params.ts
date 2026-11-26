@@ -175,7 +175,7 @@ export function validateCtfDraft(
 
   const maxPlayers = Number(draft.maxPlayers)
   const playersOk =
-    draft.maxPlayers.trim() !== "" &&
+    /^\d+$/.test(draft.maxPlayers.trim()) &&
     Number.isInteger(maxPlayers) &&
     maxPlayers >= MIN_PLAYERS &&
     maxPlayers <= MAX_PLAYERS

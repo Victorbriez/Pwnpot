@@ -133,6 +133,9 @@ export function useMyCtfs(): MyCtfs {
     (refunds.data ?? []).map((log) => Number(log.args.ctfId))
   )
   const owedOf = (id: number) => credits.byCtf.get(id) ?? BigInt(0)
+  // Tant que les réussites et les remboursements se chargent, on ne sait pas
+  // encore s'il y a des gagnants ni si le ticket a été réclamé.
+  const eventsLoaded = !solves.isPending && !refunds.isPending
 
   const playing: MyParticipation[] = (tickets.data ?? []).flatMap((log) => {
     const ctf = byId.get(Number(log.args.ctfId))
@@ -149,6 +152,7 @@ export function useMyCtfs(): MyCtfs {
         refunded: refunded.has(ctf.id),
         // Aucune réussite dans ce CTF = aucun gagnant : chaque ticket est remboursé.
         refundable:
+          eventsLoaded &&
           !refunded.has(ctf.id) &&
           (ctf.status === "cheated" ||
             (ctf.status === "finalized" && ranking.length === 0)),
@@ -163,7 +167,7 @@ export function useMyCtfs(): MyCtfs {
       {
         ctf,
         owed: owedOf(ctf.id),
-        noWinner: (solvesByCtf.get(ctf.id) ?? []).length === 0,
+        noWinner: eventsLoaded && (solvesByCtf.get(ctf.id) ?? []).length === 0,
       },
     ]
   })

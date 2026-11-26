@@ -169,6 +169,8 @@ export function CreateCtfForm() {
   const switchChain = useSwitchChain()
 
   const [title, setTitle] = useState("")
+  /** Coffre d'une tentative abandonnée, à récupérer avec `recover`. */
+  const [orphanVault, setOrphanVault] = useState<Address>()
   const [amounts, setAmounts] = useState<Amounts>(defaultAmounts)
   const [selected, setSelected] = useState<string[]>([])
   const [custom, setCustom] = useState<Address[]>([])
@@ -195,6 +197,11 @@ export function CreateCtfForm() {
     slot === "vault" ? vaultPlaceholder : slot
   )
   const withVault = slots.includes("vault")
+  // Un Coffre choisi, même en démo (où il garde une adresse connue) : il faut
+  // alors signer trois transactions, d'où la marge sur l'heure de début.
+  const pickedVault = factoryOptions.some(
+    (f) => selected.includes(f.id) && f.kind !== "test" && f.factory.perCtf
+  )
   const draft = {
     title,
     ...amounts,
@@ -264,14 +271,25 @@ export function CreateCtfForm() {
     // on garde 10 min de marge (2 min sinon). En reprise, le début choisi
     // doit seulement ne pas être passé.
     const now = nowSeconds()
-    const lead = tx.started ? 60 : slots.includes("vault") ? 600 : 120
-    const checked = validateCtfDraft(draft, { now, minStart: now + lead })
+    const lead = tx.started ? 60 : pickedVault ? 600 : 120
+    // CTF déjà créé (seule la liaison du Coffre reste) : `bind` ne dépend pas
+    // de l'heure de début, on ne la revérifie pas.
+    const created = tx.done.includes("create")
+    const checked = validateCtfDraft(
+      draft,
+      created ? {} : { now, minStart: now + lead }
+    )
     setStartError(checked.errors.start)
     if (!checked.params || needsWallet || wrongChain) return
     tx.submit(checked.params, slots)
   }
 
   const handleReset = () => {
+    // Coffre déployé mais jamais lié : on garde son adresse à l'écran pour
+    // que l'organisateur puisse récupérer son ETH (`recover`).
+    if (tx.vault && !tx.done.includes("bind") && tx.status !== "success")
+      setOrphanVault(tx.vault)
+    else setOrphanVault(undefined)
     tx.reset()
     setTitle("")
     setAmounts(defaultAmounts)
@@ -665,6 +683,35 @@ export function CreateCtfForm() {
             error={tx.error}
             isDemo={tx.isDemo}
           />
+          {tx.status === "error" && tx.ctfId !== undefined && (
+            <p className="text-sm text-muted-foreground">
+              Le CTF n° {String(tx.ctfId)} est déjà créé. Tu peux reprendre ici,
+              ou lier le Coffre depuis{" "}
+              <Link
+                href={`/ctf/${tx.ctfId}`}
+                className="font-medium text-foreground underline underline-offset-4"
+              >
+                sa page
+              </Link>{" "}
+              tant que le CTF n&apos;est pas terminé.
+            </p>
+          )}
+          {orphanVault && tx.status === "idle" && (
+            <p className="text-sm text-muted-foreground">
+              Ton Coffre précédent ({truncateAddress(orphanVault)}) n&apos;est
+              lié à aucun CTF : récupère son ETH avec{" "}
+              <code className="font-mono">recover()</code> depuis ce wallet, sur{" "}
+              <a
+                href={`${baseSepolia.blockExplorers.default.url}/address/${orphanVault}#writeContract`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-foreground underline underline-offset-4"
+              >
+                Basescan
+              </a>
+              .
+            </p>
+          )}
           {tx.vault && tx.status === "error" && (
             <p className="text-sm text-muted-foreground">
               Ton Coffre est déployé ({truncateAddress(tx.vault)}). Relance pour

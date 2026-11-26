@@ -6,7 +6,7 @@ type Variant = "brand" | "success" | "warning" | "info" | "muted"
 
 // Une entrée par phase du cycle de vie (docs/DESIGN.md).
 const statusMeta = {
-  open: { label: "Inscriptions", variant: "info", dot: "bg-info" },
+  open: { label: "Ouvert", variant: "info", dot: "bg-info" },
   running: { label: "En cours", variant: "success", dot: "bg-success" },
   contestation: { label: "Contestation", variant: "muted", dot: "bg-warning" },
   voting: { label: "Vote", variant: "warning", dot: "bg-warning" },

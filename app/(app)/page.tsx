@@ -161,8 +161,9 @@ export default function HomePage() {
             </h2>
             <p className="max-w-md text-pretty text-muted-foreground">
               Un organisateur a fuité la solution ? Une épreuve refuse de
-              valider certains joueurs ? Un détenteur de ticket conteste, et un
-              arbitre extérieur tranche.
+              valider certains joueurs ? Un détenteur de ticket conteste, et
+              l&apos;arbitre fixé au déploiement tranche (pour ce projet, un
+              arbitre de démonstration tenu par l&apos;équipe).
             </p>
             <p className="max-w-md text-sm text-pretty text-muted-foreground">
               Contester coûte une caution et les frais de l&apos;arbitre, perdus
