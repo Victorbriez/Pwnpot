@@ -38,7 +38,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { DataList, DataRow } from "@/components/site/data-list"
 import type { DisputeModel } from "@/hooks/use-dispute"
 import { settlement, type DisputeState } from "@/lib/ctf/dispute"
-import { formatEth, formatRemaining } from "@/lib/format"
+import { formatEth, formatRemaining, formatTimeLeft } from "@/lib/format"
 
 export type Role = "player" | "organizer"
 
@@ -146,7 +146,7 @@ export function DisputeCard({
                 <ItemActions className="text-xs text-muted-foreground tabular-nums">
                   {s === "current" ? (
                     <Badge variant="brand">
-                      reste {formatRemaining(state.remaining)}
+                      {formatTimeLeft(state.remaining)}
                     </Badge>
                   ) : s === "skipped" ? (
                     "sautée"
