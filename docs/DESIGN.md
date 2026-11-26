@@ -11,7 +11,7 @@ Ce document décrit le fonctionnement complet de la plateforme : le cycle de vie
 5. [Litiges et appel](#litiges-et-appel)
 6. [Problématiques et réponses](#problématiques-et-réponses)
 7. [Paramètres](#paramètres)
-8. [Interface du contrat (cible)](#interface-du-contrat-cible)
+8. [Interface du contrat](#interface-du-contrat)
 9. [Décisions actées](#décisions-actées)
 
 ---
@@ -214,12 +214,15 @@ Les quatre durées du litige sont des **arguments du constructeur** stockés en 
 
 ---
 
-## Interface du contrat (cible)
+## Interface du contrat
 
-Interface indicative pour aligner frontend, tests et doc. Elle sera remplacée par le code réel.
+Interface réelle de `CTFPlatform`, tirée de [`ICTFPlatform.sol`](../contracts/contracts/interfaces/ICTFPlatform.sol), qui fait foi (structs `CTFParams`, `CTF`, `Level`, `Player`, `Dispute` comprises). Les litiges sont en **version simplifiée** : `vote` et `appeal` sont déclarées pour le design complet mais revert `NotImplemented`.
 
 ```solidity
-interface ICTFPlatform {
+interface ICTFPlatform is IArbitrable {
+    enum Phase { Open, Running, Contestation, Voting, AppealWindow, Appealed, Finalized, Cheated }
+    // Voting et AppealWindow ne sont jamais atteintes dans la version simplifiée.
+
     // Organisateur
     function createCTF(CTFParams calldata p, address[] calldata factories) external payable returns (uint256 ctfId);
 
@@ -227,19 +230,39 @@ interface ICTFPlatform {
     function buyTicket(uint256 ctfId) external payable;
     function createInstance(uint256 ctfId, uint256 levelIndex) external returns (address instance);
     function submit(uint256 ctfId, uint256 levelIndex) external;
+    function claimRefund(uint256 ctfId) external;          // aucun gagnant, ou triche confirmée
 
     // Temps (n'importe qui)
-    function finalize(uint256 ctfId) external;
-    function applyVoteAfterTimeout(uint256 ctfId) external;
+    function finalize(uint256 ctfId) external;              // après la contestation, sans litige
+    function applyVoteAfterTimeout(uint256 ctfId) external; // arbitre muet : litige rejeté
 
     // Litiges
-    function openDispute(uint256 ctfId) external payable;
-    function vote(uint256 ctfId, bool cheated) external;
-    function appeal(uint256 ctfId) external payable;
-    function rule(uint256 disputeID, uint256 ruling) external; // appelée par l'arbitre (IArbitrable)
+    function openDispute(uint256 ctfId) external payable;   // msg.value = bond + fee de disputeCost
+    function rule(uint256 disputeID, uint256 ruling) external; // IArbitrable, appelée par l'arbitre seul
+    function vote(uint256 ctfId, bool cheated) external;    // revert NotImplemented
+    function appeal(uint256 ctfId) external payable;        // revert NotImplemented
 
     // Argent
     function withdraw() external;
+
+    // Lecture
+    function ctfCount() external view returns (uint256);
+    function getCTF(uint256 ctfId) external view returns (CTF memory);
+    function getLevels(uint256 ctfId) external view returns (Level[] memory);
+    function getPlayer(uint256 ctfId, address player) external view returns (Player memory);
+    function getPodium(uint256 ctfId) external view returns (address[3] memory);
+    function getDispute(uint256 ctfId) external view returns (Dispute memory);
+    function disputeCost(uint256 ctfId) external view returns (uint256 bond, uint256 fee);
+    function burned() external view returns (uint256);
+    function phaseOf(uint256 ctfId) external view returns (Phase);
+    function instanceOf(uint256 ctfId, uint256 levelIndex, address player) external view returns (address);
+    function isSolved(uint256 ctfId, uint256 levelIndex, address player) external view returns (bool);
+    function owed(address account) external view returns (uint256);
+    function arbitrator() external view returns (address);
+    function contestationPeriod() external view returns (uint256);
+    function votingPeriod() external view returns (uint256);
+    function appealPeriod() external view returns (uint256);
+    function arbitratorTimeout() external view returns (uint256);
 
     // Events : un par étape, lus par le frontend
     event CTFCreated(uint256 indexed ctfId, address indexed organizer);
@@ -247,13 +270,30 @@ interface ICTFPlatform {
     event InstanceCreated(uint256 indexed ctfId, uint256 levelIndex, address indexed player, address instance);
     event LevelSolved(uint256 indexed ctfId, uint256 levelIndex, address indexed player, uint256 timestamp);
     event DisputeOpened(uint256 indexed ctfId, address indexed contester);
-    event Voted(uint256 indexed ctfId, address indexed voter, bool cheated);
-    event Appealed(uint256 indexed ctfId, uint256 disputeID);
+    event Appealed(uint256 indexed ctfId, uint256 disputeID); // litige transmis à l'arbitre, dès openDispute
     event Ruled(uint256 indexed ctfId, bool cheated);
     event Finalized(uint256 indexed ctfId, bool cheated);
+    event Credited(uint256 indexed ctfId, address indexed account, uint256 amount);
+    event RefundClaimed(uint256 indexed ctfId, address indexed player, uint256 amount);
     event Withdrawn(address indexed to, uint256 amount);
+    event Voted(uint256 indexed ctfId, address indexed voter, bool cheated); // design complet, jamais émis
+    // + event Ruling(IArbitrator indexed arbitrator, uint256 indexed disputeID, uint256 ruling), hérité d'IArbitrable
 }
 ```
+
+**Erreurs personnalisées**, une par refus, décodées par le frontend :
+
+| Où | Erreurs |
+| --- | --- |
+| Constructeur | `ZeroArbitrator`, `ZeroPeriod` |
+| `createCTF` | `TitleTooLong`, `StartInPast`, `InvalidDuration`, `InvalidMaxPlayers`, `TicketPriceTooLow`, `ZeroCashPrize`, `BondTooLow`, `NoLevels`, `TooManyLevels`, `FactoryNotContract`, `WrongValue` |
+| Commun | `CTFNotFound`, `WrongPhase` |
+| `buyTicket` | `OrganizerCannotPlay`, `AlreadyHasTicket`, `CTFFull`, `WrongValue` |
+| `createInstance`, `submit` | `NoTicket`, `InvalidLevel`, `InstanceAlreadyCreated`, `InvalidInstance`, `NoInstance`, `AlreadySolved`, `NotSolved` |
+| `finalize`, `claimRefund`, `withdraw` | `ContestationNotOver`, `NothingToRefund`, `NothingToWithdraw`, `TransferFailed` |
+| Litiges | `ContestationOver`, `DisputeAlreadyOpened`, `WrongDisputeBond`, `NotArbitrator`, `UnknownDispute`, `InvalidRuling`, `TimeoutNotReached`, `NotImplemented` |
+
+`AlreadyVoted` et `NotAppealable` sont déclarées pour le design complet et ne sont jamais levées.
 
 ---
 
