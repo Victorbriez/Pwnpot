@@ -207,7 +207,7 @@ L'appel à un tiers sans intérêt dans la partie corrige ces deux biais, et son
 | Quorum | Constante | max(3 votants, 20 % des tickets) |
 | Caution de contestation | Par CTF | max(3 × `ticketPrice`, 0.001 ETH), toujours ≥ frais d'arbitrage |
 | Frais d'arbitrage (`MockArbitrator`) | Déployeur | Fixes, inférieurs à 0.001 ETH (le minimum de la caution de contestation) |
-| Limite de gaz de `validateInstance` | Constante | 300 000 *(proposé)* |
+| Limite de gaz de `validateInstance` | Constante (`VALIDATION_GAS`) | 300 000 |
 | Arbitre | Déployeur | `immutable`, fixé au déploiement |
 
 Les quatre durées du litige sont des **arguments du constructeur** stockés en `immutable` : elles sont fixées à vie pour un déploiement donné. Pour la démo, un déploiement séparé les réduit à quelques minutes.

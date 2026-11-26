@@ -43,6 +43,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm contracts:build
       - run: pnpm contracts:test
+      - name: Tests sur le bytecode déployé (profil production)
+        run: pnpm --filter @pwnpot/contracts exec hardhat test --build-profile production
       - run: pnpm contracts:typecheck
       - name: ABI du front à jour
         run: pnpm abi && git diff --exit-code lib/onchain/ctf-platform-abi.ts lib/onchain/level-artifacts.ts
