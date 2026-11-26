@@ -168,40 +168,39 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-8">
         <div className="flex flex-col gap-10">
-          {dispute && role && (
+          {dispute && (
             <DisputeCard
               dispute={dispute}
-              tickets={players}
               busy={busy}
-              isDemo={tx.isDemo}
-              role={role.value}
-              onRoleChange={role.set}
+              role={role?.value}
+              onRoleChange={role?.set}
             />
           )}
-          {!tx.isDemo && ctf.status === "contestation" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Contestation</CardTitle>
-                <CardDescription>
-                  {ctf.remaining > 0
-                    ? `Fenêtre de contestation ouverte encore ${formatRemaining(ctf.remaining)}. L'ouverture d'un litige arrive avec la prochaine version du contrat.`
-                    : "La fenêtre de contestation est passée : n'importe qui peut finaliser le CTF."}
-                </CardDescription>
-              </CardHeader>
-              {canFinalize && (
-                <CardFooter>
-                  <Button disabled={busy} onClick={model.finalize}>
-                    {pendingOn("finalize") ? (
-                      <Spinner data-icon="inline-start" />
-                    ) : (
-                      <FlagIcon data-icon="inline-start" />
-                    )}
-                    Finaliser et répartir la cagnotte
-                  </Button>
-                </CardFooter>
-              )}
-            </Card>
-          )}
+          {!tx.isDemo &&
+            ctf.status === "contestation" &&
+            ctf.remaining === 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contestation</CardTitle>
+                  <CardDescription>
+                    La fenêtre de contestation est passée sans litige :
+                    n&apos;importe qui peut finaliser le CTF.
+                  </CardDescription>
+                </CardHeader>
+                {canFinalize && (
+                  <CardFooter>
+                    <Button disabled={busy} onClick={model.finalize}>
+                      {pendingOn("finalize") ? (
+                        <Spinner data-icon="inline-start" />
+                      ) : (
+                        <FlagIcon data-icon="inline-start" />
+                      )}
+                      Finaliser et répartir la cagnotte
+                    </Button>
+                  </CardFooter>
+                )}
+              </Card>
+            )}
 
           {vaults.length > 0 && (
             <section aria-labelledby="vaults" className="flex flex-col gap-4">
@@ -377,7 +376,9 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                     <TableRow>
                       <TableHead className="w-16 pl-4">Rang</TableHead>
                       <TableHead>Joueur</TableHead>
-                      <TableHead className="pr-4 text-right">Épreuves</TableHead>
+                      <TableHead className="pr-4 text-right">
+                        Épreuves
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -438,8 +439,7 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                 {formatInt(players)} / {formatInt(ctf.maxPlayers)} joueurs
               </span>
               <span>
-                {formatInt(Math.max(ctf.maxPlayers - players, 0))} places
-                libres
+                {formatInt(Math.max(ctf.maxPlayers - players, 0))} places libres
               </span>
             </div>
           </div>
@@ -460,9 +460,8 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
               </div>
               {isOrganizer ? (
                 <p className="text-sm text-muted-foreground">
-                  Ta caution reste bloquée jusqu&apos;à la fin ; tu la
-                  récupères dans « Mes gains » si aucune triche n&apos;est
-                  confirmée.
+                  Ta caution reste bloquée jusqu&apos;à la fin ; tu la récupères
+                  dans « Mes gains » si aucune triche n&apos;est confirmée.
                 </p>
               ) : (
                 <DataList>

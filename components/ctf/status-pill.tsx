@@ -10,7 +10,7 @@ const statusMeta = {
   running: { label: "En cours", variant: "success", dot: "bg-success" },
   contestation: { label: "Contestation", variant: "muted", dot: "bg-warning" },
   voting: { label: "Vote", variant: "warning", dot: "bg-warning" },
-  appeal: { label: "Appel", variant: "warning", dot: "bg-warning" },
+  appeal: { label: "Arbitrage", variant: "warning", dot: "bg-warning" },
   finalized: {
     label: "Finalisé",
     variant: "muted",

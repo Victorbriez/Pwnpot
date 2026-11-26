@@ -1,5 +1,10 @@
 // Règles des litiges (docs/DESIGN.md, « Litiges et appel » et « Flux
 // d'argent »). Fonctions pures : le contrat reste la référence.
+//
+// Le contrat déployé applique la version simplifiée : la contestation part
+// directement à l'arbitre ERC-792, sans vote des joueurs ni appel. Les
+// constantes du vote (`VOTE_WINDOW`, `APPEAL_WINDOW`, `quorum`) décrivent le
+// design complet, présenté dans la doc.
 import { parseEther } from "viem"
 
 export const CONTESTATION_WINDOW = 48 * 3_600
@@ -12,32 +17,24 @@ export const DEMO_ARBITRATION_FEE = parseEther("0.0005")
 const MIN_CONTEST_BOND = parseEther("0.001")
 
 /**
- * Étapes d'un CTF terminé. `appealWindow` : le camp perdant peut faire
- * appel ; `appealed` : l'arbitre doit trancher.
+ * Étapes d'un CTF terminé (version simplifiée) : `contestation`, puis
+ * `appealed` si un litige est ouvert (l'arbitre doit trancher), puis le
+ * résultat.
  */
-export type DisputePhase =
-  | "contestation"
-  | "voting"
-  | "appealWindow"
-  | "appealed"
-  | "finalized"
-  | "cheated"
+export type DisputePhase = "contestation" | "appealed" | "finalized" | "cheated"
 
-export type Side = "organizer" | "players"
+/** Comment le litige a été clos. */
+export type DisputeDecision = "ruling" | "timeout"
 
 export type DisputeState = {
   phase: DisputePhase
   /** Secondes avant la fin de la phase en cours. */
   remaining: number
   opened: boolean
-  cheatVotes: number
-  fairVotes: number
-  /** Vote de l'adresse connectée, s'il y en a un. */
-  myVote?: boolean
-  /** Camp qui a fait appel. */
-  appellant?: Side
-  /** Décision de l'arbitre (`rule`) ; absente en cas de timeout. */
-  ruling?: boolean
+  /** Le contestataire est l'adresse connectée. */
+  mine?: boolean
+  /** Clos par une décision de l'arbitre, ou par le timeout. */
+  decision?: DisputeDecision
 }
 
 /** max(3 × prix du ticket, 0,001 ETH). */
@@ -46,34 +43,9 @@ export function contestBond(ticketPrice: bigint): bigint {
   return bond > MIN_CONTEST_BOND ? bond : MIN_CONTEST_BOND
 }
 
-/** max(3 votants, 20 % des tickets), arrondi au-dessus. */
+/** max(3 votants, 20 % des tickets), arrondi au-dessus (design complet). */
 export function quorum(tickets: number): number {
   return Math.max(3, Math.ceil(tickets / 5))
-}
-
-export type VoteOutcome = {
-  voters: number
-  quorum: number
-  quorumReached: boolean
-  /** Triche retenue : plus de 50 % des voix exprimées et quorum atteint. */
-  cheated: boolean
-}
-
-export function voteOutcome(state: DisputeState, tickets: number): VoteOutcome {
-  const voters = state.cheatVotes + state.fairVotes
-  const needed = quorum(tickets)
-  const quorumReached = voters >= needed
-  return {
-    voters,
-    quorum: needed,
-    quorumReached,
-    cheated: quorumReached && state.cheatVotes * 2 > voters,
-  }
-}
-
-/** Camp perdant du vote : c'est lui qui peut faire appel. */
-export function losingSide(outcome: VoteOutcome): Side {
-  return outcome.cheated ? "organizer" : "players"
 }
 
 /** Durée de chaque phase, pour repartir à zéro quand on y entre. */
@@ -81,10 +53,6 @@ export function phaseDuration(phase: DisputePhase): number {
   switch (phase) {
     case "contestation":
       return CONTESTATION_WINDOW
-    case "voting":
-      return VOTE_WINDOW
-    case "appealWindow":
-      return APPEAL_WINDOW
     case "appealed":
       return ARBITER_TIMEOUT
     default:
@@ -100,7 +68,10 @@ export function settlement(state: DisputeState): SettlementLine[] {
   const lines: SettlementLine[] = cheated
     ? [
         { who: "Joueurs", what: "Ticket remboursé" },
-        { who: "Organisateur", what: "Caution brûlée, cash prize rendu" },
+        {
+          who: "Organisateur",
+          what: "Caution brûlée (moins les frais d'arbitrage), cash prize rendu",
+        },
       ]
     : [
         { who: "Podium", what: "Cash prize + tickets, 60 / 30 / 10 %" },
@@ -114,18 +85,9 @@ export function settlement(state: DisputeState): SettlementLine[] {
   if (state.opened) {
     lines.push({
       who: "Contestataire",
-      what: cheated ? "Caution de contestation rendue" : "Perd sa caution",
-    })
-  }
-  if (state.appellant) {
-    const won =
-      (state.appellant === "organizer" && !cheated) ||
-      (state.appellant === "players" && cheated)
-    lines.push({
-      who: "Appelant",
-      what: won
-        ? "Frais d'arbitrage remboursés par le camp perdant"
-        : "Frais d'arbitrage perdus",
+      what: cheated
+        ? "Caution et frais d'arbitrage rendus"
+        : "Perd sa caution et les frais d'arbitrage",
     })
   }
   return lines
