@@ -462,8 +462,9 @@ export function CreateCtfForm() {
             <FieldSet disabled={locked}>
               <FieldLegend>3. Cagnotte</FieldLegend>
               <FieldDescription>
-                Le podium se partage le cash prize et les tickets vendus (60 /
-                30 / 10 %).
+                Le podium se partage le cash prize et les tickets vendus : 60 /
+                30 / 10 %, ou 67 / 33 % à deux gagnants, et tout au 1er
+                s&apos;il est seul.
               </FieldDescription>
               <FieldGroup className="grid sm:grid-cols-3">
                 <AmountField

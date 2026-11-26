@@ -7,7 +7,7 @@ import * as React from "react"
 import { remainingLabel } from "@/components/ctf/ctf-card"
 import { StatusPill } from "@/components/ctf/status-pill"
 import { VulnTag } from "@/components/ctf/vuln-tag"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Empty,
   EmptyContent,
@@ -119,19 +119,34 @@ export function CtfList({ ctfs }: { ctfs: Ctf[] }) {
             <EmptyMedia variant="icon">
               <SearchXIcon />
             </EmptyMedia>
-            <EmptyTitle>Aucun CTF pour ce filtre</EmptyTitle>
+            <EmptyTitle>
+              {ctfs.length === 0
+                ? "Aucun CTF publié pour l'instant"
+                : "Aucun CTF pour ce filtre"}
+            </EmptyTitle>
             <EmptyDescription>
-              Essaie un autre filtre ou affiche tout.
+              {ctfs.length === 0
+                ? "Publie le premier : la cagnotte et les cautions restent dans le contrat."
+                : "Essaie un autre filtre ou affiche tout."}
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setFilter("all")}
-            >
-              Voir tous les CTF
-            </Button>
+            {ctfs.length === 0 ? (
+              <Link
+                href="/organize/new"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Publier un CTF
+              </Link>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilter("all")}
+              >
+                Voir tous les CTF
+              </Button>
+            )}
           </EmptyContent>
         </Empty>
       )}

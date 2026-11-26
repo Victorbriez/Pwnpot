@@ -8,17 +8,17 @@ const items: { risk: string; limit: string }[] = [
   {
     risk: "Les factories sont écrites par l'organisateur.",
     limit:
-      "Une épreuve peut être truquée. Avant de payer, vérifie que le code est publié sur Basescan, que validateInstance ne lit que l'état de l'instance et que la factory n'est pas un proxy.",
+      "Une épreuve peut être truquée. Avant de payer, regarde le badge « Code vérifié » (Sourcify), vérifie que validateInstance ne lit que l'état de l'instance et que la factory n'est pas un proxy : le site t'avertit sinon.",
   },
   {
-    risk: "Le vote des joueurs n'est pas neutre.",
+    risk: "L'arbitre tranche seul chaque litige.",
     limit:
-      "Les perdants ont intérêt à voter « triche », et l'organisateur peut acheter des tickets pour peser. L'appel à l'arbitre corrige ces deux biais.",
+      "Il est fixé au déploiement, visible de tous, et ne touche que les fonds du litige. Ici, c'est un MockArbitrator tenu par l'équipe : Kleros, l'arbitre décentralisé compatible, n'existe pas sur Base Sepolia.",
   },
   {
-    risk: "L'arbitre est trusted en appel.",
+    risk: "Un litige peut être ouvert par un complice.",
     limit:
-      "Il est fixé au déploiement et ne touche que les fonds du litige. En démo, c'est un MockArbitrator contrôlé par l'équipe.",
+      "Il n'y a qu'un litige par CTF : un complice de l'organisateur peut prendre la place, et sa caution revient alors à l'organisateur. Il perd quand même les frais d'arbitrage, et l'arbitre juge sur les faits, pas sur la personne qui conteste.",
   },
 ]
 

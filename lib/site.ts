@@ -32,9 +32,9 @@ export const site = {
   },
   /** Nœud RPC utilisé par défaut quand NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL est vide. */
   rpc: {
-    name: "Coinbase, qui opère le réseau Base",
-    url: "https://sepolia.base.org",
-    privacyUrl: "https://www.coinbase.com/legal/privacy",
+    name: "PublicNode, service d'Allnodes",
+    url: "https://base-sepolia-rpc.publicnode.com",
+    privacyUrl: "https://www.publicnode.com/privacy",
   },
   platformAddress: (process.env.NEXT_PUBLIC_CTF_PLATFORM_ADDRESS ||
     null) as Address | null,
