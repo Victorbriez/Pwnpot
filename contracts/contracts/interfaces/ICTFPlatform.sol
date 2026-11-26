@@ -4,8 +4,9 @@ pragma solidity ^0.8.34;
 import {IArbitrable} from "./IArbitrable.sol";
 
 /// Interface de CTFPlatform (docs/DESIGN.md § Interface du contrat).
-/// Les fonctions de litige sont déclarées ici pour que le frontend et les tests
-/// puissent s'aligner, même si elles ne sont pas encore implémentées.
+/// Litiges, version simplifiée : la contestation part directement à l'arbitre
+/// ERC-792 (`openDispute` → `rule`). `vote` et `appeal` sont déclarées pour la
+/// version complète mais ne sont pas implémentées.
 interface ICTFPlatform is IArbitrable {
     // ---------------------------------------------------------------------
     // Types
@@ -65,7 +66,9 @@ interface ICTFPlatform is IArbitrable {
         uint256 lastSolveTime;
     }
 
-    /// État du litige d'un CTF (un seul litige par CTF). Utilisé plus tard.
+    /// État du litige d'un CTF (un seul litige par CTF). Dans la version simplifiée,
+    /// le contestataire est aussi celui qui saisit l'arbitre : `appellant`,
+    /// `appealFee` et `appealedAt` sont remplis dès `openDispute`, et les voix restent à 0.
     struct Dispute {
         address contester;
         uint256 bond;
@@ -125,8 +128,9 @@ interface ICTFPlatform is IArbitrable {
     error NothingToWithdraw();
     error TransferFailed();
 
-    // Litiges (plus tard)
+    // Litiges
     error NotImplemented();
+    error ContestationOver(uint256 endedAt);
     error NotArbitrator();
     error DisputeAlreadyOpened();
     error WrongDisputeBond(uint256 expected, uint256 sent);
@@ -146,6 +150,7 @@ interface ICTFPlatform is IArbitrable {
     event LevelSolved(uint256 indexed ctfId, uint256 levelIndex, address indexed player, uint256 timestamp);
     event DisputeOpened(uint256 indexed ctfId, address indexed contester);
     event Voted(uint256 indexed ctfId, address indexed voter, bool cheated);
+    /// Le litige est transmis à l'arbitre (dès `openDispute` dans la version simplifiée).
     event Appealed(uint256 indexed ctfId, uint256 disputeID);
     event Ruled(uint256 indexed ctfId, bool cheated);
     event Finalized(uint256 indexed ctfId, bool cheated);
@@ -182,12 +187,16 @@ interface ICTFPlatform is IArbitrable {
 
     function finalize(uint256 ctfId) external;
 
+    /// L'arbitre n'a pas répondu dans `arbitratorTimeout` : n'importe qui clôt le
+    /// litige. Sans vote dans la version simplifiée, le résultat est « pas de triche ».
     function applyVoteAfterTimeout(uint256 ctfId) external;
 
     // ---------------------------------------------------------------------
     // Litiges (`rule` vient de IArbitrable)
     // ---------------------------------------------------------------------
 
+    /// Pendant la contestation, un détenteur de ticket conteste. `msg.value` doit
+    /// valoir exactement `bond + fee` de `disputeCost`.
     function openDispute(uint256 ctfId) external payable;
 
     function vote(uint256 ctfId, bool cheated) external;
@@ -215,6 +224,12 @@ interface ICTFPlatform is IArbitrable {
     function getPodium(uint256 ctfId) external view returns (address[3] memory);
 
     function getDispute(uint256 ctfId) external view returns (Dispute memory);
+
+    /// Caution de contestation et frais actuels de l'arbitre pour `openDispute`.
+    function disputeCost(uint256 ctfId) external view returns (uint256 bond, uint256 fee);
+
+    /// Total des cautions d'organisateur brûlées (triche confirmée) : bloqué à vie.
+    function burned() external view returns (uint256);
 
     function phaseOf(uint256 ctfId) external view returns (Phase);
 

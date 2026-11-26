@@ -3,6 +3,7 @@ pragma solidity ^0.8.34;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+import {IArbitrator} from "./interfaces/IArbitrator.sol";
 import {ICTFPlatform} from "./interfaces/ICTFPlatform.sol";
 import {ILevel} from "./interfaces/ILevel.sol";
 
@@ -14,8 +15,11 @@ import {ILevel} from "./interfaces/ILevel.sol";
 /// - Les factories sont du code tiers non fiable : `nonReentrant` partout,
 ///   validation en `staticcall` avec une limite de gaz et décodage défensif.
 ///
-/// Les litiges (vote, appel, arbitre) ne sont pas encore implémentés :
-/// leurs fonctions revert `NotImplemented`.
+/// Litiges, version simplifiée : un détenteur de ticket conteste pendant la
+/// fenêtre de contestation, le litige part directement à l'arbitre ERC-792, qui
+/// tranche avec `rule`. Si l'arbitre ne répond pas dans `arbitratorTimeout`,
+/// n'importe qui clôt le litige comme « pas de triche » (`applyVoteAfterTimeout`).
+/// Le vote des joueurs et l'appel (`vote`, `appeal`) revert `NotImplemented`.
 contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
     // ---------------------------------------------------------------------
     // Constantes (docs/DESIGN.md § Paramètres)
@@ -36,6 +40,15 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
     uint256 private constant THIRD_OF_THREE = 10;
     uint256 private constant SECOND_OF_TWO = 33;
 
+    /// Caution de contestation minimale : max(3 × ticket, 0.001 ETH).
+    uint256 public constant MIN_DISPUTE_BOND = 0.001 ether;
+    uint256 private constant DISPUTE_BOND_TICKETS = 3;
+
+    /// Décisions de l'arbitre (ERC-792). 0 = refus de trancher, traité comme « pas de triche ».
+    uint256 public constant RULING_OPTIONS = 2;
+    uint256 public constant RULING_CHEATED = 1;
+    uint256 public constant RULING_NOT_CHEATED = 2;
+
     // ---------------------------------------------------------------------
     // Réglages fixés au déploiement
     // ---------------------------------------------------------------------
@@ -52,6 +65,9 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
 
     uint256 public ctfCount;
 
+    /// Cautions d'organisateur brûlées (triche confirmée). Jamais retirables.
+    uint256 public burned;
+
     /// Soldes internes retirables avec `withdraw`.
     mapping(address account => uint256 amount) public owed;
 
@@ -63,6 +79,8 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
     mapping(uint256 ctfId => mapping(uint256 levelIndex => mapping(address player => address))) private _instances;
     mapping(uint256 ctfId => mapping(uint256 levelIndex => mapping(address player => bool))) private _solved;
     mapping(uint256 ctfId => Dispute) private _disputes;
+    /// Litige chez l'arbitre → `ctfId + 1` (0 = inconnu).
+    mapping(uint256 disputeID => uint256 ctfIdPlusOne) private _disputeCtf;
 
     constructor(
         address arbitrator_,
@@ -140,7 +158,7 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
     /// L'organisateur ne peut pas jouer à son propre CTF.
     function buyTicket(uint256 ctfId) external payable nonReentrant {
         CTF storage c = _ctf(ctfId);
-        Phase phase = _phase(c);
+        Phase phase = _phase(ctfId);
         if (phase != Phase.Open && phase != Phase.Running) revert WrongPhase(phase);
         if (msg.sender == c.organizer) revert OrganizerCannotPlay();
         Player storage player = _players[ctfId][msg.sender];
@@ -157,8 +175,8 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
     /// Déploie l'instance de l'appelant pour l'épreuve `levelIndex`, via la factory.
     /// Une seule instance par joueur et par épreuve.
     function createInstance(uint256 ctfId, uint256 levelIndex) external nonReentrant returns (address instance) {
-        CTF storage c = _ctf(ctfId);
-        Phase phase = _phase(c);
+        _ctf(ctfId);
+        Phase phase = _phase(ctfId);
         if (phase != Phase.Running) revert WrongPhase(phase);
         if (!_players[ctfId][msg.sender].hasTicket) revert NoTicket();
         Level[] storage levels = _levels[ctfId];
@@ -178,8 +196,8 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
     /// Fait valider l'instance de l'appelant (et seulement la sienne).
     /// 1 point par épreuve, horodaté ; le top 3 est mis à jour.
     function submit(uint256 ctfId, uint256 levelIndex) external nonReentrant {
-        CTF storage c = _ctf(ctfId);
-        Phase phase = _phase(c);
+        _ctf(ctfId);
+        Phase phase = _phase(ctfId);
         if (phase != Phase.Running) revert WrongPhase(phase);
         Player storage player = _players[ctfId][msg.sender];
         if (!player.hasTicket) revert NoTicket();
@@ -201,7 +219,7 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
     /// Crédite le ticket de l'appelant si le CTF s'est terminé sans gagnant.
     function claimRefund(uint256 ctfId) external nonReentrant {
         CTF storage c = _ctf(ctfId);
-        if (!c.finalized) revert WrongPhase(_phase(c));
+        if (!c.finalized) revert WrongPhase(_phase(ctfId));
         if (!c.cheated && _podium[ctfId][0] != address(0)) revert NothingToRefund();
         Player storage player = _players[ctfId][msg.sender];
         if (!player.hasTicket || player.refunded) revert NothingToRefund();
@@ -220,11 +238,128 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
     /// Aucune boucle sur les joueurs : seuls le podium et l'organisateur sont crédités ici.
     function finalize(uint256 ctfId) external nonReentrant {
         CTF storage c = _ctf(ctfId);
-        Phase phase = _phase(c);
+        Phase phase = _phase(ctfId);
         if (phase != Phase.Contestation) revert WrongPhase(phase);
         uint256 contestationEnd = c.endTime + contestationPeriod;
         if (block.timestamp < contestationEnd) revert ContestationNotOver(contestationEnd);
 
+        _settle(ctfId, c);
+    }
+
+    /// L'arbitre n'a pas tranché dans `arbitratorTimeout` après la saisine :
+    /// n'importe qui clôt le litige. Sans vote des joueurs dans cette version,
+    /// le résultat par défaut est « pas de triche » (comme un quorum raté).
+    function applyVoteAfterTimeout(uint256 ctfId) external nonReentrant {
+        _ctf(ctfId);
+        Phase phase = _phase(ctfId);
+        if (phase != Phase.Appealed) revert WrongPhase(phase);
+        uint256 timeoutAt = _disputes[ctfId].appealedAt + arbitratorTimeout;
+        if (block.timestamp < timeoutAt) revert TimeoutNotReached(timeoutAt);
+
+        _resolve(ctfId, false);
+    }
+
+    // ---------------------------------------------------------------------
+    // Litiges
+    // ---------------------------------------------------------------------
+
+    /// Conteste le résultat pendant la fenêtre de contestation et saisit l'arbitre.
+    /// Réservé aux détenteurs de ticket, un seul litige par CTF.
+    /// `msg.value` = caution de contestation + frais de l'arbitre (`disputeCost`).
+    function openDispute(uint256 ctfId) external payable nonReentrant {
+        CTF storage c = _ctf(ctfId);
+        Phase phase = _phase(ctfId);
+        if (phase == Phase.Appealed) revert DisputeAlreadyOpened();
+        if (phase != Phase.Contestation) revert WrongPhase(phase);
+        uint256 contestationEnd = c.endTime + contestationPeriod;
+        if (block.timestamp >= contestationEnd) revert ContestationOver(contestationEnd);
+        if (!_players[ctfId][msg.sender].hasTicket) revert NoTicket();
+        uint256 bond = _disputeBond(c);
+        uint256 fee = IArbitrator(arbitrator).arbitrationCost("");
+        if (msg.value != bond + fee) revert WrongDisputeBond(bond + fee, msg.value);
+
+        Dispute storage d = _disputes[ctfId];
+        d.contester = msg.sender;
+        d.bond = bond;
+        d.openedAt = block.timestamp;
+        d.appellant = msg.sender;
+        d.appealFee = fee;
+        d.appealedAt = block.timestamp;
+        d.appealed = true;
+        emit DisputeOpened(ctfId, msg.sender);
+
+        // L'identifiant n'est connu qu'après l'appel. L'arbitre est fixé au
+        // déploiement (`immutable`) et `rule` est `nonReentrant` : il ne peut pas
+        // trancher pendant cet appel.
+        uint256 disputeID = IArbitrator(arbitrator).createDispute{value: fee}(RULING_OPTIONS, "");
+        if (_disputeCtf[disputeID] != 0) revert DisputeAlreadyOpened();
+        d.disputeID = disputeID;
+        _disputeCtf[disputeID] = ctfId + 1;
+
+        emit Appealed(ctfId, disputeID);
+    }
+
+    function vote(uint256, bool) external pure {
+        revert NotImplemented();
+    }
+
+    function appeal(uint256) external payable {
+        revert NotImplemented();
+    }
+
+    /// Décision de l'arbitre ERC-792, appelée par lui seul.
+    /// `RULING_CHEATED` confirme la triche ; `RULING_NOT_CHEATED` ou 0 la rejette.
+    function rule(uint256 disputeID, uint256 ruling) external nonReentrant {
+        if (msg.sender != arbitrator) revert NotArbitrator();
+        uint256 stored = _disputeCtf[disputeID];
+        if (stored == 0) revert UnknownDispute(disputeID);
+        if (ruling > RULING_OPTIONS) revert InvalidRuling(ruling);
+        uint256 ctfId = stored - 1;
+        Phase phase = _phase(ctfId);
+        if (phase != Phase.Appealed) revert WrongPhase(phase);
+
+        bool cheated = ruling == RULING_CHEATED;
+        emit Ruling(IArbitrator(msg.sender), disputeID, ruling);
+        emit Ruled(ctfId, cheated);
+
+        _resolve(ctfId, cheated);
+    }
+
+    // ---------------------------------------------------------------------
+    // Issues (interne)
+    // ---------------------------------------------------------------------
+
+    /// Clôt un litige (docs/DESIGN.md § Flux d'argent).
+    /// - Triche confirmée : la caution de l'organisateur est brûlée, sauf les frais
+    ///   d'arbitrage rendus au contestataire (plafonnés à cette caution) ; le cash
+    ///   prize est rendu à l'organisateur, la caution de contestation au
+    ///   contestataire, et chaque joueur récupère son ticket avec `claimRefund`.
+    /// - Litige rejeté : la caution de contestation va à l'organisateur (les frais
+    ///   d'arbitrage sont perdus), puis le CTF se règle comme une fin normale.
+    function _resolve(uint256 ctfId, bool cheated) private {
+        CTF storage c = _ctfs[ctfId];
+        Dispute storage d = _disputes[ctfId];
+        d.resolved = true;
+
+        if (!cheated) {
+            _credit(ctfId, c.organizer, d.bond);
+            _settle(ctfId, c);
+            return;
+        }
+
+        c.finalized = true;
+        c.cheated = true;
+        uint256 feeRefund = d.appealFee < c.organizerBond ? d.appealFee : c.organizerBond;
+        burned += c.organizerBond - feeRefund;
+        _credit(ctfId, c.organizer, c.cashPrize);
+        _credit(ctfId, d.contester, d.bond + feeRefund);
+
+        emit Finalized(ctfId, true);
+    }
+
+    /// Fin normale : podium (ou remboursement des tickets s'il n'y a aucun gagnant).
+    /// Aucune boucle sur les joueurs : seuls le podium et l'organisateur sont crédités ici.
+    function _settle(uint256 ctfId, CTF storage c) private {
         c.finalized = true;
 
         address[3] storage podium = _podium[ctfId];
@@ -250,32 +385,6 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
         }
 
         emit Finalized(ctfId, false);
-    }
-
-    function applyVoteAfterTimeout(uint256) external pure {
-        revert NotImplemented();
-    }
-
-    // ---------------------------------------------------------------------
-    // Litiges (plus tard)
-    // ---------------------------------------------------------------------
-
-    function openDispute(uint256) external payable {
-        revert NotImplemented();
-    }
-
-    function vote(uint256, bool) external pure {
-        revert NotImplemented();
-    }
-
-    function appeal(uint256) external payable {
-        revert NotImplemented();
-    }
-
-    /// Appelée par l'arbitre ERC-792 uniquement.
-    function rule(uint256, uint256) external view {
-        if (msg.sender != arbitrator) revert NotArbitrator();
-        revert NotImplemented();
     }
 
     // ---------------------------------------------------------------------
@@ -322,8 +431,14 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
         return _disputes[ctfId];
     }
 
+    function disputeCost(uint256 ctfId) external view returns (uint256 bond, uint256 fee) {
+        bond = _disputeBond(_ctf(ctfId));
+        fee = IArbitrator(arbitrator).arbitrationCost("");
+    }
+
     function phaseOf(uint256 ctfId) external view returns (Phase) {
-        return _phase(_ctf(ctfId));
+        _ctf(ctfId);
+        return _phase(ctfId);
     }
 
     function instanceOf(uint256 ctfId, uint256 levelIndex, address player) external view returns (address) {
@@ -343,12 +458,21 @@ contract CTFPlatform is ICTFPlatform, ReentrancyGuard {
         return _ctfs[ctfId];
     }
 
-    function _phase(CTF storage c) private view returns (Phase) {
+    function _phase(uint256 ctfId) private view returns (Phase) {
+        CTF storage c = _ctfs[ctfId];
         if (c.cheated) return Phase.Cheated;
         if (c.finalized) return Phase.Finalized;
         if (block.timestamp < c.startTime) return Phase.Open;
         if (block.timestamp < c.endTime) return Phase.Running;
+        // Litige ouvert et pas encore tranché (un litige tranché a finalisé le CTF).
+        if (_disputes[ctfId].contester != address(0)) return Phase.Appealed;
         return Phase.Contestation;
+    }
+
+    /// max(3 × ticket, 0.001 ETH) (docs/DESIGN.md § Dimensionnement des cautions).
+    function _disputeBond(CTF storage c) private view returns (uint256) {
+        uint256 bond = c.ticketPrice * DISPUTE_BOND_TICKETS;
+        return bond > MIN_DISPUTE_BOND ? bond : MIN_DISPUTE_BOND;
     }
 
     function _credit(uint256 ctfId, address account, uint256 amount) private {
