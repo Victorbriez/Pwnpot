@@ -94,7 +94,7 @@ Et la faille elle-même est au programme : **l'épreuve 1, le Coffre, reproduit 
 
 1. Wikipedia, « [The DAO](https://en.wikipedia.org/wiki/The_DAO) » : levée, montant volé, hard fork, Ethereum Classic.
 2. Vitalik Buterin, « [CRITICAL UPDATE Re: DAO Vulnerability](https://blog.ethereum.org/2016/06/17/critical-update-re-dao-vulnerability/) », blog de la Fondation Ethereum, 17 juin 2016.
-3. Phil Daian, « Analysis of the DAO exploit », Hacking, Distributed, 18 juin 2016 ([original](https://hackingdistributed.com/2016/06/18/analysis-of-the-dao-exploit/), [copie](https://incidentdatabase.ai/reports/902)).
+3. Phil Daian, « Analysis of the DAO exploit », Hacking, Distributed, 18 juin 2016 ([archive de l'original](https://web.archive.org/web/20241201011331/https://hackingdistributed.com/2016/06/18/analysis-of-the-dao-exploit/), [copie](https://incidentdatabase.ai/reports/902) ; le site d'origine ne répond plus).
 4. Vitalik Buterin, « [Hard Fork Completed](https://blog.ethereum.org/2016/07/20/hard-fork-completed) », blog de la Fondation Ethereum, 20 juillet 2016.
 5. SEC, « Report of Investigation Pursuant to Section 21(a) of the Securities Exchange Act of 1934: The DAO », Release No. 81207, 25 juillet 2017 ([communiqué de la SEC](https://www.sec.gov/news/press-release/2017-131), [texte du rapport, copie IOSCO](https://api.iosco.org/library/ico-statements/United%20States%20-%20SEC%20-%20Report%20of%20Investigation%20into%20the%20DAO.pdf)).
 6. CoinDesk, « [Understanding The DAO Attack](https://www.coindesk.com/learn/understanding-the-dao-attack) », 25 juin 2016.

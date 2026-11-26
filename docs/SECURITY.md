@@ -89,7 +89,7 @@ Ce document liste ce qu'un attaquant peut tenter contre Pwnpot, ce qui l'en emp�
 
 Ces propriétés doivent être vraies à tout moment. Elles sont vérifiées par [`CTFPlatformInvariants.t.sol`](../contracts/contracts/CTFPlatformInvariants.t.sol) ([#31](https://github.com/Victorbriez/Pwnpot/issues/31)) : un *handler* enchaîne des actions aléatoires (créer un CTF, acheter un ticket, créer et soumettre une instance exploitée ou non, avancer le temps, finaliser, contester, faire trancher l'arbitre ou attendre son timeout, se faire rembourser, retirer, et un tiers ou le déployeur qui tente de trancher), puis chaque invariant est vérifié. 256 suites de 60 actions à chaque `pnpm contracts:test`, 10 000 avec `pnpm contracts:invariants` (environ 7 min). Sur 10 000 suites, toutes les issues sont atteintes (podium à 1, 2 et 3 gagnants, aucun gagnant, litige rejeté, timeout de l'arbitre, triche confirmée).
 
-Bugs injectés pour vérifier que les invariants les détectent : un `withdraw` qui ne remet pas `owed` à zéro est détecté dès 256 suites (invariants 1, 2 et 6) ; un 3e du podium crédité deux fois n'est détecté qu'avec les 10 000 suites (invariants 1 et 2), car le cas à trois gagnants est plus rare. Lancer `pnpm contracts:invariants` avant chaque déploiement.
+Bugs injectés pour vérifier que les invariants les détectent : un `withdraw` qui ne remet pas `owed` à zéro est détecté dès 256 suites (invariants 1, 2 et 6) ; un 3e du podium crédité deux fois n'est détecté par les invariants qu'avec les 10 000 suites (invariants 1 et 2), car le cas à trois gagnants est plus rare ; il est en revanche détecté à chaque CI par 5 tests ciblés (`test_ThreeWinners_SixtyThirtyTen`, `test_HappyPath_ThreeWinners`, `testFuzz_Conservation`…). Lancer `pnpm contracts:invariants` avant chaque déploiement.
 
 1. **Solvabilité** : `address(this).balance ≥ Σ owed[*] + Σ fonds encore bloqués dans les CTF en cours`.
 2. **Conservation** : pour un CTF finalisé, `cash prize + Σ tickets + caution organisateur + caution de contestation = Σ crédits distribués + montant brûlé` (les frais d'arbitrage partent chez l'arbitre à l'ouverture du litige ; s'ils sont rendus au contestataire, c'est sur la caution de l'organisateur). Testé au wei près par `testFuzz_Conservation_WithDispute`.
@@ -185,9 +185,9 @@ Cohérent avec le [tableau des rôles](../README.md#rôles-et-confiance) : seule
 ### Tests
 
 - **Couverture** (`hardhat test --coverage`) : 99 % des lignes de `CTFPlatform`. Deux lignes défensives ne sont pas atteintes : un arbitre qui réutiliserait un `disputeID` (revert `DisputeAlreadyOpened`) et un crédit de 0 wei (ignoré).
-- **Profil production** : les 195 tests passent sur le bytecode optimisé.
+- **Profil production** : les 208 tests passent sur le bytecode optimisé (avec les tests d'invariants de #31).
 - **Répétition sur un nœud local** : module Ignition `PwnpotModule` déployé tel quel (profil production, durées courtes), puis quatre parcours joués en vraies transactions avec l'ABI du frontend (triche confirmée, litige rejeté, timeout de l'arbitre, fin sans litige). Chaque refus attendu renvoie la bonne erreur. Après tous les retraits, le solde du contrat est égal au montant brûlé.
-- **Reste à faire** : tests d'invariants avec état sur des suites d'appels aléatoires ([#31](https://github.com/Victorbriez/Pwnpot/issues/31), hors périmètre du code freeze). La répétition et `testFuzz_Conservation_WithDispute` couvrent les mêmes propriétés sur les parcours réels.
+- **Tests d'invariants** : faits depuis ([#31](https://github.com/Victorbriez/Pwnpot/issues/31)), voir [Invariants](#invariants).
 
 ---
 

@@ -85,6 +85,11 @@ pnpm format               # Prettier
 pnpm contracts:build      # compile les contrats
 pnpm contracts:test       # tests Solidity + TypeScript
 pnpm contracts:typecheck  # compile puis tsc des tests/scripts Hardhat
+pnpm contracts:test:production  # tests sur le bytecode optimisé (celui qui est déployé)
+pnpm contracts:invariants # tests d'invariants, 10 000 suites (~7 min), avant chaque déploiement
+pnpm contracts:env        # variables NEXT_PUBLIC_* du déploiement démo (DEPLOYMENT=<id> pour un autre)
+pnpm contracts:deploy     # déploie le module sur Base Sepolia (id pwnpot-disputes-demo, durées de démo)
+pnpm contracts:verify     # relance la vérification Basescan / Blockscout / Sourcify de ce déploiement
 pnpm abi                  # recopie l'ABI de CTFPlatform dans lib/onchain/ (après un changement du contrat)
 pnpm chain                # nœud Hardhat local (chain id 84532, comme Base Sepolia)
 pnpm chain:deploy         # déploie CTFPlatform, les 3 épreuves et TestLevel en local, 2 CTF d'exemple, écrit .env.local
