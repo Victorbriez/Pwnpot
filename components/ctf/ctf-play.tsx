@@ -109,6 +109,11 @@ export function CtfPlay({ ctfId }: { ctfId: number }) {
 }
 
 function CtfPlayView({ model }: { model: CtfPlayModel }) {
+  // Épreuves finies (ou triche confirmée) sans personne à payer : les parts du
+  // podium ne sont plus que théoriques.
+  const gameOver = model.ctf.status !== "open" && model.ctf.status !== "running"
+  const unpaid =
+    model.ctf.status === "cheated" || (gameOver && model.winners === 0)
   const {
     ctf,
     challenges,
@@ -361,7 +366,9 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                         {label}
                       </span>
                       <span className="text-lg font-semibold tabular-nums">
-                        {share !== undefined ? formatEth(share) : "—"}
+                        {share !== undefined && !unpaid
+                          ? formatEth(share)
+                          : "—"}
                       </span>
                     </div>
                     <div className="flex min-h-5 items-center gap-2 text-sm">
@@ -423,11 +430,26 @@ function CtfPlayView({ model }: { model: CtfPlayModel }) {
                 </Table>
               </div>
             )}
-            {board.length === 0 && (
+            {ctf.status === "cheated" ? (
               <p className="text-sm text-muted-foreground">
-                Personne n&apos;a encore marqué : le podium se remplit à chaque
-                épreuve réussie.
+                Triche confirmée : le podium ne touche rien, chaque joueur
+                récupère son ticket.
               </p>
+            ) : unpaid ? (
+              <p className="text-sm text-muted-foreground">
+                Personne n&apos;a marqué : pas de podium, chaque joueur récupère
+                son ticket
+                {model.ctf.status === "finalized"
+                  ? "."
+                  : " une fois le CTF finalisé."}
+              </p>
+            ) : (
+              board.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Personne n&apos;a encore marqué : le podium se remplit à
+                  chaque épreuve réussie.
+                </p>
+              )
             )}
           </section>
         </div>
