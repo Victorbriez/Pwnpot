@@ -55,20 +55,26 @@ Onglets à ouvrir avant H : la page `#code` de `CTFPlatform` sur Basescan, sa pa
 
 ### Script de l'exploit
 
-`pnpm demo:codesafe` lit le RPC et la clé dans le keystore Hardhat de la machine qui le lance. `unlock` est ouvert à tous : n'importe quel compte de test approvisionné suffirait, mais on prend celui du **joueur 1** : c'est le joueur qui lit le mot de passe et ouvre son propre coffre, comme dans un vrai CTF. Jamais un wallet qui détient de vrais fonds. À faire une fois, la veille (chaque commande demande la valeur, puis le mot de passe du keystore) :
+`pnpm demo:codesafe` lit le RPC et la clé dans le keystore Hardhat de la machine qui le lance. `unlock` est ouvert à tous : n'importe quel compte de test approvisionné suffirait, mais on prend celui du **joueur 1** : c'est le joueur qui lit le mot de passe et ouvre son propre coffre, comme dans un vrai CTF. Jamais un wallet qui détient de vrais fonds. À faire une fois, la veille (chaque commande demande la valeur, puis le mot de passe du keystore ; identiques sous macOS, Linux et Windows) :
 
 ```bash
 pnpm --filter @pwnpot/contracts exec hardhat keystore set BASE_SEPOLIA_RPC_URL
 pnpm --filter @pwnpot/contracts exec hardhat keystore set BASE_SEPOLIA_PRIVATE_KEY
 ```
 
-Sous Windows (PowerShell), la variable se passe autrement : `INSTANCE=0x… pnpm demo:codesafe` y donne « terme non reconnu ».
+Les commandes qui prennent une variable s'écrivent différemment selon le terminal : `INSTANCE=0x… pnpm …` ne marche que sous macOS / Linux (bash, zsh, Git Bash). Sous Windows PowerShell, elle donne « terme non reconnu ».
 
-```powershell
-$env:INSTANCE="0x…"; pnpm demo:codesafe
-```
+| Action                                          | macOS / Linux                                 | Windows (PowerShell)                                              |
+| ----------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------- |
+| Exploit (démo, étape 4)                         | `INSTANCE=0x… pnpm demo:codesafe`             | `$env:INSTANCE="0x…"; pnpm demo:codesafe`                         |
+| Vérification du matin, sans rien envoyer        | `INSTANCE=0x… READ_ONLY=1 pnpm demo:codesafe` | `$env:INSTANCE="0x…"; $env:READ_ONLY="1"; pnpm demo:codesafe`     |
+| Annuler la lecture seule (PowerShell seulement) | —                                             | `Remove-Item Env:READ_ONLY`                                       |
+| Nœud local : jouer un exploit                   | `PLAYER=3 CTF=0 LEVEL=0 pnpm chain:solve`     | `$env:PLAYER="3"; $env:CTF="0"; $env:LEVEL="0"; pnpm chain:solve` |
+| Nœud local : avancer l'horloge de 2 h           | `ADVANCE=7200 pnpm chain:time`                | `$env:ADVANCE="7200"; pnpm chain:time`                            |
 
-Le matin, lancer une fois `INSTANCE=<instance du joueur 2 sur A> READ_ONLY=1 pnpm demo:codesafe` (lecture seule : le joueur 1 ne touche pas au coffre du joueur 2) pour saisir le mot de passe du keystore et vérifier le RPC, sans rien envoyer.
+Sous PowerShell, une variable reste définie jusqu'à la fermeture du terminal : après la vérification du matin, lancer `Remove-Item Env:READ_ONLY`, sinon l'exploit de la démo ne ferait que lire.
+
+Le matin, lancer une fois la vérification sur l'instance du joueur 2 sur A (le joueur 1 ne touche pas à son coffre) pour saisir le mot de passe du keystore et vérifier le RPC, sans rien envoyer.
 
 ### CTF à créer à l'avance
 
@@ -89,7 +95,7 @@ Créer A, B et C au plus tard à **H − 1 h 30** : un CTF doit commencer après
 | 1   | Organisateur                | « Organiser » → « Nouveau CTF » : créer un CTF (2 épreuves partagées, début dans 5 min). Il ne sert qu'à montrer la création                           | Badges « Code vérifié » sur les factories, total envoyé (cash prize + caution)               | Transaction, event `CTFCreated`                                                                                 |
 | 2   | Joueur 1                    | Sur **A** : acheter un ticket                                                                                                                          | La cagnotte et le nombre de joueurs augmentent                                               | Event `TicketBought`                                                                                            |
 | 3   | Joueur 1                    | « Créer mon instance » sur le Coffre-fort à code                                                                                                       | « Ton instance : 0x… »                                                                       | Event `InstanceCreated` (adresse de l'instance)                                                                 |
-| 4   | Joueur 1 (terminal)         | `INSTANCE=0x… pnpm demo:codesafe` avec l'adresse de son instance                                                                                       | Le terminal affiche le slot 1 (mot de passe « private »), puis la transaction `unlock`       | Transaction `unlock` sur l'instance                                                                             |
+| 4   | Joueur 1 (terminal)         | `pnpm demo:codesafe` avec l'adresse de son instance ([commande selon le système](#script-de-lexploit))                                                 | Le terminal affiche le slot 1 (mot de passe « private »), puis la transaction `unlock`       | Transaction `unlock` sur l'instance                                                                             |
 | 5   | Joueur 2, puis joueur 1     | « Vérifier ma réussite ». Le joueur 2 n'a rien exploité : **refus** « Ton instance n'est pas encore exploitée. » (`NotSolved`). Le joueur 1 est validé | Le classement de A se met à jour chez le joueur 2 sans recharger (rafraîchi toutes les 15 s) | Event `LevelSolved` (joueur 1). Le refus n'atteint pas la chaîne : le wallet ne propose même pas la transaction |
 | 6   | —                           | Ouvrir **B** : fini depuis 15 min, contestation terminée                                                                                               | Statut, podium, « qui récupère quoi »                                                        | —                                                                                                               |
 | 7   | **Joueur 2**                | `finalize` sur B. N'importe qui peut l'appeler : ni l'organisateur ni la plateforme n'ont la main                                                      | B passe en « Finalisé »                                                                      | Events `Credited` (joueur 1 : 0.0003 ETH, organisateur : caution 0.0003 ETH) puis `Finalized`                   |
@@ -133,8 +139,9 @@ Le jury demandera probablement un second échec. Dans l'interface, la plupart de
 - **Testnet inutilisable** : le dire au jury et basculer sur le nœud local, même code :
   1. `pnpm chain`, puis `pnpm chain:deploy` (écrit `.env.local`), puis `pnpm dev`.
   2. Réseau « Pwnpot local » dans le wallet : RPC `http://127.0.0.1:8545`, chain id `84532`, clés de test affichées par `pnpm chain`.
-  3. Exploits : `PLAYER=3 CTF=0 LEVEL=0 pnpm chain:solve`. Temps : `ADVANCE=7200 pnpm chain:time`.
-  4. Pas d'explorer en local : montrer les events dans le site.
+
+3. Exploits : `pnpm chain:solve`, temps : `pnpm chain:time` (commandes macOS / Linux et Windows dans [Script de l'exploit](#script-de-lexploit)).
+4. Pas d'explorer en local : montrer les events dans le site.
 
 ## Répétitions
 
@@ -142,4 +149,4 @@ Sans le scénario 2, une seule personne peut tout répéter, en passant d'un pro
 
 - [ ] Répétition 1 sur Base Sepolia, profils propres, chronomètre : 15 min maximum.
 - [ ] Répétition 2 la veille au soir, avec les wallets du jour J.
-- [ ] Le matin : soldes vérifiés, CTF A et B (et C si scénario 2) créés aux bonnes heures, onglets ouverts, chaque wallet sur Base Sepolia pour pwnpot.vercel.app, `READ_ONLY=1 pnpm demo:codesafe` lancé une fois.
+- [ ] Le matin : soldes vérifiés, CTF A et B (et C si scénario 2) créés aux bonnes heures, onglets ouverts, chaque wallet sur Base Sepolia pour pwnpot.vercel.app, vérification `READ_ONLY` de `pnpm demo:codesafe` lancée une fois (et `Remove-Item Env:READ_ONLY` sous PowerShell).
