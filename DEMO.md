@@ -2,30 +2,41 @@
 
 15 minutes en direct sur Base Sepolia (minutes 5 à 20 de la soutenance), sur le déploiement **démo** (`pwnpot-disputes-demo`) utilisé par [pwnpot.vercel.app](https://pwnpot.vercel.app). Dans ce document, **H** est l'heure de début de la soutenance.
 
+| Scénario                                                                                     | Durée  | Statut                                                                                         |
+| -------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| [1 — Un CTF de bout en bout](#scénario-1--un-ctf-de-bout-en-bout-7-min)                      | ~7 min | obligatoire                                                                                    |
+| [2 — Litige tranché par l'arbitre](#scénario-2--litige-tranché-par-larbitre-optionnel-5-min) | ~5 min | **optionnel** : seulement si les wallets ont l'ETH du litige (0.0015 ETH fixés par le contrat) |
+| [3 — Ce que personne ne peut faire](#scénario-3--ce-que-personne-ne-peut-faire-2-min)        | ~2 min | obligatoire                                                                                    |
+
+Sans le scénario 2, la démo se répète **seul**, avec trois comptes de test et environ **0.0025 ETH** au total.
+
 ## Ce que la démo doit montrer
 
-| Exigence du jury                                                         | Où dans la démo                                                                                                                                                   |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Le parcours nominal, de bout en bout, confirmé sur le testnet            | Scénario 1 : création, ticket, instance, exploit, validation, finalisation, retrait                                                                               |
-| La fonctionnalité décentralisée : l'argent ne bouge que selon les règles | Scénario 1 étape 7 (`finalize` appelé par un joueur, pas par l'organisateur), scénario 2 (l'arbitre ne tranche que le litige), scénario 3 (aucune fonction admin) |
-| Au moins un échec, avec la raison affichée dans l'interface              | Scénario 1 étape 5 : `NotSolved`, « Ton instance n'est pas encore exploitée. ». Un second au choix du jury : [Échecs prêts à montrer](#échecs-prêts-à-montrer)    |
-| L'explorer : contrat vérifié, transactions de la démo, events émis       | À chaque étape (colonne « Sur Basescan »)                                                                                                                         |
+| Exigence du jury                                                         | Où dans la démo                                                                                                                                                                |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Le parcours nominal, de bout en bout, confirmé sur le testnet            | Scénario 1 : création, ticket, instance, exploit, validation, finalisation, retrait                                                                                            |
+| La fonctionnalité décentralisée : l'argent ne bouge que selon les règles | Scénario 1 étape 7 (`finalize` appelé par un joueur, pas par l'organisateur) et scénario 3 (aucune fonction admin). En option, scénario 2 (l'arbitre ne tranche que le litige) |
+| Au moins un échec, avec la raison affichée dans l'interface              | Scénario 1 étape 5 : `NotSolved`, « Ton instance n'est pas encore exploitée. ». Un second au choix du jury : [Échecs prêts à montrer](#échecs-prêts-à-montrer)                 |
+| L'explorer : contrat vérifié, transactions de la démo, events émis       | À chaque étape (colonne « Sur Basescan »)                                                                                                                                      |
+
+Sans le scénario 2, le litige se présente pendant la revue de code : `openDispute` et `rule` dans `CTFPlatform.sol`, et leurs tests dans `CTFPlatformDisputes.t.sol`.
 
 ## Préparation
 
 ### Wallets
 
-Un profil navigateur propre par rôle, wallet connecté sur Base Sepolia avant H.
+Trois comptes de test (une seule phrase de récupération MetaMask suffit, avec un compte par rôle), un profil navigateur propre par rôle, connecté sur Base Sepolia avant H.
 
-| Rôle                                   | Profil navigateur              | Wallet                                       | Solde à prévoir                                                         |
-| -------------------------------------- | ------------------------------ | -------------------------------------------- | ----------------------------------------------------------------------- |
-| Organisateur                           | Profil A                       | `0x…`                                        | 0.02 ETH : 5 CTF × (cash prize 0.001 + caution 0.0013) + gas            |
-| Joueur 1 (gagnant)                     | Profil B                       | `0x…`                                        | 0.005 ETH : 4 tickets × 0.0001 + gas                                    |
-| Joueur 2 (perdant, contestataire)      | Profil C                       | `0x…`                                        | 0.01 ETH : 4 tickets + 2 litiges × (caution 0.001 + frais 0.0005) + gas |
-| Déployeur, `ruler` de `MockArbitrator` | Basescan (wallet du déployeur) | `0xA469B2A79DD89792D71921F987Dfdc0b189466ad` | 0.005 ETH de gas : `giveRuling`                                         |
-| Secours                                | Terminal (keystore Hardhat)    | `0x…`                                        | 0.02 ETH : `pnpm demo:codesafe`, et remplacer un wallet à sec           |
+| Rôle                                                          | Profil navigateur   | Wallet                                       | Solde à prévoir                       | En plus pour le scénario 2                           |
+| ------------------------------------------------------------- | ------------------- | -------------------------------------------- | ------------------------------------- | ---------------------------------------------------- |
+| Organisateur, et compte du keystore pour `pnpm demo:codesafe` | Profil A + terminal | `0x…`                                        | 0.0015 ETH : 3 CTF × 0.0004 + gas     | + 0.0004 ETH (CTF C)                                 |
+| Joueur 1 (gagnant)                                            | Profil B            | `0x…`                                        | 0.0003 ETH : 2 tickets × 0.0001 + gas | + 0.0001 ETH (ticket C)                              |
+| Joueur 2 (perdant)                                            | Profil C            | `0x…`                                        | 0.0003 ETH : 2 tickets × 0.0001 + gas | + 0.0016 ETH (ticket C, caution 0.001, frais 0.0005) |
+| Déployeur, `ruler` de `MockArbitrator`                        | Basescan            | `0xA469B2A79DD89792D71921F987Dfdc0b189466ad` | —                                     | gas de `giveRuling`                                  |
 
-Demander l'ETH Base Sepolia sur Teams **la veille**, pas le matin.
+Le gas de Base Sepolia est négligeable (0.006 gwei : toute la démo coûte moins de 0.0002 ETH). L'argent n'est pas consommé : il revient par les retraits une fois les CTF finalisés. Seuls les frais d'arbitrage du scénario 2 partent au déployeur (récupérables avec `withdrawFees`).
+
+Pour approvisionner les comptes : les faucets listés sur [docs.base.org](https://docs.base.org/base-chain/tools/network-faucets) (limite par adresse et par jour, donc à réclamer sur chaque compte), ou Teams, **la veille**.
 
 ### Adresses (déploiement démo)
 
@@ -38,9 +49,11 @@ Demander l'ETH Base Sepolia sur Teams **la veille**, pas le matin.
 
 Durées du déploiement démo (`ignition/parameters/demo.json`) : **10 min** de contestation, **15 min** avant le timeout de l'arbitre. Un CTF dure **au moins 1 h** (`MIN_DURATION`) : tout ce qui dépend du temps se prépare avant H.
 
-Onglets à ouvrir avant H : la page `#code` de `CTFPlatform` sur Basescan, sa page `#events`, la page _Write Contract_ de `MockArbitrator`, et un terminal à la racine du repo.
+Onglets à ouvrir avant H : la page `#code` de `CTFPlatform` sur Basescan, sa page `#events`, et un terminal à la racine du repo. Pour le scénario 2, la page _Write Contract_ de `MockArbitrator` dans le navigateur du déployeur.
 
-`pnpm demo:codesafe` lit le RPC et la clé dans le keystore Hardhat de la machine qui le lance. `unlock` est ouvert à tous : n'importe quel compte de test approvisionné suffit, par exemple le wallet de secours, jamais un wallet qui détient de vrais fonds. À faire une fois, la veille (chaque commande demande la valeur, puis le mot de passe du keystore) :
+### Script de l'exploit
+
+`pnpm demo:codesafe` lit le RPC et la clé dans le keystore Hardhat de la machine qui le lance. `unlock` est ouvert à tous : n'importe quel compte de test approvisionné suffit, ici celui de l'organisateur, jamais un wallet qui détient de vrais fonds. À faire une fois, la veille (chaque commande demande la valeur, puis le mot de passe du keystore) :
 
 ```bash
 pnpm --filter @pwnpot/contracts exec hardhat keystore set BASE_SEPOLIA_RPC_URL
@@ -51,16 +64,15 @@ Le matin, lancer une fois `INSTANCE=<instance du joueur 2 sur A> READ_ONLY=1 pnp
 
 ### CTF à créer à l'avance
 
-Tous avec cash prize **0.001 ETH**, ticket **0.0001 ETH**, **3 joueurs** maximum et la caution minimale proposée par le formulaire (0.0013 ETH), avec l'épreuve **Coffre-fort à code**.
+Tous avec l'épreuve **Coffre-fort à code**, cash prize **0.0001 ETH**, ticket **0.0001 ETH**, **2 joueurs** maximum et la caution calculée par le formulaire (0.0003 ETH) : **0.0004 ETH** envoyés par CTF.
 
-| CTF                           | Début      | Fin        | À faire avant H                                                                                       | Sert à                                                    |
-| ----------------------------- | ---------- | ---------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **A — En cours**              | H − 1 h    | H + 1 h    | Joueur 2 : ticket et instance (non exploitée)                                                         | Scénario 1, étapes 2 à 5                                  |
-| **B — À finaliser**           | H − 1 h 25 | H − 15 min | Joueurs 1 et 2 : ticket. Joueur 1 : instance exploitée (`pnpm demo:codesafe`) et validée avant la fin | Scénario 1, étapes 6 à 8 (contestation finie à H − 5 min) |
-| **C — Litige**                | H − 55 min | H + 7 min  | Joueurs 1 et 2 : ticket. Joueur 1 : épreuve validée                                                   | Scénario 2 (contestation ouverte de H + 7 à H + 17)       |
-| **D — Arbitre muet** (option) | H − 1 h 20 | H − 20 min | Comme C, puis joueur 2 ouvre un litige vers H − 15 min, sans décision                                 | Scénario 2, étape 5 (timeout atteint vers H)              |
+| CTF                     | Début      | Fin        | À faire avant H                                                                                       | Sert à                                                    |
+| ----------------------- | ---------- | ---------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **A — En cours**        | H − 1 h    | H + 1 h    | Joueur 2 : ticket et instance (non exploitée)                                                         | Scénario 1, étapes 2 à 5                                  |
+| **B — À finaliser**     | H − 1 h 25 | H − 15 min | Joueurs 1 et 2 : ticket. Joueur 1 : instance exploitée (`pnpm demo:codesafe`) et validée avant la fin | Scénario 1, étapes 6 à 8 (contestation finie à H − 5 min) |
+| **C — Litige** (option) | H − 55 min | H + 7 min  | Joueurs 1 et 2 : ticket. Joueur 1 : épreuve validée                                                   | Scénario 2 (contestation ouverte de H + 7 à H + 17)       |
 
-Créer A, B, C et D au plus tard à **H − 1 h 30** : un CTF doit commencer après sa création.
+Créer A, B et C au plus tard à **H − 1 h 30** : un CTF doit commencer après sa création.
 
 ## Scénario 1 — Un CTF de bout en bout (~7 min)
 
@@ -69,23 +81,22 @@ Créer A, B, C et D au plus tard à **H − 1 h 30** : un CTF doit commencer apr
 | 1   | Organisateur                | « Organiser » → « Nouveau CTF » : créer un CTF (2 épreuves partagées, début dans 5 min). Il ne sert qu'à montrer la création                           | Badges « Code vérifié » sur les factories, total envoyé (cash prize + caution)               | Transaction, event `CTFCreated`                                                                                 |
 | 2   | Joueur 1                    | Sur **A** : acheter un ticket                                                                                                                          | La cagnotte et le nombre de joueurs augmentent                                               | Event `TicketBought`                                                                                            |
 | 3   | Joueur 1                    | « Créer mon instance » sur le Coffre-fort à code                                                                                                       | « Ton instance : 0x… »                                                                       | Event `InstanceCreated` (adresse de l'instance)                                                                 |
-| 4   | Secours (terminal)          | `INSTANCE=0x… pnpm demo:codesafe` avec l'adresse affichée                                                                                              | Le terminal affiche le slot 1 (mot de passe « private »), puis la transaction `unlock`       | Transaction `unlock` sur l'instance                                                                             |
+| 4   | Organisateur (terminal)     | `INSTANCE=0x… pnpm demo:codesafe` avec l'adresse affichée                                                                                              | Le terminal affiche le slot 1 (mot de passe « private »), puis la transaction `unlock`       | Transaction `unlock` sur l'instance                                                                             |
 | 5   | Joueur 2, puis joueur 1     | « Vérifier ma réussite ». Le joueur 2 n'a rien exploité : **refus** « Ton instance n'est pas encore exploitée. » (`NotSolved`). Le joueur 1 est validé | Le classement de A se met à jour chez le joueur 2 sans recharger (rafraîchi toutes les 15 s) | Event `LevelSolved` (joueur 1). Le refus n'atteint pas la chaîne : le wallet ne propose même pas la transaction |
 | 6   | —                           | Ouvrir **B** : fini depuis 15 min, contestation terminée                                                                                               | Statut, podium, « qui récupère quoi »                                                        | —                                                                                                               |
-| 7   | **Joueur 2**                | `finalize` sur B. N'importe qui peut l'appeler : ni l'organisateur ni la plateforme n'ont la main                                                      | B passe en « Finalisé »                                                                      | Events `Credited` (joueur 1 : 0.0012 ETH, organisateur : caution 0.0013 ETH) puis `Finalized`                   |
+| 7   | **Joueur 2**                | `finalize` sur B. N'importe qui peut l'appeler : ni l'organisateur ni la plateforme n'ont la main                                                      | B passe en « Finalisé »                                                                      | Events `Credited` (joueur 1 : 0.0003 ETH, organisateur : caution 0.0003 ETH) puis `Finalized`                   |
 | 8   | Joueur 1, puis organisateur | « Mon espace » → « Mes gains » → « Retirer »                                                                                                           | Le solde du wallet augmente                                                                  | Event `Withdrawn`                                                                                               |
 
-## Scénario 2 — Litige tranché par l'arbitre (~5 min)
+## Scénario 2 — Litige tranché par l'arbitre (optionnel, ~5 min)
 
-Version déployée : pas de vote ni d'appel, la contestation part directement à l'arbitre ERC-792.
+À jouer seulement si le CTF C est prêt et que le joueur 2 a 0.0015 ETH de plus. Version déployée : pas de vote ni d'appel, la contestation part directement à l'arbitre ERC-792. Il faut le déployeur, connecté sur Basescan.
 
 1. **Joueur 2**, sur **C** (fin à H + 7 min, contestation ouverte) : « Ouvrir un litige ». → Le bouton affiche le total, caution 0.001 + frais 0.0005 ETH. Events `DisputeOpened` et `Appealed` (avec le `disputeID`). C passe en « Arbitrage ».
 2. Montrer que l'argent est gelé : plus de bouton de finalisation, compte à rebours du timeout de l'arbitre.
 3. **Déployeur**, sur Basescan _Write Contract_ de `MockArbitrator` : `giveRuling(disputeID, 2)` (« pas de triche »). → Event `RulingGiven` sur `MockArbitrator`, puis `Ruling` (ERC-792), `Ruled` et `Finalized` sur `CTFPlatform`.
-4. Page de C : joueur 1 payé (0.0012 ETH), l'organisateur récupère sa caution plus celle du contestataire (0.0013 + 0.001 ETH), les frais d'arbitrage sont perdus.
-5. Option, sur **D** : l'arbitre n'a pas répondu en 15 min. **N'importe qui** clique « Clore le litige (l'arbitre n'a pas répondu) ». → Le litige est rejeté et D se règle normalement : un arbitre muet ne bloque pas les fonds.
+4. Page de C : joueur 1 payé (0.0003 ETH), l'organisateur récupère sa caution plus celle du contestataire (0.0003 + 0.001 ETH), les frais d'arbitrage sont perdus.
 
-Variante à proposer si le jury la demande : `giveRuling(disputeID, 1)` (« triche ») → caution de l'organisateur brûlée, frais rendus au contestataire, cash prize rendu, tickets récupérés avec « Récupérer mon ticket » (`claimRefund`).
+Variante à proposer si le jury la demande : `giveRuling(disputeID, 1)` (« triche ») → caution de l'organisateur brûlée, frais rendus au contestataire dans la limite de cette caution (ici 0.0003 des 0.0005 ETH : le joueur 2 récupère 0.0013 ETH), cash prize rendu, tickets récupérés avec « Récupérer mon ticket » (`claimRefund`).
 
 ## Scénario 3 — Ce que personne ne peut faire (~2 min)
 
@@ -94,14 +105,14 @@ Variante à proposer si le jury la demande : `giveRuling(disputeID, 1)` (« tric
 
 ## Échecs prêts à montrer
 
-Le jury demandera probablement un second échec. Dans l'interface, la plupart des actions interdites sont **désactivées avec leur raison** (organisateur qui veut jouer, « Rien à retirer », litige hors fenêtre). Pour un revert décodé, passer par Basescan _Write Contract_ de `CTFPlatform` avec le wallet concerné : l'estimation du gas échoue et Basescan affiche l'erreur.
+Le jury demandera probablement un second échec. Dans l'interface, la plupart des actions interdites sont **désactivées avec leur raison** (organisateur qui veut jouer, « Rien à retirer », litige hors fenêtre). Pour un revert décodé, passer par Basescan _Write Contract_ de `CTFPlatform` avec le wallet concerné : l'estimation du gas échoue et Basescan affiche l'erreur. Aucun ne coûte d'ETH.
 
 | Tentative                             | Qui                           | Erreur                                                     |
 | ------------------------------------- | ----------------------------- | ---------------------------------------------------------- |
 | « Vérifier ma réussite » sans exploit | Joueur 2 sur A, dans le site  | `NotSolved` : « Ton instance n'est pas encore exploitée. » |
 | `buyTicket(A)` une seconde fois       | Joueur 1                      | `AlreadyHasTicket`                                         |
 | `buyTicket(A)`                        | Organisateur                  | `OrganizerCannotPlay`                                      |
-| `finalize(C)` pendant l'arbitrage     | N'importe qui                 | `WrongPhase`                                               |
+| `finalize(A)` pendant le jeu          | N'importe qui                 | `WrongPhase`                                               |
 | `withdraw()` sans solde               | Joueur 2                      | `NothingToWithdraw`                                        |
 | `rule(…)` sur `CTFPlatform`           | N'importe qui sauf l'arbitre  | `NotArbitrator`                                            |
 | `giveRuling(…)` sur `MockArbitrator`  | N'importe qui sauf le `ruler` | `NotRuler`                                                 |
@@ -109,7 +120,7 @@ Le jury demandera probablement un second échec. Dans l'interface, la plupart de
 ## Plan B
 
 - **RPC public lent** : basculer `NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL` sur un RPC dédié et relancer le front en local (`pnpm dev`).
-- **Un wallet à sec** : prendre le wallet de secours.
+- **Un wallet à sec** : réclamer sur un faucet, ou transférer depuis un autre compte de test.
 - **Frontend en panne** : jouer les mêmes étapes depuis Basescan, _Write Contract_.
 - **Testnet inutilisable** : le dire au jury et basculer sur le nœud local, même code :
   1. `pnpm chain`, puis `pnpm chain:deploy` (écrit `.env.local`), puis `pnpm dev`.
@@ -119,6 +130,8 @@ Le jury demandera probablement un second échec. Dans l'interface, la plupart de
 
 ## Répétitions
 
+Sans le scénario 2, une seule personne peut tout répéter, en passant d'un profil navigateur à l'autre.
+
 - [ ] Répétition 1 sur Base Sepolia, profils propres, chronomètre : 15 min maximum.
 - [ ] Répétition 2 la veille au soir, avec les wallets du jour J.
-- [ ] Le matin : soldes vérifiés, CTF A à D créés aux bonnes heures, onglets ouverts, `READ_ONLY=1 pnpm demo:codesafe` lancé une fois.
+- [ ] Le matin : soldes vérifiés, CTF A et B (et C si scénario 2) créés aux bonnes heures, onglets ouverts, `READ_ONLY=1 pnpm demo:codesafe` lancé une fois.
