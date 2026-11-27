@@ -17,13 +17,13 @@
 
 Un profil navigateur propre par rôle, wallet connecté sur Base Sepolia avant H.
 
-| Rôle                                   | Profil navigateur                      | Wallet                                       | Solde à prévoir                                                         |
-| -------------------------------------- | -------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------- |
-| Organisateur                           | Profil A                               | `0x…`                                        | 0.02 ETH : 5 CTF × (cash prize 0.001 + caution 0.0013) + gas            |
-| Joueur 1 (gagnant)                     | Profil B                               | `0x…`                                        | 0.005 ETH : 4 tickets × 0.0001 + gas                                    |
-| Joueur 2 (perdant, contestataire)      | Profil C                               | `0x…`                                        | 0.01 ETH : 4 tickets + 2 litiges × (caution 0.001 + frais 0.0005) + gas |
-| Déployeur, `ruler` de `MockArbitrator` | Terminal (keystore Hardhat) + Basescan | `0xA469B2A79DD89792D71921F987Dfdc0b189466ad` | 0.005 ETH de gas : `giveRuling` et `pnpm demo:codesafe`                 |
-| Secours                                | —                                      | `0x…`                                        | 0.02 ETH, pour remplacer un wallet à sec                                |
+| Rôle                                   | Profil navigateur              | Wallet                                       | Solde à prévoir                                                         |
+| -------------------------------------- | ------------------------------ | -------------------------------------------- | ----------------------------------------------------------------------- |
+| Organisateur                           | Profil A                       | `0x…`                                        | 0.02 ETH : 5 CTF × (cash prize 0.001 + caution 0.0013) + gas            |
+| Joueur 1 (gagnant)                     | Profil B                       | `0x…`                                        | 0.005 ETH : 4 tickets × 0.0001 + gas                                    |
+| Joueur 2 (perdant, contestataire)      | Profil C                       | `0x…`                                        | 0.01 ETH : 4 tickets + 2 litiges × (caution 0.001 + frais 0.0005) + gas |
+| Déployeur, `ruler` de `MockArbitrator` | Basescan (wallet du déployeur) | `0xA469B2A79DD89792D71921F987Dfdc0b189466ad` | 0.005 ETH de gas : `giveRuling`                                         |
+| Secours                                | Terminal (keystore Hardhat)    | `0x…`                                        | 0.02 ETH : `pnpm demo:codesafe`, et remplacer un wallet à sec           |
 
 Demander l'ETH Base Sepolia sur Teams **la veille**, pas le matin.
 
@@ -38,7 +38,16 @@ Demander l'ETH Base Sepolia sur Teams **la veille**, pas le matin.
 
 Durées du déploiement démo (`ignition/parameters/demo.json`) : **10 min** de contestation, **15 min** avant le timeout de l'arbitre. Un CTF dure **au moins 1 h** (`MIN_DURATION`) : tout ce qui dépend du temps se prépare avant H.
 
-Onglets à ouvrir avant H : la page `#code` de `CTFPlatform` sur Basescan, sa page `#events`, la page _Write Contract_ de `MockArbitrator`, et un terminal à la racine du repo (`pnpm demo:codesafe` lit le RPC et la clé dans le keystore Hardhat, mot de passe à saisir avant la démo).
+Onglets à ouvrir avant H : la page `#code` de `CTFPlatform` sur Basescan, sa page `#events`, la page _Write Contract_ de `MockArbitrator`, et un terminal à la racine du repo.
+
+`pnpm demo:codesafe` lit le RPC et la clé dans le keystore Hardhat de la machine qui le lance. `unlock` est ouvert à tous : n'importe quel compte de test approvisionné suffit, par exemple le wallet de secours, jamais un wallet qui détient de vrais fonds. À faire une fois, la veille (chaque commande demande la valeur, puis le mot de passe du keystore) :
+
+```bash
+pnpm --filter @pwnpot/contracts exec hardhat keystore set BASE_SEPOLIA_RPC_URL
+pnpm --filter @pwnpot/contracts exec hardhat keystore set BASE_SEPOLIA_PRIVATE_KEY
+```
+
+Le matin, lancer une fois `INSTANCE=<instance du joueur 2 sur A> READ_ONLY=1 pnpm demo:codesafe` pour saisir le mot de passe du keystore et vérifier le RPC, sans rien envoyer.
 
 ### CTF à créer à l'avance
 
@@ -60,7 +69,7 @@ Créer A, B, C et D au plus tard à **H − 1 h 30** : un CTF doit commencer apr
 | 1   | Organisateur                | « Organiser » → « Nouveau CTF » : créer un CTF (2 épreuves partagées, début dans 5 min). Il ne sert qu'à montrer la création                           | Badges « Code vérifié » sur les factories, total envoyé (cash prize + caution)               | Transaction, event `CTFCreated`                                                                                 |
 | 2   | Joueur 1                    | Sur **A** : acheter un ticket                                                                                                                          | La cagnotte et le nombre de joueurs augmentent                                               | Event `TicketBought`                                                                                            |
 | 3   | Joueur 1                    | « Créer mon instance » sur le Coffre-fort à code                                                                                                       | « Ton instance : 0x… »                                                                       | Event `InstanceCreated` (adresse de l'instance)                                                                 |
-| 4   | Déployeur                   | `INSTANCE=0x… pnpm demo:codesafe` avec l'adresse affichée                                                                                              | Le terminal affiche le slot 1 (mot de passe « private »), puis la transaction `unlock`       | Transaction `unlock` sur l'instance                                                                             |
+| 4   | Secours (terminal)          | `INSTANCE=0x… pnpm demo:codesafe` avec l'adresse affichée                                                                                              | Le terminal affiche le slot 1 (mot de passe « private »), puis la transaction `unlock`       | Transaction `unlock` sur l'instance                                                                             |
 | 5   | Joueur 2, puis joueur 1     | « Vérifier ma réussite ». Le joueur 2 n'a rien exploité : **refus** « Ton instance n'est pas encore exploitée. » (`NotSolved`). Le joueur 1 est validé | Le classement de A se met à jour chez le joueur 2 sans recharger (rafraîchi toutes les 15 s) | Event `LevelSolved` (joueur 1). Le refus n'atteint pas la chaîne : le wallet ne propose même pas la transaction |
 | 6   | —                           | Ouvrir **B** : fini depuis 15 min, contestation terminée                                                                                               | Statut, podium, « qui récupère quoi »                                                        | —                                                                                                               |
 | 7   | **Joueur 2**                | `finalize` sur B. N'importe qui peut l'appeler : ni l'organisateur ni la plateforme n'ont la main                                                      | B passe en « Finalisé »                                                                      | Events `Credited` (joueur 1 : 0.0012 ETH, organisateur : caution 0.0013 ETH) puis `Finalized`                   |
@@ -112,4 +121,4 @@ Le jury demandera probablement un second échec. Dans l'interface, la plupart de
 
 - [ ] Répétition 1 sur Base Sepolia, profils propres, chronomètre : 15 min maximum.
 - [ ] Répétition 2 la veille au soir, avec les wallets du jour J.
-- [ ] Le matin : soldes vérifiés, CTF A à D créés aux bonnes heures, onglets ouverts, keystore déverrouillé.
+- [ ] Le matin : soldes vérifiés, CTF A à D créés aux bonnes heures, onglets ouverts, `READ_ONLY=1 pnpm demo:codesafe` lancé une fois.
