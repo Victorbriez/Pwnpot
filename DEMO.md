@@ -25,7 +25,9 @@ Sans le scénario 2, le litige se présente pendant la revue de code : `openDisp
 
 ### Wallets
 
-Trois comptes de test (une seule phrase de récupération MetaMask suffit, avec un compte par rôle), un profil navigateur propre par rôle, connecté sur Base Sepolia avant H.
+Trois comptes de test, un navigateur par rôle. MetaMask n'expose qu'un compte par site et par navigateur : deux rôles dans le même Chrome se déconnectent l'un l'autre. Utiliser des profils Chrome distincts, ou Chrome + Firefox + Edge, chacun avec sa propre extension MetaMask ; un compte joueur s'y importe avec sa clé privée (« Ajouter un compte » → « Importer un compte »).
+
+**Réseau par site** : MetaMask choisit le réseau site par site. Pour chaque wallet, sur la ligne « pwnpot.vercel.app » en bas de MetaMask, sélectionner **Base Sepolia** avant H. Sinon le site refuse la transaction : « The current chain of the wallet (id: 1) does not match the target chain (id: 84532) ».
 
 | Rôle                                                                | Profil navigateur   | Wallet                                                                                                                          | Solde à prévoir                       | En plus pour le scénario 2                           |
 | ------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------- |
@@ -58,6 +60,12 @@ Onglets à ouvrir avant H : la page `#code` de `CTFPlatform` sur Basescan, sa pa
 ```bash
 pnpm --filter @pwnpot/contracts exec hardhat keystore set BASE_SEPOLIA_RPC_URL
 pnpm --filter @pwnpot/contracts exec hardhat keystore set BASE_SEPOLIA_PRIVATE_KEY
+```
+
+Sous Windows (PowerShell), la variable se passe autrement : `INSTANCE=0x… pnpm demo:codesafe` y donne « terme non reconnu ».
+
+```powershell
+$env:INSTANCE="0x…"; pnpm demo:codesafe
 ```
 
 Le matin, lancer une fois `INSTANCE=<instance du joueur 2 sur A> READ_ONLY=1 pnpm demo:codesafe` (lecture seule : le joueur 1 ne touche pas au coffre du joueur 2) pour saisir le mot de passe du keystore et vérifier le RPC, sans rien envoyer.
@@ -134,4 +142,4 @@ Sans le scénario 2, une seule personne peut tout répéter, en passant d'un pro
 
 - [ ] Répétition 1 sur Base Sepolia, profils propres, chronomètre : 15 min maximum.
 - [ ] Répétition 2 la veille au soir, avec les wallets du jour J.
-- [ ] Le matin : soldes vérifiés, CTF A et B (et C si scénario 2) créés aux bonnes heures, onglets ouverts, `READ_ONLY=1 pnpm demo:codesafe` lancé une fois.
+- [ ] Le matin : soldes vérifiés, CTF A et B (et C si scénario 2) créés aux bonnes heures, onglets ouverts, chaque wallet sur Base Sepolia pour pwnpot.vercel.app, `READ_ONLY=1 pnpm demo:codesafe` lancé une fois.
