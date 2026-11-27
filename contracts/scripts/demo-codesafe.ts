@@ -4,10 +4,11 @@
 // eth_getStorageAt. Le script affiche les deux slots, puis appelle `unlock` avec
 // le mot de passe lu. Aucun contrat n'est déployé.
 //
-// `unlock` est ouvert à tous : la transaction part du compte du keystore
-// (BASE_SEPOLIA_PRIVATE_KEY), pas du wallet du joueur. Ce qui compte pour
-// `validateInstance`, c'est que l'instance soit celle du joueur et qu'elle soit
-// ouverte. Le joueur clique ensuite « Vérifier ma réussite » sur le site.
+// La transaction part du compte du keystore (BASE_SEPOLIA_PRIVATE_KEY) : pour la
+// démo, celui du joueur, qui ouvre ainsi son propre coffre. `unlock` est ouvert à
+// tous, et `validateInstance` vérifie seulement que l'instance est celle du
+// joueur et qu'elle est ouverte. Le joueur clique ensuite « Vérifier ma
+// réussite » sur le site.
 //
 //   INSTANCE=0x… pnpm demo:codesafe            # lit puis ouvre
 //   INSTANCE=0x… READ_ONLY=1 pnpm demo:codesafe  # lit seulement
