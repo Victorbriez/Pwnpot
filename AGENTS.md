@@ -96,6 +96,7 @@ pnpm chain                # nœud Hardhat local (chain id 84532, comme Base Sepo
 pnpm chain:deploy         # déploie CTFPlatform, les 3 épreuves et TestLevel en local, 2 CTF d'exemple, écrit .env.local
 ADVANCE=7200 pnpm chain:time  # avance l'horloge du nœud local (en secondes)
 PLAYER=3 CTF=0 LEVEL=0 pnpm chain:solve  # joue l'exploit de l'épreuve LEVEL pour un joueur (local seulement)
+INSTANCE=0x… pnpm demo:codesafe  # démo sur Base Sepolia : lit le slot 1 d'une instance du Coffre-fort à code et appelle unlock
 ```
 
 Avant de considérer une tâche finie : `pnpm lint` et `pnpm typecheck` passent, plus `pnpm contracts:test` si un contrat a changé.

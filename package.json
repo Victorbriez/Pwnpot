@@ -26,7 +26,8 @@
     "chain": "pnpm --filter @pwnpot/contracts exec hardhat node --network chain",
     "chain:deploy": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-deploy.ts --network localhost",
     "chain:time": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-time.ts --network localhost",
-    "chain:solve": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-solve.ts --network localhost"
+    "chain:solve": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/dev-solve.ts --network localhost",
+    "demo:codesafe": "pnpm --filter @pwnpot/contracts exec hardhat run scripts/demo-codesafe.ts --network baseSepolia"
   },
   "dependencies": {
     "@base-org/account": "^2.6.0",
